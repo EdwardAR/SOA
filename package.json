@@ -1,0 +1,53 @@
+{
+  "name": "school-management-soa",
+  "version": "1.0.0",
+  "description": "Service-Oriented Architecture for School Management Platform",
+  "main": "index.js",
+  "scripts": {
+    "start": "node api-gateway/gateway.js",
+    "dev": "nodemon api-gateway/gateway.js",
+    "gateway": "node api-gateway/gateway.js",
+    "gateway:dev": "nodemon api-gateway/gateway.js",
+    "service:auth": "node services/auth-service/index.js",
+    "service:auth:dev": "nodemon services/auth-service/index.js",
+    "service:student": "node services/student-service/index.js",
+    "service:student:dev": "nodemon services/student-service/index.js",
+    "service:teacher": "node services/teacher-service/index.js",
+    "service:teacher:dev": "nodemon services/teacher-service/index.js",
+    "service:enrollment": "node services/enrollment-service/index.js",
+    "service:enrollment:dev": "nodemon services/enrollment-service/index.js",
+    "service:academic": "node services/academic-service/index.js",
+    "service:academic:dev": "nodemon services/academic-service/index.js",
+    "service:attendance": "node services/attendance-service/index.js",
+    "service:attendance:dev": "nodemon services/attendance-service/index.js",
+    "service:payment": "node services/payment-service/index.js",
+    "service:payment:dev": "nodemon services/payment-service/index.js",
+    "service:notification": "node services/notification-service/index.js",
+    "service:notification:dev": "nodemon services/notification-service/index.js",
+    "ops:start-all": "powershell -ExecutionPolicy Bypass -File scripts/start-all.ps1",
+    "ops:stop-all": "powershell -ExecutionPolicy Bypass -File scripts/stop-all.ps1",
+    "ops:health": "powershell -ExecutionPolicy Bypass -File scripts/health-check.ps1"
+  },
+  "keywords": [
+    "SOA",
+    "microservices",
+    "school",
+    "management"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "express-http-proxy": "^2.1.1",
+    "mysql2": "^3.6.0",
+    "jsonwebtoken": "^9.0.0",
+    "bcryptjs": "^2.4.3",
+    "express-validator": "^7.0.0",
+    "dotenv": "^16.0.3",
+    "axios": "^1.4.0",
+    "nodemailer": "^6.9.4"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20"
+  }
+}
