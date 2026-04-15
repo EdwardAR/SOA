@@ -1,648 +1,248 @@
-# Example API Usage Guide
+# Ejemplos de uso - Sistema SOA de Gestion Escolar
 
-This document provides practical examples of using the School Management SOA System.
+Este documento incluye flujos practicos para probar el sistema de punta a punta.
 
-## 1. User Authentication Flow
+## 1. Flujo minimo de autenticacion
 
-### Step 1: Register a Student
-```bash
+### 1.1 Registrar usuario
+
+```http
 POST http://localhost:3000/api/auth/register
 Content-Type: application/json
 
 {
-  "username": "john_student",
-  "email": "john.student@school.com",
-  "password": "SecurePass123!",
-  "role": "student"
+  "username": "demo_admin",
+  "email": "demo_admin@example.com",
+  "password": "DemoPass123!",
+  "role": "admin"
 }
 ```
 
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Registration successful",
-  "data": {
-    "id": 1,
-    "username": "john_student",
-    "email": "john.student@school.com",
-    "role": "student",
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-  }
-}
-```
+### 1.2 Login
 
-### Step 2: Login
-```bash
+```http
 POST http://localhost:3000/api/auth/login
 Content-Type: application/json
 
 {
-  "email": "john.student@school.com",
-  "password": "SecurePass123!"
+  "email": "demo_admin@example.com",
+  "password": "DemoPass123!"
 }
 ```
 
-### Step 3: Save Token
-Store the returned token for subsequent requests:
-```
-TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
+Guardar `data.token` para solicitudes protegidas.
 
----
+## 2. Flujo de estudiantes
 
-## 2. Student Management
+### 2.1 Crear estudiante
 
-### Create Student Profile
-```bash
+```http
 POST http://localhost:3000/api/students
 Content-Type: application/json
 
 {
-  "enrollmentNumber": "STU-2024-001",
-  "firstName": "John",
-  "lastName": "Doe",
-  "email": "john.doe@school.com",
-  "password": "InitialPass123",
-  "dateOfBirth": "2006-03-15",
-  "gender": "M",
-  "phone": "+1-555-0100",
-  "address": "123 Main Street",
-  "city": "Springfield",
-  "state": "IL",
-  "postalCode": "62701"
+  "enrollmentNumber": "STU-2026-001",
+  "firstName": "Ana",
+  "lastName": "Lopez",
+  "email": "ana.lopez@example.com",
+  "password": "Pass12345",
+  "dateOfBirth": "2007-02-10",
+  "gender": "F"
 }
 ```
 
-### Get Student Information
-```bash
+### 2.2 Listar estudiantes
+
+```http
+GET http://localhost:3000/api/students
+Authorization: Bearer <token>
+```
+
+### 2.3 Consultar estudiante
+
+```http
 GET http://localhost:3000/api/students/1
-Authorization: Bearer {TOKEN}
+Authorization: Bearer <token>
 ```
 
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "id": 1,
-    "user_id": 1,
-    "enrollment_number": "STU-2024-001",
-    "first_name": "John",
-    "last_name": "Doe",
-    "date_of_birth": "2006-03-15",
-    "gender": "M",
-    "phone": "+1-555-0100",
-    "address": "123 Main Street",
-    "city": "Springfield",
-    "state": "IL",
-    "postal_code": "62701",
-    "email": "john.doe@school.com",
-    "role": "student"
-  }
-}
-```
+## 3. Flujo de docentes
 
-### Update Student Information
-```bash
-PUT http://localhost:3000/api/students/1
-Authorization: Bearer {TOKEN}
-Content-Type: application/json
+### 3.1 Crear docente
 
-{
-  "phone": "+1-555-0200",
-  "address": "456 Oak Avenue"
-}
-```
-
-### Search Students
-```bash
-GET http://localhost:3000/api/students/search?firstName=John&lastName=Doe
-Authorization: Bearer {TOKEN}
-```
-
----
-
-## 3. Teacher Management
-
-### Create Teacher
-```bash
+```http
 POST http://localhost:3000/api/teachers
 Content-Type: application/json
 
 {
-  "employeeId": "EMP-2024-001",
-  "firstName": "Jane",
-  "lastName": "Smith",
-  "email": "jane.smith@school.com",
-  "password": "SecurePass456!",
-  "specialization": "Mathematics",
-  "phone": "+1-555-0300",
-  "hireDate": "2023-08-01"
+  "employeeId": "EMP-2026-001",
+  "firstName": "Carlos",
+  "lastName": "Diaz",
+  "email": "carlos.diaz@example.com",
+  "password": "Pass12345",
+  "specialization": "Matematicas",
+  "hireDate": "2024-01-10"
 }
 ```
 
-### Get All Teachers
-```bash
-GET http://localhost:3000/api/teachers?page=1&limit=20
-Authorization: Bearer {TOKEN}
+### 3.2 Listar docentes
+
+```http
+GET http://localhost:3000/api/teachers
+Authorization: Bearer <token>
 ```
 
-### Assign Teacher to Course
-First, create a course (manually in database), then:
-```bash
-POST http://localhost:3000/api/teachers/1/courses
-Authorization: Bearer {TOKEN}
-Content-Type: application/json
+## 4. Flujo de matricula
 
-{
-  "courseId": 1
-}
-```
+Antes de matricular, valida que exista un classroom (ejemplo `id=1`).
 
-### Get Teacher Courses
-```bash
-GET http://localhost:3000/api/teachers/1/courses
-Authorization: Bearer {TOKEN}
-```
+### 4.1 Matricular
 
----
-
-## 4. Classroom & Enrollment Management
-
-### Create Classroom (in database)
-```sql
-INSERT INTO classrooms (name, grade_level, capacity, room_number)
-VALUES ('10-A', 10, 35, '101');
-```
-
-### Enroll Student in Classroom
-```bash
+```http
 POST http://localhost:3000/api/enrollments
-Authorization: Bearer {TOKEN}
+Authorization: Bearer <token>
 Content-Type: application/json
 
 {
   "studentId": 1,
   "classroomId": 1,
-  "enrollmentDate": "2024-01-15"
+  "enrollmentDate": "2026-04-15"
 }
 ```
 
-### Get Student Enrollments
-```bash
+### 4.2 Consultar matriculas de estudiante
+
+```http
 GET http://localhost:3000/api/enrollments/student/1
-Authorization: Bearer {TOKEN}
+Authorization: Bearer <token>
 ```
 
-### Get Classroom Enrollments
-```bash
-GET http://localhost:3000/api/enrollments/classroom/1
-Authorization: Bearer {TOKEN}
-```
+## 5. Flujo academico
 
-**Response:**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": 1,
-      "student_id": 1,
-      "classroom_id": 1,
-      "enrollment_date": "2024-01-15",
-      "status": "active",
-      "enrollment_number": "STU-2024-001",
-      "first_name": "John",
-      "last_name": "Doe",
-      "classroom_name": "10-A"
-    }
-  ],
-  "totalEnrollments": 1
-}
-```
+### 5.1 Registrar notas
 
----
-
-## 5. Academic Records
-
-### Register Grades
-```bash
+```http
 POST http://localhost:3000/api/academic/grades
-Authorization: Bearer {TOKEN}
+Authorization: Bearer <token>
 Content-Type: application/json
 
 {
   "studentId": 1,
   "courseId": 1,
   "teacherId": 1,
-  "midtermScore": 85.5,
-  "finalScore": 92.0,
-  "recordedDate": "2024-04-15"
+  "midtermScore": 82.5,
+  "finalScore": 91.0,
+  "recordedDate": "2026-04-15"
 }
 ```
 
-### Get Student Academic History
-```bash
+### 5.2 Historial academico
+
+```http
 GET http://localhost:3000/api/academic/students/1/history
-Authorization: Bearer {TOKEN}
+Authorization: Bearer <token>
 ```
 
-**Response:**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": 1,
-      "student_id": 1,
-      "course_id": 1,
-      "teacher_id": 1,
-      "midterm_score": 85.5,
-      "final_score": 92.0,
-      "overall_score": 88.75,
-      "grade": "B",
-      "recorded_date": "2024-04-15",
-      "course_name": "Mathematics",
-      "course_code": "MATH-101",
-      "teacher_first_name": "Jane",
-      "teacher_last_name": "Smith"
-    }
-  ]
-}
-```
+## 6. Flujo de asistencia
 
-### Get Student GPA
-```bash
-GET http://localhost:3000/api/academic/students/1/gpa
-Authorization: Bearer {TOKEN}
-```
+### 6.1 Marcar asistencia
 
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "gpa": 88.75,
-    "total_courses": 1,
-    "grade_a_count": 0,
-    "grade_b_count": 1,
-    "grade_c_count": 0,
-    "grade_d_count": 0,
-    "grade_f_count": 0
-  }
-}
-```
-
----
-
-## 6. Attendance Tracking
-
-### Mark Attendance
-```bash
+```http
 POST http://localhost:3000/api/attendance
-Authorization: Bearer {TOKEN}
+Authorization: Bearer <token>
 Content-Type: application/json
 
 {
   "studentId": 1,
   "classroomId": 1,
-  "attendanceDate": "2024-04-15",
-  "status": "present",
-  "remarks": "On time",
-  "markedBy": 1
+  "attendanceDate": "2026-04-15",
+  "status": "present"
 }
 ```
 
-### Get Student Attendance
-```bash
-GET http://localhost:3000/api/attendance/students/1?startDate=2024-01-01&endDate=2024-12-31
-Authorization: Bearer {TOKEN}
+### 6.2 Consultar asistencia
+
+```http
+GET http://localhost:3000/api/attendance/students/1
+Authorization: Bearer <token>
 ```
 
-### Get Attendance Summary
-```bash
-GET http://localhost:3000/api/attendance/students/1/summary
-Authorization: Bearer {TOKEN}
-```
+## 7. Flujo de pagos
 
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "present": 75,
-    "absent": 3,
-    "late": 2,
-    "excused": 0
-  }
-}
-```
+### 7.1 Generar factura
 
-### Get Monthly Attendance Report
-```bash
-GET http://localhost:3000/api/attendance/students/1/monthly?month=4&year=2024
-Authorization: Bearer {TOKEN}
-```
-
-### Get Classroom Attendance Report
-```bash
-GET http://localhost:3000/api/attendance/report/classroom?classroomId=1&attendanceDate=2024-04-15
-Authorization: Bearer {TOKEN}
-```
-
----
-
-## 7. Payment Management
-
-### Generate Invoice
-```bash
+```http
 POST http://localhost:3000/api/payments/invoices
-Authorization: Bearer {TOKEN}
+Authorization: Bearer <token>
 Content-Type: application/json
 
 {
   "studentId": 1,
-  "feeType": "Tuition",
-  "amount": 5000.00,
-  "dueDate": "2024-05-31"
+  "amount": 1200.00,
+  "feeType": "Mensualidad",
+  "dueDate": "2026-05-10"
 }
 ```
 
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Invoice generated successfully",
-  "data": {
-    "id": 1,
-    "invoiceId": "INV-1713196200000-abc123def",
-    "studentId": 1,
-    "feeType": "Tuition",
-    "amount": 5000.00,
-    "dueDate": "2024-05-31",
-    "status": "pending",
-    "createdAt": "2024-04-15T10:30:00.000Z"
-  }
-}
+### 7.2 Consultar facturas
+
+```http
+GET http://localhost:3000/api/payments/students/1/invoices
+Authorization: Bearer <token>
 ```
 
-### Get Student Invoices
-```bash
-GET http://localhost:3000/api/payments/students/1/invoices?status=pending
-Authorization: Bearer {TOKEN}
-```
+## 8. Flujo de notificaciones
 
-### Record Payment
-```bash
-POST http://localhost:3000/api/payments/1/record
-Authorization: Bearer {TOKEN}
-Content-Type: application/json
+### 8.1 Enviar notificacion in-app
 
-{
-  "paymentMethod": "credit_card",
-  "transactionId": "TXN-2024-001"
-}
-```
-
-### Get Payment Summary
-```bash
-GET http://localhost:3000/api/payments/students/1/summary
-Authorization: Bearer {TOKEN}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "total_paid": 5000.00,
-    "total_pending": 5000.00,
-    "total_overdue": 0.00,
-    "total_invoices": 2,
-    "paid_count": 1,
-    "pending_count": 1
-  }
-}
-```
-
-### Get Overdue Payments
-```bash
-GET http://localhost:3000/api/payments/report/overdue
-Authorization: Bearer {TOKEN}
-```
-
----
-
-## 8. Notifications
-
-### Send Email Notification
-```bash
-POST http://localhost:3000/api/notifications/send/email
-Authorization: Bearer {TOKEN}
-Content-Type: application/json
-
-{
-  "recipientUserId": 1,
-  "subject": "Grade Report Available",
-  "message": "Your grades for the current semester have been posted. Please check your portal.",
-  "recipientEmail": "john.doe@school.com"
-}
-```
-
-### Send SMS Notification
-```bash
-POST http://localhost:3000/api/notifications/send/sms
-Authorization: Bearer {TOKEN}
-Content-Type: application/json
-
-{
-  "recipientUserId": 1,
-  "subject": "Attendance Alert",
-  "message": "Your child was marked absent today",
-  "phoneNumber": "+1-555-0100"
-}
-```
-
-### Send In-App Notification
-```bash
+```http
 POST http://localhost:3000/api/notifications/send/in-app
-Authorization: Bearer {TOKEN}
+Authorization: Bearer <token>
 Content-Type: application/json
 
 {
   "recipientUserId": 1,
-  "subject": "New Announcement",
-  "message": "School will be closed on Friday for professional development day"
+  "subject": "Aviso",
+  "message": "Notificacion de prueba"
 }
 ```
 
-### Get User Notifications
-```bash
-GET http://localhost:3000/api/notifications/users/1?unreadOnly=true
-Authorization: Bearer {TOKEN}
+### 8.2 Consultar notificaciones
+
+```http
+GET http://localhost:3000/api/notifications/users/1
+Authorization: Bearer <token>
 ```
 
-### Broadcast Notification to Multiple Users
-```bash
-POST http://localhost:3000/api/notifications/broadcast
-Authorization: Bearer {TOKEN}
-Content-Type: application/json
+## 9. Validacion rapida desde interfaz visual
 
-{
-  "recipientUserIds": [1, 2, 3, 4, 5],
-  "subject": "Important: School Holiday",
-  "message": "School will be closed from April 20-25 for spring break",
-  "notificationType": "email"
-}
-```
+Puedes ejecutar estos flujos sin Postman en:
 
-### Mark Notification as Read
-```bash
-PUT http://localhost:3000/api/notifications/1/read
-Authorization: Bearer {TOKEN}
-```
+- `http://localhost:3000/portal`
 
----
+Orden sugerido:
 
-## 9. Complete Workflow Example
+1. Autenticacion (Registrar + Iniciar sesion)
+2. Estudiantes (Crear + Listar)
+3. Docentes (Crear + Listar)
+4. Matricula
+5. Asistencia
+6. Pagos
+7. Notificaciones
 
-### Scenario: Register and Manage a Student
+## 10. Errores comunes y correccion
 
-**Step 1:** Register User
-```bash
-POST http://localhost:3000/api/auth/register
-```
+### `Cannot GET /api/auth/login`
 
-**Step 2:** Create Student Profile
-```bash
-POST http://localhost:3000/api/students
-```
+Es normal al abrir la URL en navegador (envia GET). Login requiere POST.
 
-**Step 3:** Get Student ID from response, then enroll in classroom
-```bash
-POST http://localhost:3000/api/enrollments
-```
+### `401 Invalid or expired token`
 
-**Step 4:** Record Attendance Daily
-```bash
-POST http://localhost:3000/api/attendance
-```
+Repetir login y usar token nuevo.
 
-**Step 5:** Record Grades After Each Test
-```bash
-POST http://localhost:3000/api/academic/grades
-```
+### `404 Classroom not found`
 
-**Step 6:** Generate Invoice for Fees
-```bash
-POST http://localhost:3000/api/payments/invoices
-```
+Insertar datos base en `classrooms`.
 
-**Step 7:** Send Notifications to Parents
-```bash
-POST http://localhost:3000/api/notifications/send/email
-```
+### `500 Registration failed`
 
----
-
-## Error Handling Examples
-
-### Invalid Token
-```bash
-GET http://localhost:3000/api/students/1
-Authorization: Bearer invalid_token
-```
-
-**Response:**
-```json
-{
-  "success": false,
-  "message": "Invalid or expired token",
-  "timestamp": "2024-04-15T10:30:00.000Z"
-}
-```
-
-### Resource Not Found
-```bash
-GET http://localhost:3000/api/students/9999
-Authorization: Bearer {TOKEN}
-```
-
-**Response:**
-```json
-{
-  "success": false,
-  "message": "Student not found",
-  "timestamp": "2024-04-15T10:30:00.000Z"
-}
-```
-
-### Validation Error
-```bash
-POST http://localhost:3000/api/students
-Content-Type: application/json
-
-{
-  "firstName": "John"
-  // Missing required fields
-}
-```
-
-**Response:**
-```json
-{
-  "success": false,
-  "message": "Validation Error",
-  "details": [
-    {
-      "msg": "Last name is required",
-      "param": "lastName"
-    },
-    {
-      "msg": "Valid email is required",
-      "param": "email"
-    }
-  ],
-  "timestamp": "2024-04-15T10:30:00.000Z"
-}
-```
-
----
-
-## Tips for Testing
-
-1. **Use Postman** - Import these examples into Postman
-2. **Save responses** - Store IDs from responses for subsequent requests
-3. **Use environment variables** - Store TOKEN as Postman variable
-4. **Test error cases** - Try invalid data and expired tokens
-5. **Monitor logs** - Check server logs for detailed error messages
-
----
-
-## Common Issues & Solutions
-
-**Issue:** "Database connection error"
-- **Solution:** Verify MySQL is running and credentials are correct in .env
-
-**Issue:** "Token expired"
-- **Solution:** Login again to get a new token
-
-**Issue:** "Resource not found"
-- **Solution:** Verify the ID exists before making requests
-
-**Issue:** "Validation error"
-- **Solution:** Check required fields in API_DOCUMENTATION.md
-
-**Issue:** "Port already in use"
-- **Solution:** Change port in .env or kill process using the port
-
----
-
-## Next Steps
-
-1. Review API_DOCUMENTATION.md for complete endpoint reference
-2. Explore service-to-service communication
-3. Implement frontend to consume these APIs
-4. Set up monitoring and logging
-5. Deploy to production environment
+Verificar conectividad a base de datos y credenciales en `.env`.

@@ -1,11 +1,13 @@
 const express = require('express');
 const httpProxy = require('express-http-proxy');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
 
 // Middlewares
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
 // URLs de servicios. En produccion deberian venir desde variables de entorno
 const serviceUrls = {
@@ -65,6 +67,16 @@ app.get('/health', (req, res) => {
     message: 'API Gateway is running',
     timestamp: new Date().toISOString(),
   });
+});
+
+// Landing de pruebas manuales en navegador
+app.get('/test', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Portal funcional para revisar modulos del sistema SOA
+app.get('/portal', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'portal.html'));
 });
 
 // Manejador 404

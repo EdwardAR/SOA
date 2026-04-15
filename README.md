@@ -1,55 +1,51 @@
 # Sistema SOA de Gestion Escolar
 
-Plataforma de gestion escolar basada en Arquitectura Orientada a Servicios (SOA) con microservicios, API Gateway, MySQL/MariaDB y autenticacion JWT.
+Plataforma de gestion escolar implementada con arquitectura SOA y microservicios, API Gateway, autenticacion JWT y base de datos relacional MySQL/MariaDB.
 
-## Resumen de arquitectura
+## Vision general
 
-La solucion expone un API Gateway que enruta solicitudes hacia servicios independientes:
+El sistema se divide en servicios independientes por dominio y un API Gateway central:
 
-- API Gateway (3000)
-- Auth Service (3008)
-- Student Service (3001)
-- Teacher Service (3002)
-- Enrollment Service (3003)
-- Academic Service (3004)
-- Attendance Service (3005)
-- Payment Service (3006)
-- Notification Service (3007)
+- API Gateway: `3000`
+- Auth Service: `3008`
+- Student Service: `3001`
+- Teacher Service: `3002`
+- Enrollment Service: `3003`
+- Academic Service: `3004`
+- Attendance Service: `3005`
+- Payment Service: `3006`
+- Notification Service: `3007`
 
-## Requisitos previos
+## Requisitos
 
 - Windows 10/11
-- Node.js 18+ (recomendado)
+- Node.js 18+
 - npm
-- Motor de BD MySQL o MariaDB
+- MySQL o MariaDB
 
 ## Estructura del proyecto
 
-- api-gateway/: enrutamiento principal
-- services/: microservicios por dominio
-- shared/: DB, auth, errores y validaciones
-- database/: esquema SQL
-- API_DOCUMENTATION.md: referencia de endpoints
-- EXAMPLES.md: ejemplos de requests
-- ARCHITECTURE.md: decisiones de arquitectura
+- `api-gateway/`: gateway de entrada, UI de pruebas y proxy a servicios
+- `services/`: microservicios por modulo
+- `shared/`: utilidades compartidas (auth, errores, validaciones, DB)
+- `database/schema.sql`: esquema relacional
+- `scripts/`: scripts de arranque, parada y health checks
 
-## Configuracion inicial (paso a paso)
+## Configuracion inicial
 
-### 1. Instalar dependencias Node
+1. Instalar dependencias
 
 ```bash
 npm install
 ```
 
-### 2. Crear archivo de entorno
+2. Crear variables de entorno
 
 ```bash
 copy .env.example .env
 ```
 
-### 3. Revisar variables en .env
-
-Valores recomendados para entorno local:
+3. Revisar `.env`
 
 ```env
 PORT=3000
@@ -72,47 +68,25 @@ JWT_EXPIRY=7d
 NODE_ENV=development
 ```
 
-Nota: si usas password en root o un usuario dedicado, ajusta DB_USER y DB_PASSWORD.
+4. Crear base de datos y tablas
 
-### 4. Crear base de datos y cargar esquema
-
-Si tienes mysql/mariadb en PATH:
+Si `mysql` esta en PATH:
 
 ```bash
 mysql -u root -e "CREATE DATABASE IF NOT EXISTS school_management CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 mysql -u root school_management < database/schema.sql
 ```
 
-Si no esta en PATH (caso comun en Windows con MariaDB):
+Si usas MariaDB en ruta local:
 
 ```powershell
 & "C:\Program Files\MariaDB 12.2\bin\mysql.exe" -u root -e "CREATE DATABASE IF NOT EXISTS school_management CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 Get-Content .\database\schema.sql | & "C:\Program Files\MariaDB 12.2\bin\mysql.exe" -u root school_management
 ```
 
-### 5. Verificar tablas creadas
+## Levantar el sistema
 
-```bash
-mysql -u root -e "USE school_management; SHOW TABLES;"
-```
-
-Debes ver 11 tablas:
-
-- users
-- students
-- teachers
-- classrooms
-- enrollments
-- courses
-- teacher_courses
-- grades
-- attendance
-- payments
-- notifications
-
-## Como levantar el sistema
-
-### Opcion A: por scripts (recomendada)
+### Opcion recomendada
 
 ```bash
 npm run ops:start-all
@@ -125,7 +99,7 @@ Para detener:
 npm run ops:stop-all
 ```
 
-### Opcion B: manual por servicio
+### Opcion manual
 
 En terminales separadas:
 
@@ -141,163 +115,46 @@ npm run service:payment
 npm run service:notification
 ```
 
-## Verificacion rapida de funcionamiento
+## Portal visual y consola de pruebas
 
-### 1. Health checks
+- Portal funcional: `http://localhost:3000/portal`
+- Consola tecnica simple: `http://localhost:3000/test`
+- Estado gateway: `http://localhost:3000/health`
 
-```bash
-npm run ops:health
-```
+## Flujo recomendado para validar rapido
 
-Todos deben responder OK (puertos 3000 a 3008).
+1. Entrar a `http://localhost:3000/portal`.
+2. Modulo Autenticacion: registrar usuario y luego iniciar sesion.
+3. Modulo Estudiantes: crear estudiante y listar.
+4. Modulo Docentes: crear docente y listar.
+5. Modulo Matricula: matricular estudiante (requiere `classroom` existente).
+6. Modulo Asistencia/Pagos/Notificaciones: ejecutar operaciones basicas.
 
-### 2. Prueba end-to-end minima (auth)
+## Solucion de problemas
 
-Registro:
+### `Cannot GET /api/...` en navegador
 
-```http
-POST http://localhost:3000/api/auth/register
-Content-Type: application/json
+Si abres una URL en la barra del navegador, se envia `GET`. Muchos endpoints de negocio usan `POST` o `PUT`.
 
-{
-  "username": "admin_local",
-  "email": "admin_local@example.com",
-  "password": "AdminPass123!",
-  "role": "admin"
-}
-```
+Usa el portal en `http://localhost:3000/portal`, Postman o la consola `test`.
 
-Login:
+### `EADDRINUSE`
 
-```http
-POST http://localhost:3000/api/auth/login
-Content-Type: application/json
-
-{
-  "email": "admin_local@example.com",
-  "password": "AdminPass123!"
-}
-```
-
-## Arranque automatico de BD en Windows
-
-Se dejo un script de inicio automatico por usuario en:
-
-- C:/Users/edwar/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Startup/start-mariadb-soa.cmd
-
-Esto inicia MariaDB al iniciar sesion sin requerir instalar un servicio de Windows con permisos de administrador.
-
-## Troubleshooting
-
-### Error: ECONNREFUSED en base de datos
-
-Posibles causas:
-
-- MariaDB/MySQL no esta iniciado
-- Credenciales de .env no coinciden
-- Puerto 3306 ocupado o bloqueado
-
-Acciones:
-
-1. Verifica proceso:
-
-```powershell
-Get-Process mariadbd,mysqld -ErrorAction SilentlyContinue
-```
-
-2. Prueba conexion:
-
-```powershell
-& "C:\Program Files\MariaDB 12.2\bin\mysql.exe" -u root -e "SELECT VERSION();"
-```
-
-### Error: EADDRINUSE al iniciar servicios
-
-Significa que el puerto ya esta en uso.
-
-Acciones:
-
-1. Detener procesos Node:
+Puerto en uso.
 
 ```bash
 npm run ops:stop-all
-```
-
-2. Levantar nuevamente:
-
-```bash
 npm run ops:start-all
 ```
 
-### Error: mysql no se reconoce
+### `ECONNREFUSED` a base de datos
 
-Usa ruta completa del ejecutable MariaDB en los comandos o agrega la carpeta bin al PATH.
+- Verificar proceso MySQL/MariaDB activo.
+- Verificar `.env`.
+- Confirmar puerto 3306 libre.
 
-## Endpoints principales
+## Documentacion adicional
 
-### Auth
-- POST /api/auth/register
-- POST /api/auth/login
-- POST /api/auth/verify
-- GET /api/auth/profile
-- PUT /api/auth/profile
-- POST /api/auth/change-password
-
-### Students
-- POST /api/students
-- GET /api/students
-- GET /api/students/:id
-- PUT /api/students/:id
-- DELETE /api/students/:id
-
-### Teachers
-- POST /api/teachers
-- GET /api/teachers
-- GET /api/teachers/:id
-- POST /api/teachers/:teacherId/courses
-
-### Enrollments
-- POST /api/enrollments
-- GET /api/enrollments/student/:studentId
-- GET /api/enrollments/classroom/:classroomId
-- PUT /api/enrollments/:enrollmentId/status
-
-### Academic
-- POST /api/academic/grades
-- GET /api/academic/students/:studentId/history
-- GET /api/academic/students/:studentId/gpa
-- GET /api/academic/courses/:courseId/grades
-
-### Attendance
-- POST /api/attendance
-- GET /api/attendance/students/:studentId
-- GET /api/attendance/students/:studentId/summary
-- GET /api/attendance/report/classroom
-
-### Payments
-- POST /api/payments/invoices
-- GET /api/payments/:paymentId
-- POST /api/payments/:paymentId/record
-- GET /api/payments/report/overdue
-
-### Notifications
-- POST /api/notifications/send/email
-- POST /api/notifications/send/sms
-- POST /api/notifications/send/in-app
-- POST /api/notifications/broadcast
-- GET /api/notifications/users/:userId
-
-## Seguridad y buenas practicas
-
-- JWT en endpoints protegidos
-- Passwords con bcryptjs
-- Validacion de entrada con express-validator
-- SQL parametrizado
-- Arquitectura por capas: controller, service, repository
-- Principios SOLID y DRY
-
-## Documentacion complementaria
-
-- API_DOCUMENTATION.md
-- EXAMPLES.md
-- ARCHITECTURE.md
+- `API_DOCUMENTATION.md`: referencia de endpoints y contratos
+- `EXAMPLES.md`: pruebas guiadas con payloads
+- `ARCHITECTURE.md`: patrones, decisiones y buenas practicas

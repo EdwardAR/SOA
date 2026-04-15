@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SOA Test Console</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --ink: #18212f;
+      --muted: #56637a;
+      --accent: #0b6bcb;
+      --ok: #087e4f;
+      --warn: #8a5b00;
+      --danger: #b22020;
+      --border: #d7e0ec;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Segoe UI, system-ui, -apple-system, sans-serif;
+      background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 35%);
+      color: var(--ink);
+    }
+
+    .wrap {
+      max-width: 1050px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+    }
+
+    p.lead {
+      margin: 0 0 22px;
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 8px 20px rgba(16, 40, 80, 0.08);
+    }
+
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+
+    .field {
+      margin-bottom: 10px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid #c4d2e4;
+      border-radius: 9px;
+      padding: 9px 10px;
+      font-size: 14px;
+      background: #fff;
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+      font-family: Consolas, monospace;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: none;
+      border-radius: 9px;
+      padding: 9px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      color: white;
+      background: var(--accent);
+    }
+
+    button.secondary { background: #4a5a70; }
+    button.warn { background: var(--warn); }
+
+    .status {
+      margin-top: 10px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .ok { color: var(--ok); }
+    .fail { color: var(--danger); }
+
+    pre {
+      margin: 10px 0 0;
+      background: #101623;
+      color: #d8e6ff;
+      border-radius: 10px;
+      padding: 10px;
+      overflow: auto;
+      max-height: 260px;
+      font-size: 12px;
+    }
+
+    .token {
+      word-break: break-all;
+      background: #e9f3ff;
+      border: 1px solid #bfd9fb;
+      border-radius: 9px;
+      padding: 8px;
+      font-size: 12px;
+      color: #17406b;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Consola de pruebas del sistema SOA</h1>
+    <p class="lead">Prueba endpoints sin Postman. Todo se envía al API Gateway en el puerto 3000.</p>
+
+    <div class="grid">
+      <section class="card">
+        <h2>1) Registro de usuario</h2>
+        <div class="field">
+          <label>Username</label>
+          <input id="regUsername" value="demo_user" />
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input id="regEmail" value="demo_user@example.com" />
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input id="regPassword" value="DemoPass123!" />
+        </div>
+        <div class="field">
+          <label>Role</label>
+          <select id="regRole">
+            <option value="student">student</option>
+            <option value="teacher">teacher</option>
+            <option value="admin">admin</option>
+          </select>
+        </div>
+        <div class="row">
+          <button id="btnRegister">Registrar</button>
+          <button class="secondary" id="btnRandomEmail">Email aleatorio</button>
+        </div>
+        <div class="status" id="registerStatus"></div>
+        <pre id="registerOut"></pre>
+      </section>
+
+      <section class="card">
+        <h2>2) Login + token JWT</h2>
+        <div class="field">
+          <label>Email</label>
+          <input id="loginEmail" value="demo_user@example.com" />
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input id="loginPassword" value="DemoPass123!" />
+        </div>
+        <div class="row">
+          <button id="btnLogin">Iniciar sesion</button>
+        </div>
+        <div class="status" id="loginStatus"></div>
+        <div class="token" id="tokenBox">Sin token</div>
+        <pre id="loginOut"></pre>
+      </section>
+
+      <section class="card">
+        <h2>3) Probar endpoint personalizado</h2>
+        <div class="field">
+          <label>Metodo</label>
+          <select id="customMethod">
+            <option>GET</option>
+            <option selected>POST</option>
+            <option>PUT</option>
+            <option>DELETE</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Path (ejemplo: /api/students o /api/auth/profile)</label>
+          <input id="customPath" value="/api/auth/profile" />
+        </div>
+        <div class="field">
+          <label>Body JSON (para POST/PUT)</label>
+          <textarea id="customBody">{
+  "enrollmentNumber": "STU-TEST-001",
+  "firstName": "Ana",
+  "lastName": "Perez",
+  "email": "ana.perez@example.com",
+  "password": "Pass12345",
+  "dateOfBirth": "2007-05-12",
+  "gender": "F"
+}</textarea>
+        </div>
+        <div class="row">
+          <button id="btnCustom">Ejecutar</button>
+          <button class="warn" id="btnClear">Limpiar salida</button>
+        </div>
+        <div class="status" id="customStatus"></div>
+        <pre id="customOut"></pre>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    let jwtToken = '';
+
+    function setStatus(id, ok, text) {
+      const el = document.getElementById(id);
+      el.className = 'status ' + (ok ? 'ok' : 'fail');
+      el.textContent = text;
+    }
+
+    function setOut(id, data) {
+      document.getElementById(id).textContent = typeof data === 'string'
+        ? data
+        : JSON.stringify(data, null, 2);
+    }
+
+    async function request(path, method, body, withAuth = false) {
+      const headers = { 'Content-Type': 'application/json' };
+      if (withAuth && jwtToken) {
+        headers.Authorization = 'Bearer ' + jwtToken;
+      }
+
+      const options = { method, headers };
+      if (body && method !== 'GET' && method !== 'DELETE') {
+        options.body = JSON.stringify(body);
+      }
+
+      const res = await fetch(path, options);
+      const text = await res.text();
+      let json;
+      try { json = JSON.parse(text); } catch (_) { json = text; }
+
+      return { ok: res.ok, status: res.status, data: json };
+    }
+
+    document.getElementById('btnRandomEmail').addEventListener('click', () => {
+      const rnd = Date.now();
+      const email = `demo_${rnd}@example.com`;
+      document.getElementById('regEmail').value = email;
+      document.getElementById('loginEmail').value = email;
+      setStatus('registerStatus', true, 'Email actualizado: ' + email);
+    });
+
+    document.getElementById('btnRegister').addEventListener('click', async () => {
+      const payload = {
+        username: document.getElementById('regUsername').value,
+        email: document.getElementById('regEmail').value,
+        password: document.getElementById('regPassword').value,
+        role: document.getElementById('regRole').value,
+      };
+
+      try {
+        const r = await request('/api/auth/register', 'POST', payload, false);
+        setStatus('registerStatus', r.ok, `${r.status} ${r.ok ? 'OK' : 'ERROR'}`);
+        setOut('registerOut', r.data);
+        if (r.ok) {
+          document.getElementById('loginEmail').value = payload.email;
+          document.getElementById('loginPassword').value = payload.password;
+        }
+      } catch (e) {
+        setStatus('registerStatus', false, 'Error de red');
+        setOut('registerOut', String(e));
+      }
+    });
+
+    document.getElementById('btnLogin').addEventListener('click', async () => {
+      const payload = {
+        email: document.getElementById('loginEmail').value,
+        password: document.getElementById('loginPassword').value,
+      };
+
+      try {
+        const r = await request('/api/auth/login', 'POST', payload, false);
+        setStatus('loginStatus', r.ok, `${r.status} ${r.ok ? 'OK' : 'ERROR'}`);
+        setOut('loginOut', r.data);
+
+        if (r.ok && r.data && r.data.data && r.data.data.token) {
+          jwtToken = r.data.data.token;
+          document.getElementById('tokenBox').textContent = jwtToken;
+        }
+      } catch (e) {
+        setStatus('loginStatus', false, 'Error de red');
+        setOut('loginOut', String(e));
+      }
+    });
+
+    document.getElementById('btnCustom').addEventListener('click', async () => {
+      const method = document.getElementById('customMethod').value;
+      const path = document.getElementById('customPath').value;
+      let body = null;
+
+      if (method !== 'GET' && method !== 'DELETE') {
+        try {
+          body = JSON.parse(document.getElementById('customBody').value || '{}');
+        } catch (e) {
+          setStatus('customStatus', false, 'JSON invalido en Body');
+          setOut('customOut', String(e));
+          return;
+        }
+      }
+
+      try {
+        const r = await request(path, method, body, true);
+        setStatus('customStatus', r.ok, `${r.status} ${r.ok ? 'OK' : 'ERROR'}`);
+        setOut('customOut', r.data);
+      } catch (e) {
+        setStatus('customStatus', false, 'Error de red');
+        setOut('customOut', String(e));
+      }
+    });
+
+    document.getElementById('btnClear').addEventListener('click', () => {
+      setOut('customOut', '');
+      setStatus('customStatus', true, 'Salida limpiada');
+    });
+  </script>
+</body>
+</html>
