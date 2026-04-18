@@ -32,10 +32,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function mostrarAlerta(tipo, mensaje, duracion = 5000) {
   const iconos = {
-    error: 'bi-exclamation-circle',
-    success: 'bi-check-circle',
-    warning: 'bi-exclamation-triangle',
-    info: 'bi-info-circle'
+    error: 'bi-exclamation-circle-fill',
+    success: 'bi-check-circle-fill',
+    warning: 'bi-exclamation-triangle-fill',
+    info: 'bi-info-circle-fill'
   };
 
   const alertDiv = document.createElement('div');
@@ -63,10 +63,10 @@ function mostrarAlerta(tipo, mensaje, duracion = 5000) {
 function establecerBotonEstado(boton, cargando, texto) {
   if (cargando) {
     boton.disabled = true;
-    boton.innerHTML = '<span class="btn-login-loading"></span>Ingresando...';
+    boton.innerHTML = '<span class="btn-login-loading"></span> Ingresando...';
   } else {
     boton.disabled = false;
-    boton.textContent = texto || 'Ingresar';
+    boton.innerHTML = '<i class="bi bi-box-arrow-in-right btn-icon"></i> Ingresar';
   }
 }
 
@@ -80,7 +80,9 @@ function mostrarLogin() {
     <div class="login-wrapper">
       <div class="login-container">
         <div class="login-header">
-          <span class="login-header-icon">🎓</span>
+          <div class="login-header-icon-wrapper">
+            <i class="bi bi-mortarboard-fill login-header-icon"></i>
+          </div>
           <h1>Colegio Futuro Digital</h1>
           <p>Sistema de Gestión Académica SOA</p>
         </div>
@@ -89,54 +91,60 @@ function mostrarLogin() {
 
         <form id="loginForm" class="login-form" onsubmit="handleLogin(event)">
           <div class="form-group">
-            <label for="email">Email</label>
+            <label for="email"><i class="bi bi-envelope-fill form-label-icon"></i> Email</label>
             <input type="email" id="email" placeholder="tu@email.com" required>
           </div>
 
           <div class="form-group">
-            <label for="password">Contraseña</label>
+            <label for="password"><i class="bi bi-lock-fill form-label-icon"></i> Contraseña</label>
             <input type="password" id="password" placeholder="••••••••" required>
           </div>
 
-          <button type="submit" class="btn-login" id="btnLogin">Ingresar</button>
+          <button type="submit" class="btn-login" id="btnLogin">
+            <i class="bi bi-box-arrow-in-right btn-icon"></i> Ingresar
+          </button>
         </form>
 
         <div class="login-divider">O usa una cuenta de prueba</div>
 
         <div class="demo-credentials">
-          <h3>👤 Cuentas de Demostración</h3>
+          <h3><i class="bi bi-people-fill demo-header-icon"></i> Cuentas de Demostración</h3>
           <ul class="demo-credentials-list">
             <li class="demo-credentials-item" onclick="rellenarFormulario('director@colegio.com', 'password123')">
-              <span class="demo-credentials-item-icon">👔</span>
+              <span class="demo-credentials-item-icon"><i class="bi bi-person-check-fill icon-director"></i></span>
               <div class="demo-credentials-item-text">
                 <div class="demo-credentials-item-role">Director</div>
                 <div class="demo-credentials-item-email">director@colegio.com</div>
               </div>
+              <span class="demo-credentials-item-action"><i class="bi bi-chevron-right"></i></span>
             </li>
             <li class="demo-credentials-item" onclick="rellenarFormulario('luis@estudiante.com', 'password123')">
-              <span class="demo-credentials-item-icon">👨‍🎓</span>
+              <span class="demo-credentials-item-icon"><i class="bi bi-mortarboard-fill icon-alumno"></i></span>
               <div class="demo-credentials-item-text">
                 <div class="demo-credentials-item-role">Alumno</div>
                 <div class="demo-credentials-item-email">luis@estudiante.com</div>
               </div>
+              <span class="demo-credentials-item-action"><i class="bi bi-chevron-right"></i></span>
             </li>
             <li class="demo-credentials-item" onclick="rellenarFormulario('juan@colegio.com', 'password123')">
-              <span class="demo-credentials-item-icon">👨‍🏫</span>
+              <span class="demo-credentials-item-icon"><i class="bi bi-easel-fill icon-docente"></i></span>
               <div class="demo-credentials-item-text">
                 <div class="demo-credentials-item-role">Docente</div>
                 <div class="demo-credentials-item-email">juan@colegio.com</div>
               </div>
+              <span class="demo-credentials-item-action"><i class="bi bi-chevron-right"></i></span>
             </li>
             <li class="demo-credentials-item" onclick="rellenarFormulario('admin@colegio.com', 'password123')">
-              <span class="demo-credentials-item-icon">🔧</span>
+              <span class="demo-credentials-item-icon"><i class="bi bi-gear-fill icon-admin"></i></span>
               <div class="demo-credentials-item-text">
                 <div class="demo-credentials-item-role">Administrador</div>
                 <div class="demo-credentials-item-email">admin@colegio.com</div>
               </div>
+              <span class="demo-credentials-item-action"><i class="bi bi-chevron-right"></i></span>
             </li>
           </ul>
           <div class="demo-credentials-password">
-            🔑 Contraseña: <strong>password123</strong>
+            <i class="bi bi-key-fill demo-key-icon"></i> Contraseña: <strong>password123</strong>
           </div>
         </div>
       </div>
@@ -214,7 +222,9 @@ function mostrarDashboard() {
     <div class="dashboard-wrapper">
       <div class="sidebar">
         <div class="sidebar-header">
-          <span class="login-header-icon">🎓</span>
+          <div class="sidebar-header-icon-wrapper">
+            <i class="bi bi-mortarboard-fill sidebar-header-icon"></i>
+          </div>
           <h3>${state.usuario.nombre}</h3>
           <p>${state.usuario.tipo_usuario}</p>
         </div>
@@ -223,33 +233,33 @@ function mostrarDashboard() {
           <div class="nav-item">
             <div class="nav-link active" onclick="cargarPagina('inicio', this)">
               <i class="bi bi-speedometer2 nav-link-icon"></i>
-              Inicio
+              <span>Inicio</span>
             </div>
           </div>
 
           ${state.usuario.tipo_usuario === 'alumno' ? `
           <div class="nav-item">
             <div class="nav-link" onclick="cargarPagina('mis-cursos', this)">
-              <i class="bi bi-book nav-link-icon"></i>
-              Mis Cursos
+              <i class="bi bi-book-fill nav-link-icon"></i>
+              <span>Mis Cursos</span>
             </div>
           </div>
           <div class="nav-item">
             <div class="nav-link" onclick="cargarPagina('mis-notas', this)">
               <i class="bi bi-pencil-square nav-link-icon"></i>
-              Mis Notas
+              <span>Mis Notas</span>
             </div>
           </div>
           <div class="nav-item">
             <div class="nav-link" onclick="cargarPagina('mis-pagos', this)">
               <i class="bi bi-credit-card nav-link-icon"></i>
-              Mis Pagos
+              <span>Mis Pagos</span>
             </div>
           </div>
           <div class="nav-item">
             <div class="nav-link" onclick="cargarPagina('asistencia', this)">
-              <i class="bi bi-check-circle nav-link-icon"></i>
-              Asistencia
+              <i class="bi bi-check-circle-fill nav-link-icon"></i>
+              <span>Asistencia</span>
             </div>
           </div>
           ` : ''}
@@ -257,20 +267,20 @@ function mostrarDashboard() {
           ${state.usuario.tipo_usuario === 'docente' ? `
           <div class="nav-item">
             <div class="nav-link" onclick="cargarPagina('mis-cursos', this)">
-              <i class="bi bi-book nav-link-icon"></i>
-              Mis Cursos
+              <i class="bi bi-book-fill nav-link-icon"></i>
+              <span>Mis Cursos</span>
             </div>
           </div>
           <div class="nav-item">
             <div class="nav-link" onclick="cargarPagina('calificaciones', this)">
               <i class="bi bi-pencil-square nav-link-icon"></i>
-              Calificaciones
+              <span>Calificaciones</span>
             </div>
           </div>
           <div class="nav-item">
             <div class="nav-link" onclick="cargarPagina('asistencia', this)">
-              <i class="bi bi-check-circle nav-link-icon"></i>
-              Asistencia
+              <i class="bi bi-check-circle-fill nav-link-icon"></i>
+              <span>Asistencia</span>
             </div>
           </div>
           ` : ''}
@@ -278,26 +288,26 @@ function mostrarDashboard() {
           ${(state.usuario.tipo_usuario === 'administrativo' || state.usuario.tipo_usuario === 'director') ? `
           <div class="nav-item">
             <div class="nav-link" onclick="cargarPagina('alumnos', this)">
-              <i class="bi bi-people nav-link-icon"></i>
-              Alumnos
+              <i class="bi bi-people-fill nav-link-icon"></i>
+              <span>Alumnos</span>
             </div>
           </div>
           <div class="nav-item">
             <div class="nav-link" onclick="cargarPagina('cursos', this)">
-              <i class="bi bi-book nav-link-icon"></i>
-              Cursos
+              <i class="bi bi-book-half nav-link-icon"></i>
+              <span>Cursos</span>
             </div>
           </div>
           <div class="nav-item">
             <div class="nav-link" onclick="cargarPagina('pagos', this)">
-              <i class="bi bi-credit-card nav-link-icon"></i>
-              Pagos
+              <i class="bi bi-currency-dollar nav-link-icon"></i>
+              <span>Pagos</span>
             </div>
           </div>
           <div class="nav-item">
             <div class="nav-link" onclick="cargarPagina('matriculas', this)">
               <i class="bi bi-list-check nav-link-icon"></i>
-              Matrículas
+              <span>Matrículas</span>
             </div>
           </div>
           ` : ''}
@@ -305,17 +315,19 @@ function mostrarDashboard() {
 
         <div class="sidebar-footer">
           <button class="btn-logout" onclick="handleLogout()">
-            <i class="bi bi-box-arrow-left"></i> Cerrar Sesión
+            <i class="bi bi-box-arrow-left btn-icon"></i> Cerrar Sesión
           </button>
         </div>
       </div>
 
       <div class="dashboard-main">
         <div class="topbar">
-          <div class="topbar-title">Sistema de Gestión Académica</div>
+          <div class="topbar-title">
+            <i class="bi bi-diagram-3 topbar-icon"></i> Sistema de Gestión Académica
+          </div>
           <div class="topbar-info">
-            <span><strong>👤 ${state.usuario.nombre}</strong></span>
-            <span class="topbar-role">${state.usuario.tipo_usuario.toUpperCase()}</span>
+            <span><i class="bi bi-person-circle topbar-user-icon"></i> <strong>${state.usuario.nombre}</strong></span>
+            <span class="topbar-role"><i class="bi bi-shield-fill topbar-badge-icon"></i> ${state.usuario.tipo_usuario.toUpperCase()}</span>
           </div>
         </div>
 
@@ -387,22 +399,28 @@ function cargarPagina(pagina, elemento) {
 
 function mostrarInicio(content) {
   content.innerHTML = `
-    <h2 style="margin-bottom: 25px;">Bienvenido, <strong>${state.usuario.nombre}</strong></h2>
+    <div class="page-header">
+      <h2><i class="bi bi-house-door-fill page-icon"></i> Bienvenido, <strong>${state.usuario.nombre}</strong></h2>
+    </div>
 
     <div class="stats-grid">
       <div class="stat-card">
+        <div class="stat-icon"><i class="bi bi-lightning-charge-fill"></i></div>
         <div class="stat-number">7</div>
         <div class="stat-label">Servicios Activos</div>
       </div>
       <div class="stat-card">
+        <div class="stat-icon"><i class="bi bi-check-circle-fill"></i></div>
         <div class="stat-number">✅</div>
         <div class="stat-label">Sistema Operativo</div>
       </div>
       <div class="stat-card">
+        <div class="stat-icon"><i class="bi bi-calendar-event"></i></div>
         <div class="stat-number">2024-1</div>
-        <div class="stat-label">Período Académico</div>
+        <div class="stat-label">Período Actual</div>
       </div>
       <div class="stat-card">
+        <div class="stat-icon"><i class="bi bi-cloud-check"></i></div>
         <div class="stat-number">∞</div>
         <div class="stat-label">Escalabilidad</div>
       </div>
@@ -410,22 +428,22 @@ function mostrarInicio(content) {
 
     <div class="card">
       <div class="card-header">
-        <i class="bi bi-info-circle"></i> Información del Sistema
+        <i class="bi bi-info-circle-fill"></i> Información del Sistema
       </div>
       <div class="card-body">
-        <p><strong>Nombre del Sistema:</strong> Gestión Académica SOA</p>
-        <p><strong>Versión:</strong> 1.0.0</p>
-        <p><strong>Arquitectura:</strong> Microservicios Distribuidos</p>
-        <p><strong>Servicios Disponibles:</strong></p>
-        <ul>
-          <li><strong>API Gateway</strong> (Puerto 3000) - Autenticación y proxy</li>
-          <li><strong>Servicio de Alumnos</strong> (Puerto 3001) - CRUD de estudiantes</li>
-          <li><strong>Servicio de Matrículas</strong> (Puerto 3002) - Inscripciones</li>
-          <li><strong>Servicio de Profesores</strong> (Puerto 3003) - Gestión docentes</li>
-          <li><strong>Servicio de Cursos</strong> (Puerto 3004) - Gestión académica</li>
-          <li><strong>Servicio de Pagos</strong> (Puerto 3005) - Transacciones</li>
-          <li><strong>Servicio de Notificaciones</strong> (Puerto 3006) - Emails/SMS</li>
-          <li><strong>Servicio de Asistencia</strong> (Puerto 3007) - Control de asistencia</li>
+        <p><strong><i class="bi bi-gear-fill"></i> Nombre:</strong> Gestión Académica SOA</p>
+        <p><strong><i class="bi bi-tag-fill"></i> Versión:</strong> 1.0.0</p>
+        <p><strong><i class="bi bi-diagram-3-fill"></i> Arquitectura:</strong> Microservicios Distribuidos</p>
+        <p><strong><i class="bi bi-server"></i> Servicios Disponibles:</strong></p>
+        <ul style="margin-top: 15px;">
+          <li><i class="bi bi-cloud-fill"></i> <strong>API Gateway</strong> (Puerto 3000) - Autenticación y proxy</li>
+          <li><i class="bi bi-people-fill"></i> <strong>Servicio de Alumnos</strong> (Puerto 3001) - CRUD de estudiantes</li>
+          <li><i class="bi bi-clipboard-check"></i> <strong>Servicio de Matrículas</strong> (Puerto 3002) - Inscripciones</li>
+          <li><i class="bi bi-easel-fill"></i> <strong>Servicio de Profesores</strong> (Puerto 3003) - Gestión docentes</li>
+          <li><i class="bi bi-book-fill"></i> <strong>Servicio de Cursos</strong> (Puerto 3004) - Gestión académica</li>
+          <li><i class="bi bi-credit-card-fill"></i> <strong>Servicio de Pagos</strong> (Puerto 3005) - Transacciones</li>
+          <li><i class="bi bi-envelope-fill"></i> <strong>Servicio de Notificaciones</strong> (Puerto 3006) - Emails/SMS</li>
+          <li><i class="bi bi-check-circle-fill"></i> <strong>Servicio de Asistencia</strong> (Puerto 3007) - Control de asistencia</li>
         </ul>
       </div>
     </div>
@@ -436,13 +454,13 @@ function mostrarInicio(content) {
       </div>
       <div class="card-body">
         <ul>
-          <li>✅ <strong>RN-001:</strong> Asignación única de aula por periodo</li>
-          <li>✅ <strong>RN-002:</strong> Registro de notas en plazo</li>
-          <li>✅ <strong>RN-003:</strong> Control diario de asistencia</li>
-          <li>✅ <strong>RN-004:</strong> Restricción de matrícula por deuda</li>
-          <li>✅ <strong>RN-005:</strong> Acceso restringido para padres</li>
-          <li>✅ <strong>RN-006:</strong> Notificación automática de inasistencias</li>
-          <li>✅ <strong>RN-007:</strong> Validación de datos obligatorios</li>
+          <li><i class="bi bi-check-circle-fill" style="color: var(--success);"></i> <strong>RN-001:</strong> Asignación única de aula por periodo</li>
+          <li><i class="bi bi-check-circle-fill" style="color: var(--success);"></i> <strong>RN-002:</strong> Registro de notas en plazo</li>
+          <li><i class="bi bi-check-circle-fill" style="color: var(--success);"></i> <strong>RN-003:</strong> Control diario de asistencia</li>
+          <li><i class="bi bi-check-circle-fill" style="color: var(--success);"></i> <strong>RN-004:</strong> Restricción de matrícula por deuda</li>
+          <li><i class="bi bi-check-circle-fill" style="color: var(--success);"></i> <strong>RN-005:</strong> Acceso restringido para padres</li>
+          <li><i class="bi bi-check-circle-fill" style="color: var(--success);"></i> <strong>RN-006:</strong> Notificación automática de inasistencias</li>
+          <li><i class="bi bi-check-circle-fill" style="color: var(--success);"></i> <strong>RN-007:</strong> Validación de datos obligatorios</li>
         </ul>
       </div>
     </div>
@@ -451,11 +469,13 @@ function mostrarInicio(content) {
 
 function mostrarAlumnos(content) {
   content.innerHTML = `
-    <h2>👥 Gestión de Alumnos</h2>
+    <div class="page-header">
+      <h2><i class="bi bi-people-fill page-icon"></i> Gestión de Alumnos</h2>
+    </div>
     <div class="card">
-      <div class="card-header">Lista de Alumnos</div>
+      <div class="card-header"><i class="bi bi-list-check"></i> Lista de Alumnos</div>
       <div class="card-body">
-        <p>Funcionalidad disponible a través de la API.</p>
+        <p><i class="bi bi-info-circle"></i> Funcionalidad disponible a través de la API.</p>
         <p><code>GET /api/alumnos</code></p>
       </div>
     </div>
@@ -464,11 +484,13 @@ function mostrarAlumnos(content) {
 
 function mostrarMisCursos(content) {
   content.innerHTML = `
-    <h2>📚 Mis Cursos</h2>
+    <div class="page-header">
+      <h2><i class="bi bi-book-fill page-icon"></i> Mis Cursos</h2>
+    </div>
     <div class="card">
-      <div class="card-header">Cursos Inscritos</div>
+      <div class="card-header"><i class="bi bi-mortarboard-fill"></i> Cursos Inscritos</div>
       <div class="card-body">
-        <p>Cargando información de cursos...</p>
+        <p><i class="bi bi-hourglass-split"></i> Cargando información de cursos...</p>
       </div>
     </div>
   `;
@@ -476,11 +498,13 @@ function mostrarMisCursos(content) {
 
 function mostrarMisNotas(content) {
   content.innerHTML = `
-    <h2>📝 Mis Notas</h2>
+    <div class="page-header">
+      <h2><i class="bi bi-pencil-square page-icon"></i> Mis Notas</h2>
+    </div>
     <div class="card">
-      <div class="card-header">Calificaciones por Curso</div>
+      <div class="card-header"><i class="bi bi-file-text-fill"></i> Calificaciones por Curso</div>
       <div class="card-body">
-        <p>Cargando calificaciones...</p>
+        <p><i class="bi bi-hourglass-split"></i> Cargando calificaciones...</p>
       </div>
     </div>
   `;
@@ -488,11 +512,13 @@ function mostrarMisNotas(content) {
 
 function mostrarMisPagos(content) {
   content.innerHTML = `
-    <h2>💰 Mis Pagos</h2>
+    <div class="page-header">
+      <h2><i class="bi bi-credit-card page-icon"></i> Mis Pagos</h2>
+    </div>
     <div class="card">
-      <div class="card-header">Estado de Pagos</div>
+      <div class="card-header"><i class="bi bi-wallet2-fill"></i> Estado de Pagos</div>
       <div class="card-body">
-        <p>Cargando estado de pagos...</p>
+        <p><i class="bi bi-hourglass-split"></i> Cargando estado de pagos...</p>
       </div>
     </div>
   `;
@@ -500,11 +526,13 @@ function mostrarMisPagos(content) {
 
 function mostrarAsistencia(content) {
   content.innerHTML = `
-    <h2>✅ Asistencia</h2>
+    <div class="page-header">
+      <h2><i class="bi bi-check-circle-fill page-icon"></i> Asistencia</h2>
+    </div>
     <div class="card">
-      <div class="card-header">Registro de Asistencia</div>
+      <div class="card-header"><i class="bi bi-calendar2-check"></i> Registro de Asistencia</div>
       <div class="card-body">
-        <p>Cargando asistencia...</p>
+        <p><i class="bi bi-hourglass-split"></i> Cargando asistencia...</p>
       </div>
     </div>
   `;
@@ -512,11 +540,13 @@ function mostrarAsistencia(content) {
 
 function mostrarCursos(content) {
   content.innerHTML = `
-    <h2>📚 Cursos</h2>
+    <div class="page-header">
+      <h2><i class="bi bi-book-half page-icon"></i> Cursos</h2>
+    </div>
     <div class="card">
-      <div class="card-header">Gestión de Cursos</div>
+      <div class="card-header"><i class="bi bi-collection-fill"></i> Gestión de Cursos</div>
       <div class="card-body">
-        <p>Cargando lista de cursos...</p>
+        <p><i class="bi bi-hourglass-split"></i> Cargando lista de cursos...</p>
       </div>
     </div>
   `;
@@ -524,11 +554,13 @@ function mostrarCursos(content) {
 
 function mostrarPagos(content) {
   content.innerHTML = `
-    <h2>💰 Pagos</h2>
+    <div class="page-header">
+      <h2><i class="bi bi-currency-dollar page-icon"></i> Pagos</h2>
+    </div>
     <div class="card">
-      <div class="card-header">Gestión de Pagos</div>
+      <div class="card-header"><i class="bi bi-cash-coin"></i> Gestión de Pagos</div>
       <div class="card-body">
-        <p>Cargando pagos...</p>
+        <p><i class="bi bi-hourglass-split"></i> Cargando pagos...</p>
       </div>
     </div>
   `;
@@ -536,11 +568,13 @@ function mostrarPagos(content) {
 
 function mostrarMatriculas(content) {
   content.innerHTML = `
-    <h2>📋 Matrículas</h2>
+    <div class="page-header">
+      <h2><i class="bi bi-list-check page-icon"></i> Matrículas</h2>
+    </div>
     <div class="card">
-      <div class="card-header">Gestión de Matrículas</div>
+      <div class="card-header"><i class="bi bi-clipboard-check-fill"></i> Gestión de Matrículas</div>
       <div class="card-body">
-        <p>Cargando matrículas...</p>
+        <p><i class="bi bi-hourglass-split"></i> Cargando matrículas...</p>
       </div>
     </div>
   `;

@@ -690,3 +690,213 @@ body {
     padding: 15px;
   }
 }
+
+/* ============================================
+   ICON STYLES - MEJORADOS
+   ============================================ */
+
+.login-header-icon-wrapper {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+  animation: bounce 2s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.login-header-icon {
+  font-size: 40px;
+  color: white;
+}
+
+.form-label-icon {
+  margin-right: 8px;
+  color: var(--primary);
+  font-size: 16px;
+}
+
+.btn-icon {
+  margin-right: 8px;
+  font-size: 18px;
+}
+
+.demo-header-icon {
+  margin-right: 8px;
+  font-size: 18px;
+  color: var(--primary);
+}
+
+.demo-key-icon {
+  margin-right: 8px;
+  color: var(--warning);
+}
+
+.demo-credentials-item-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: white;
+  flex-shrink: 0;
+  transition: var(--transition);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+}
+
+.icon-director {
+  font-size: 22px;
+}
+
+.icon-alumno {
+  font-size: 22px;
+}
+
+.icon-docente {
+  font-size: 22px;
+}
+
+.icon-admin {
+  font-size: 22px;
+}
+
+.demo-credentials-item {
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.demo-credentials-item:hover .demo-credentials-item-icon {
+  transform: scale(1.15) rotate(5deg);
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.demo-credentials-item-action {
+  display: flex;
+  align-items: center;
+  color: var(--gray);
+  transition: var(--transition);
+  margin-left: auto;
+  font-size: 16px;
+}
+
+.demo-credentials-item:hover .demo-credentials-item-action {
+  transform: translateX(5px);
+  color: var(--primary);
+}
+
+/* Sidebar Icons */
+.sidebar-header-icon-wrapper {
+  width: 60px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 15px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.sidebar-header-icon {
+  font-size: 28px;
+  color: white;
+}
+
+.nav-link-icon {
+  width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: var(--transition);
+}
+
+.nav-link:hover .nav-link-icon {
+  transform: scale(1.15);
+}
+
+.nav-link.active .nav-link-icon {
+  animation: popIn 0.3s ease-out;
+}
+
+@keyframes popIn {
+  0% { transform: scale(0.8); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* Topbar Icons */
+.topbar-icon {
+  margin-right: 8px;
+  font-size: 20px;
+  color: var(--primary);
+}
+
+.topbar-user-icon {
+  margin-right: 8px;
+  font-size: 18px;
+  color: var(--primary);
+}
+
+.topbar-badge-icon {
+  margin-right: 6px;
+  font-size: 14px;
+}
+
+/* Page Icons */
+.page-icon {
+  margin-right: 12px;
+  color: var(--primary);
+  font-size: 28px;
+}
+
+.page-header {
+  margin-bottom: 25px;
+}
+
+.page-header h2 {
+  display: flex;
+  align-items: center;
+  font-size: 28px;
+}
+
+/* Card Icons */
+.card-header i {
+  margin-right: 8px;
+  font-size: 18px;
+}
+
+.card-body i {
+  margin-right: 6px;
+  font-size: 16px;
+  color: var(--primary);
+}
+
+.card-body li i {
+  margin-right: 8px;
+  color: var(--success);
+  font-weight: bold;
+}
+
+/* Stat Card Icons */
+.stat-icon {
+  font-size: 32px;
+  color: var(--primary);
+  margin-bottom: 10px;
+}
+
+.stat-card {
+  border-left: 4px solid var(--primary);
+}
