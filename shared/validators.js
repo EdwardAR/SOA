@@ -1,100 +1,175 @@
-const { body, validationResult } = require('express-validator');
-const { APIError } = require('./errors');
+// Validadores compartidos para el sistema SOA
 
-/**
- * Middleware de validacion para verificar errores
- */
-const validateRequest = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    throw new APIError(400, 'Error de validacion', errors.array());
+const validadores = {
+  // Validar email
+  esEmailValido: (email) => {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
+  },
+
+  // Validar contraseña fuerte
+  esContraseñaFuerte: (password) => {
+    // Mínimo 8 caracteres, mayúscula, minúscula, número
+    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$/;
+    return regex.test(password);
+  },
+
+  // Validar número de documento
+  esDocumentoValido: (numero) => {
+    return /^\d{6,12}$/.test(numero);
+  },
+
+  // Validar teléfono
+  esTelefonoValido: (telefono) => {
+    return /^[0-9\s\-\+\(\)]{7,}$/.test(telefono);
+  },
+
+  // Validar UUID
+  esUUIDValido: (uuid) => {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuid);
+  },
+
+  // Validar fecha en formato YYYY-MM-DD
+  esFechaValida: (fecha) => {
+    const regex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!regex.test(fecha)) return false;
+    return !isNaN(Date.parse(fecha));
+  },
+
+  // Validar rango de puntuación (0-20)
+  esPuntuacionValida: (puntuacion) => {
+    return puntuacion >= 0 && puntuacion <= 20;
+  },
+
+  // Validar monto monetario
+  esMontValido: (monto) => {
+    return !isNaN(monto) && monto > 0;
+  },
+
+  // Validar tipo de usuario
+  esTipoUsuarioValido: (tipo) => {
+    const tiposValidos = ['alumno', 'docente', 'administrativo', 'padre', 'director'];
+    return tiposValidos.includes(tipo);
+  },
+
+  // Validar estado de asistencia
+  esEstadoAsistenciaValido: (estado) => {
+    const estadosValidos = ['PRESENTE', 'FALTA', 'JUSTIFICADO'];
+    return estadosValidos.includes(estado);
+  },
+
+  // Validar estado de pago
+  esEstadoPagoValido: (estado) => {
+    const estadosValidos = ['pendiente', 'pagado', 'cancelado', 'rechazado'];
+    return estadosValidos.includes(estado);
   }
-  next();
 };
 
-/**
- * Reglas de validacion para estudiantes
- */
-const validateStudent = [
-  body('enrollmentNumber').notEmpty().withMessage('Enrollment number is required').trim(),
-  body('firstName').notEmpty().withMessage('First name is required').trim(),
-  body('lastName').notEmpty().withMessage('Last name is required').trim(),
-  body('email').isEmail().withMessage('Valid email is required'),
-  body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
-  body('dateOfBirth').isISO8601().withMessage('Valid date of birth is required'),
-  body('gender').isIn(['M', 'F', 'Other']).withMessage('Valid gender is required'),
-];
+// Función para validar objeto completo
+const validarAlumno = (alumno) => {
+  const errores = [];
 
-/**
- * Reglas de validacion para docentes
- */
-const validateTeacher = [
-  body('employeeId').notEmpty().withMessage('Employee ID is required').trim(),
-  body('firstName').notEmpty().withMessage('First name is required').trim(),
-  body('lastName').notEmpty().withMessage('Last name is required').trim(),
-  body('email').isEmail().withMessage('Valid email is required'),
-  body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
-  body('specialization').notEmpty().withMessage('Specialization is required').trim(),
-  body('hireDate').isISO8601().withMessage('Valid hire date is required'),
-];
+  if (!alumno.apellido_paterno || alumno.apellido_paterno.trim() === '') {
+    errores.push('Apellido paterno es requerido');
+  }
 
-/**
- * Reglas de validacion para matriculas
- */
-const validateEnrollment = [
-  body('studentId').isInt().withMessage('Valid student ID is required'),
-  body('classroomId').isInt().withMessage('Valid classroom ID is required'),
-  body('enrollmentDate').isISO8601().withMessage('Valid enrollment date is required'),
-];
+  if (!alumno.primer_nombre || alumno.primer_nombre.trim() === '') {
+    errores.push('Primer nombre es requerido');
+  }
 
-/**
- * Reglas de validacion para calificaciones
- */
-const validateGrade = [
-  body('studentId').isInt().withMessage('Valid student ID is required'),
-  body('courseId').isInt().withMessage('Valid course ID is required'),
-  body('teacherId').isInt().withMessage('Valid teacher ID is required'),
-  body('midtermScore').isDecimal().withMessage('Valid midterm score is required'),
-  body('finalScore').isDecimal().withMessage('Valid final score is required'),
-  body('overallScore').optional().isDecimal().withMessage('Valid overall score is required'),
-];
+  if (!alumno.numero_documento) {
+    errores.push('Número de documento es requerido');
+  } else if (!validadores.esDocumentoValido(alumno.numero_documento)) {
+    errores.push('Número de documento inválido');
+  }
 
-/**
- * Reglas de validacion para asistencia
- */
-const validateAttendance = [
-  body('studentId').isInt().withMessage('Valid student ID is required'),
-  body('classroomId').isInt().withMessage('Valid classroom ID is required'),
-  body('attendanceDate').isISO8601().withMessage('Valid attendance date is required'),
-  body('status').isIn(['present', 'absent', 'late', 'excused']).withMessage('Valid status is required'),
-];
+  if (alumno.email && !validadores.esEmailValido(alumno.email)) {
+    errores.push('Email inválido');
+  }
 
-/**
- * Reglas de validacion para pagos
- */
-const validatePayment = [
-  body('studentId').isInt().withMessage('Valid student ID is required'),
-  body('amount').isDecimal().withMessage('Valid amount is required'),
-  body('feeType').notEmpty().withMessage('Fee type is required').trim(),
-];
+  return {
+    valido: errores.length === 0,
+    errores
+  };
+};
 
-/**
- * Reglas de validacion para notificaciones
- */
-const validateNotification = [
-  body('recipientUserId').isInt().withMessage('Valid recipient user ID is required'),
-  body('subject').notEmpty().withMessage('Subject is required').trim(),
-  body('message').notEmpty().withMessage('Message is required').trim(),
-  body('notificationType').optional().isIn(['email', 'sms', 'in-app']).withMessage('Valid notification type is required'),
-];
+const validarProfesor = (profesor) => {
+  const errores = [];
+
+  if (!profesor.apellido_paterno || profesor.apellido_paterno.trim() === '') {
+    errores.push('Apellido paterno es requerido');
+  }
+
+  if (!profesor.primer_nombre || profesor.primer_nombre.trim() === '') {
+    errores.push('Primer nombre es requerido');
+  }
+
+  if (!profesor.numero_documento) {
+    errores.push('Número de documento es requerido');
+  } else if (!validadores.esDocumentoValido(profesor.numero_documento)) {
+    errores.push('Número de documento inválido');
+  }
+
+  return {
+    valido: errores.length === 0,
+    errores
+  };
+};
+
+const validarCurso = (curso) => {
+  const errores = [];
+
+  if (!curso.codigo || curso.codigo.trim() === '') {
+    errores.push('Código de curso es requerido');
+  }
+
+  if (!curso.nombre || curso.nombre.trim() === '') {
+    errores.push('Nombre del curso es requerido');
+  }
+
+  if (!curso.grado_nivel || curso.grado_nivel.trim() === '') {
+    errores.push('Grado/Nivel es requerido');
+  }
+
+  if (!curso.profesor_id) {
+    errores.push('Profesor es requerido');
+  }
+
+  if (!curso.periodo_academico || curso.periodo_academico.trim() === '') {
+    errores.push('Período académico es requerido');
+  }
+
+  return {
+    valido: errores.length === 0,
+    errores
+  };
+};
+
+const validarPago = (pago) => {
+  const errores = [];
+
+  if (!pago.alumno_id) {
+    errores.push('Alumno es requerido');
+  }
+
+  if (!pago.monto || !validadores.esMontValido(pago.monto)) {
+    errores.push('Monto inválido o no especificado');
+  }
+
+  if (!pago.concepto || pago.concepto.trim() === '') {
+    errores.push('Concepto es requerido');
+  }
+
+  return {
+    valido: errores.length === 0,
+    errores
+  };
+};
 
 module.exports = {
-  validateRequest,
-  validateStudent,
-  validateTeacher,
-  validateEnrollment,
-  validateGrade,
-  validateAttendance,
-  validatePayment,
-  validateNotification,
+  validadores,
+  validarAlumno,
+  validarProfesor,
+  validarCurso,
+  validarPago
 };

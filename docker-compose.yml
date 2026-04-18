@@ -1,0 +1,167 @@
+version: '3.8'
+
+services:
+  # API Gateway
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - GATEWAY_PORT=3000
+      - ALUMNOS_SERVICE_URL=http://alumnos-service:3001
+      - MATRICULA_SERVICE_URL=http://matricula-service:3002
+      - PROFESORES_SERVICE_URL=http://profesores-service:3003
+      - CURSOS_SERVICE_URL=http://cursos-service:3004
+      - PAGOS_SERVICE_URL=http://pagos-service:3005
+      - NOTIFICACIONES_SERVICE_URL=http://notificaciones-service:3006
+      - ASISTENCIA_SERVICE_URL=http://asistencia-service:3007
+      - DB_PATH=/app/database/colegio.db
+      - JWT_SECRET=clave_secreta_produccion_cambiar
+    volumes:
+      - ./database:/app/database
+    depends_on:
+      - alumnos-service
+      - matricula-service
+      - profesores-service
+      - cursos-service
+      - pagos-service
+      - notificaciones-service
+      - asistencia-service
+    networks:
+      - soa-network
+
+  # Servicio de Alumnos
+  alumnos-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_NAME: alumnos
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - ALUMNOS_SERVICE_PORT=3001
+      - DB_PATH=/app/database/colegio.db
+    volumes:
+      - ./database:/app/database
+    networks:
+      - soa-network
+
+  # Servicio de Matrículas
+  matricula-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_NAME: matricula
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=production
+      - MATRICULA_SERVICE_PORT=3002
+      - DB_PATH=/app/database/colegio.db
+    volumes:
+      - ./database:/app/database
+    networks:
+      - soa-network
+
+  # Servicio de Profesores
+  profesores-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_NAME: profesores
+    ports:
+      - "3003:3003"
+    environment:
+      - NODE_ENV=production
+      - PROFESORES_SERVICE_PORT=3003
+      - DB_PATH=/app/database/colegio.db
+    volumes:
+      - ./database:/app/database
+    networks:
+      - soa-network
+
+  # Servicio de Cursos
+  cursos-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_NAME: cursos
+    ports:
+      - "3004:3004"
+    environment:
+      - NODE_ENV=production
+      - CURSOS_SERVICE_PORT=3004
+      - DB_PATH=/app/database/colegio.db
+    volumes:
+      - ./database:/app/database
+    networks:
+      - soa-network
+
+  # Servicio de Pagos
+  pagos-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_NAME: pagos
+    ports:
+      - "3005:3005"
+    environment:
+      - NODE_ENV=production
+      - PAGOS_SERVICE_PORT=3005
+      - DB_PATH=/app/database/colegio.db
+    volumes:
+      - ./database:/app/database
+    networks:
+      - soa-network
+
+  # Servicio de Notificaciones
+  notificaciones-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_NAME: notificaciones
+    ports:
+      - "3006:3006"
+    environment:
+      - NODE_ENV=production
+      - NOTIFICACIONES_SERVICE_PORT=3006
+      - DB_PATH=/app/database/colegio.db
+    volumes:
+      - ./database:/app/database
+    networks:
+      - soa-network
+
+  # Servicio de Asistencia
+  asistencia-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_NAME: asistencia
+    ports:
+      - "3007:3007"
+    environment:
+      - NODE_ENV=production
+      - ASISTENCIA_SERVICE_PORT=3007
+      - DB_PATH=/app/database/colegio.db
+    volumes:
+      - ./database:/app/database
+    networks:
+      - soa-network
+
+networks:
+  soa-network:
+    driver: bridge
+
+volumes:
+  database:

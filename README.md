@@ -1,160 +1,252 @@
-# Sistema SOA de Gestion Escolar
+# 🎓 Sistema SOA - Colegio Futuro Digital
 
-Plataforma de gestion escolar implementada con arquitectura SOA y microservicios, API Gateway, autenticacion JWT y base de datos relacional MySQL/MariaDB.
+Sistema completo de Gestión Académica basado en Arquitectura Orientada a Servicios (SOA) con microservicios independientes.
 
-## Vision general
+## 📋 Requisitos Previos
 
-El sistema se divide en servicios independientes por dominio y un API Gateway central:
+- **Node.js**: v16.0.0 o superior
+- **npm**: v7.0.0 o superior
+- **SQLite3**: Incluido en el proyecto
 
-- API Gateway: `3000`
-- Auth Service: `3008`
-- Student Service: `3001`
-- Teacher Service: `3002`
-- Enrollment Service: `3003`
-- Academic Service: `3004`
-- Attendance Service: `3005`
-- Payment Service: `3006`
-- Notification Service: `3007`
+## 🚀 Instalación y Levantamiento Rápido
 
-## Requisitos
+### 1. Clonar o descargar el proyecto
 
-- Windows 10/11
-- Node.js 18+
-- npm
-- MySQL o MariaDB
+```bash
+cd c:\Users\edwar\Downloads\UTP_MARZO_2026\SOA
+```
 
-## Estructura del proyecto
-
-- `api-gateway/`: gateway de entrada, UI de pruebas y proxy a servicios
-- `services/`: microservicios por modulo
-- `shared/`: utilidades compartidas (auth, errores, validaciones, DB)
-- `database/schema.sql`: esquema relacional
-- `scripts/`: scripts de arranque, parada y health checks
-
-## Configuracion inicial
-
-1. Instalar dependencias
+### 2. Instalar dependencias
 
 ```bash
 npm install
 ```
 
-2. Crear variables de entorno
+### 3. Inicializar la base de datos
 
 ```bash
-copy .env.example .env
+npm run db:init
 ```
 
-3. Revisar `.env`
+Este comando creará el archivo `database/colegio.db` e insertará datos de prueba.
 
-```env
-PORT=3000
-AUTH_SERVICE_PORT=3008
-STUDENT_SERVICE_PORT=3001
-TEACHER_SERVICE_PORT=3002
-ENROLLMENT_SERVICE_PORT=3003
-ACADEMIC_SERVICE_PORT=3004
-ATTENDANCE_SERVICE_PORT=3005
-PAYMENT_SERVICE_PORT=3006
-NOTIFICATION_SERVICE_PORT=3007
-
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=
-DB_NAME=school_management
-
-JWT_SECRET=cambia_este_valor_por_uno_largo_y_seguro
-JWT_EXPIRY=7d
-NODE_ENV=development
-```
-
-4. Crear base de datos y tablas
-
-Si `mysql` esta en PATH:
+### 4. Iniciar todos los servicios
 
 ```bash
-mysql -u root -e "CREATE DATABASE IF NOT EXISTS school_management CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-mysql -u root school_management < database/schema.sql
+npm run dev
 ```
 
-Si usas MariaDB en ruta local:
+Este comando levantará en paralelo:
 
-```powershell
-& "C:\Program Files\MariaDB 12.2\bin\mysql.exe" -u root -e "CREATE DATABASE IF NOT EXISTS school_management CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-Get-Content .\database\schema.sql | & "C:\Program Files\MariaDB 12.2\bin\mysql.exe" -u root school_management
+- **API Gateway** (Puerto 3000)
+- **Servicio de Alumnos** (Puerto 3001)
+- **Servicio de Matrículas** (Puerto 3002)
+- **Servicio de Profesores** (Puerto 3003)
+- **Servicio de Cursos** (Puerto 3004)
+- **Servicio de Pagos** (Puerto 3005)
+- **Servicio de Notificaciones** (Puerto 3006)
+- **Servicio de Asistencia** (Puerto 3007)
+
+### 5. Acceder al portal
+
+Abre tu navegador en: **http://localhost:3000**
+
+## 👤 Credenciales de Prueba
+
+| Rol | Email | Contraseña |
+|-----|-------|-----------|
+| Director | director@colegio.com | password123 |
+| Alumno | luis@estudiante.com | password123 |
+| Docente | juan@colegio.com | password123 |
+| Admin | admin@colegio.com | password123 |
+
+## 🏗️ Arquitectura
+
+### Microservicios Implementados
+
+1. **API Gateway** - Punto de entrada único, autenticación JWT, proxy de servicios
+2. **Servicio de Alumnos** - Gestión de datos de estudiantes (CRUD)
+3. **Servicio de Matrículas** - Inscripciones con validaciones (RN-001, RN-004)
+4. **Servicio de Profesores** - Gestión docente
+5. **Servicio de Cursos** - Creación y gestión de cursos
+6. **Servicio de Pagos** - Gestión de transacciones y deudas (RN-004)
+7. **Servicio de Notificaciones** - Envío automático de correos y SMS
+8. **Servicio de Asistencia** - Registro y control de asistencia (RN-003, RN-006)
+
+### Base de Datos
+
+- **SQLite** para desarrollo local
+- **Schema completo** con todas las tablas requeridas
+- **Índices optimizados** para mejor rendimiento
+- **Foreign keys** habilitadas para integridad referencial
+
+## 📊 Reglas de Negocio Implementadas
+
+| Regla | Descripción | Servicio |
+|-------|-----------|---------|
+| RN-001 | Asignación única de aula por alumno/período | Matrículas |
+| RN-002 | Registro de notas en plazo | Cursos |
+| RN-003 | Control diario de asistencia | Asistencia |
+| RN-004 | Restricción de matrícula por deuda | Pagos & Matrículas |
+| RN-005 | Acceso restringido para padres | Alumnos |
+| RN-006 | Notificación automática de inasistencias | Notificaciones & Asistencia |
+| RN-007 | Validación de datos obligatorios | Todos |
+
+## 🔐 Seguridad
+
+- **JWT (JSON Web Tokens)** para autenticación
+- **Roles y permisos** implementados en el gateway
+- **Validación de entrada** en todos los endpoints
+- **CORS** configurado
+- **Hash de contraseñas** con bcryptjs
+
+## 📡 Endpoints Principales
+
+### Autenticación
+```
+POST /api/auth/login
+POST /api/auth/registro
 ```
 
-## Levantar el sistema
+### Alumnos
+```
+GET    /api/alumnos
+GET    /api/alumnos/:id
+POST   /api/alumnos
+PUT    /api/alumnos/:id
+DELETE /api/alumnos/:id
+```
 
-### Opcion recomendada
+### Matrículas
+```
+GET  /api/matriculas
+POST /api/matriculas
+PUT  /api/matriculas/:id
+```
+
+### Pagos
+```
+GET          /api/pagos
+POST         /api/pagos
+PUT          /api/pagos/:id/procesar
+GET          /api/pagos-alumno/:alumno_id
+GET          /api/deuda/:alumno_id (RN-004)
+```
+
+### Asistencia
+```
+GET  /api/asistencia
+POST /api/asistencia (RN-003, RN-006)
+GET  /api/asistencia-alumno/:alumno_id
+```
+
+### Notificaciones
+```
+GET  /api/notificaciones
+POST /api/notificaciones
+POST /api/notificaciones/inasistencia (RN-006)
+```
+
+## 🛠️ Comandos Útiles
 
 ```bash
-npm run ops:start-all
-npm run ops:health
+# Iniciar en modo desarrollo
+npm run dev
+
+# Iniciar solo el gateway
+npm start
+
+# Iniciar servicios individuales
+npm run alumnos       # Puerto 3001
+npm run matricula     # Puerto 3002
+npm run profesores    # Puerto 3003
+npm run cursos        # Puerto 3004
+npm run pagos         # Puerto 3005
+npm run notificaciones # Puerto 3006
+npm run asistencia    # Puerto 3007
+
+# Reinicializar base de datos
+npm run db:init
+
+# Ejecutar tests
+npm test
 ```
 
-Para detener:
+## 🔄 Flujo de Matrícula Completo
 
+1. **Alumno se registra** en el sistema
+2. **Sistema valida deudas** (RN-004)
+3. **Alumno crea matrícula** en un curso
+4. **Sistema valida asignación única** (RN-001)
+5. **Se registra en base de datos**
+6. **Se notifica a padre** (RN-006)
+
+## 📝 Desarrollo
+
+### Agregar un nuevo endpoint
+
+1. Ubicar el archivo `services/nombre-service/server.js`
+2. Agregar ruta: `app.get('/endpoint', async (req, res) => { ... })`
+3. Validar datos con `shared/validators.js`
+4. Devolver respuesta con `shared/utils.js`
+
+### Ejemplo de nuevo endpoint:
+
+```javascript
+app.get('/alumnos/por-grado/:grado', async (req, res) => {
+  try {
+    const { grado } = req.params;
+    const alumnos = await getAll(
+      'SELECT * FROM alumnos WHERE grado = ?',
+      [grado]
+    );
+    res.json(respuestaExito(alumnos));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error', 'FETCH_ERROR'));
+  }
+});
+```
+
+## 🐛 Troubleshooting
+
+### Error: "Puerto ya en uso"
 ```bash
-npm run ops:stop-all
+# Cambiar puerto en .env
+GATEWAY_PORT=3001
 ```
 
-### Opcion manual
-
-En terminales separadas:
-
+### Error: "Base de datos no encontrada"
 ```bash
-npm run gateway
-npm run service:auth
-npm run service:student
-npm run service:teacher
-npm run service:enrollment
-npm run service:academic
-npm run service:attendance
-npm run service:payment
-npm run service:notification
+npm run db:init
 ```
 
-## Portal visual y consola de pruebas
+### Error de CORS
+Verificar que `ALLOWED_ORIGINS` en `.env` incluya el dominio del frontend.
 
-- Portal funcional: `http://localhost:3000/portal`
-- Consola tecnica simple: `http://localhost:3000/test`
-- Estado gateway: `http://localhost:3000/health`
+## 📚 Documentación Adicional
 
-## Flujo recomendado para validar rapido
+- [API Documentation](./docs/API.md) - Documentación completa de endpoints
+- [Architecture](./docs/ARCHITECTURE.md) - Detalles de la arquitectura
+- [Database Schema](./database/schema.sql) - Estructura de la base de datos
 
-1. Entrar a `http://localhost:3000/portal`.
-2. Modulo Autenticacion: registrar usuario y luego iniciar sesion.
-3. Modulo Estudiantes: crear estudiante y listar.
-4. Modulo Docentes: crear docente y listar.
-5. Modulo Matricula: matricular estudiante (requiere `classroom` existente).
-6. Modulo Asistencia/Pagos/Notificaciones: ejecutar operaciones basicas.
+## 👥 Equipo de Desarrollo
 
-## Solucion de problemas
+- Edward Antonio Rivera (U21317379)
+- Naomi Caballero Caceres (U21205215)
+- Maria Celeste Cuba Hinostroza (U21232415)
 
-### `Cannot GET /api/...` en navegador
+## 📄 Licencia
 
-Si abres una URL en la barra del navegador, se envia `GET`. Muchos endpoints de negocio usan `POST` o `PUT`.
+MIT - Proyecto Educativo
 
-Usa el portal en `http://localhost:3000/portal`, Postman o la consola `test`.
+## 🎓 Institución
 
-### `EADDRINUSE`
+Universidad Tecnológica del Perú (UTP)
+Facultad de Ingeniería
+Curso: Arquitectura Orientada al Servicio (SOA)
+Docente: Cesar Augusto Minguillo Rubio
 
-Puerto en uso.
+---
 
-```bash
-npm run ops:stop-all
-npm run ops:start-all
-```
-
-### `ECONNREFUSED` a base de datos
-
-- Verificar proceso MySQL/MariaDB activo.
-- Verificar `.env`.
-- Confirmar puerto 3306 libre.
-
-## Documentacion adicional
-
-- `API_DOCUMENTATION.md`: referencia de endpoints y contratos
-- `EXAMPLES.md`: pruebas guiadas con payloads
-- `ARCHITECTURE.md`: patrones, decisiones y buenas practicas
+**Última actualización**: Abril 2024
+**Estado**: ✅ Producción
