@@ -5,7 +5,8 @@ const API_BASE = 'http://localhost:3000/api';
 const state = {
   usuario: null,
   token: null,
-  paginaActual: 'login'
+  paginaActual: 'login',
+  cargando: false
 };
 
 // Inicializar aplicación
@@ -13,142 +14,166 @@ document.addEventListener('DOMContentLoaded', () => {
   const token = localStorage.getItem('token');
   if (token) {
     state.token = token;
-    state.usuario = JSON.parse(localStorage.getItem('usuario'));
-    mostrarDashboard();
+    try {
+      state.usuario = JSON.parse(localStorage.getItem('usuario'));
+      mostrarDashboard();
+    } catch (e) {
+      localStorage.clear();
+      mostrarLogin();
+    }
   } else {
     mostrarLogin();
   }
 });
 
 // ============================================
-// PÁGINAS
+// UTILIDADES
+// ============================================
+
+function mostrarAlerta(tipo, mensaje, duracion = 5000) {
+  const iconos = {
+    error: 'bi-exclamation-circle',
+    success: 'bi-check-circle',
+    warning: 'bi-exclamation-triangle',
+    info: 'bi-info-circle'
+  };
+
+  const alertDiv = document.createElement('div');
+  alertDiv.className = `alert-message alert-${tipo}`;
+  alertDiv.innerHTML = `
+    <i class="bi ${iconos[tipo]} alert-icon"></i>
+    <span>${mensaje}</span>
+  `;
+
+  const container = document.querySelector('.alert-container') ||
+                   document.querySelector('.login-form');
+
+  if (container) {
+    container.insertAdjacentElement('beforebegin', alertDiv);
+
+    if (duracion) {
+      setTimeout(() => {
+        alertDiv.style.animation = 'slideUp 0.3s ease-out forwards';
+        setTimeout(() => alertDiv.remove(), 300);
+      }, duracion);
+    }
+  }
+}
+
+function establecerBotonEstado(boton, cargando, texto) {
+  if (cargando) {
+    boton.disabled = true;
+    boton.innerHTML = '<span class="btn-login-loading"></span>Ingresando...';
+  } else {
+    boton.disabled = false;
+    boton.textContent = texto || 'Ingresar';
+  }
+}
+
+// ============================================
+// LOGIN
 // ============================================
 
 function mostrarLogin() {
   state.paginaActual = 'login';
   document.getElementById('app').innerHTML = `
-    <div class="login-container">
-      <div class="login-header">
-        <h1>🎓 Colegio Futuro Digital</h1>
-        <p>Sistema de Gestión Académica SOA</p>
-      </div>
-
-      <div class="error-message" id="loginError"></div>
-
-      <form onsubmit="handleLogin(event)">
-        <input type="email" id="email" placeholder="Email" class="form-control" required>
-        <input type="password" id="password" placeholder="Contraseña" class="form-control" required>
-        <button type="submit" class="btn btn-primary">Ingresar</button>
-      </form>
-
-      <div style="margin-top: 20px; text-align: center; font-size: 12px; color: #7f8c8d;">
-        <p><strong>Credenciales de prueba:</strong></p>
-        <p>📧 director@colegio.com</p>
-        <p>👨‍🎓 luis@estudiante.com</p>
-        <p>👨‍🏫 juan@colegio.com</p>
-        <p><em>Contraseña: password123</em></p>
-      </div>
-    </div>
-  `;
-}
-
-function mostrarDashboard() {
-  state.paginaActual = 'dashboard';
-  document.getElementById('app').innerHTML = `
-    <div style="display: flex; height: 100vh;">
-      <div class="sidebar" style="width: 250px; flex-shrink: 0;">
-        <div class="sidebar-header">
-          <h3>Menú</h3>
-          <p>${state.usuario.nombre}</p>
+    <div class="login-wrapper">
+      <div class="login-container">
+        <div class="login-header">
+          <span class="login-header-icon">🎓</span>
+          <h1>Colegio Futuro Digital</h1>
+          <p>Sistema de Gestión Académica SOA</p>
         </div>
 
-        <div class="nav-item">
-          <div class="nav-link active" onclick="cargarPagina('inicio')">📊 Inicio</div>
-        </div>
+        <div class="alert-container"></div>
 
-        ${state.usuario.tipo_usuario === 'alumno' ? `
-        <div class="nav-item">
-          <div class="nav-link" onclick="cargarPagina('mis-cursos')">📚 Mis Cursos</div>
-        </div>
-        <div class="nav-item">
-          <div class="nav-link" onclick="cargarPagina('mis-notas')">📝 Mis Notas</div>
-        </div>
-        <div class="nav-item">
-          <div class="nav-link" onclick="cargarPagina('mis-pagos')">💰 Mis Pagos</div>
-        </div>
-        <div class="nav-item">
-          <div class="nav-link" onclick="cargarPagina('asistencia')">✅ Asistencia</div>
-        </div>
-        ` : ''}
-
-        ${state.usuario.tipo_usuario === 'docente' ? `
-        <div class="nav-item">
-          <div class="nav-link" onclick="cargarPagina('mis-cursos')">📚 Mis Cursos</div>
-        </div>
-        <div class="nav-item">
-          <div class="nav-link" onclick="cargarPagina('calificaciones')">📝 Calificaciones</div>
-        </div>
-        <div class="nav-item">
-          <div class="nav-link" onclick="cargarPagina('asistencia')">✅ Asistencia</div>
-        </div>
-        ` : ''}
-
-        ${(state.usuario.tipo_usuario === 'administrativo' || state.usuario.tipo_usuario === 'director') ? `
-        <div class="nav-item">
-          <div class="nav-link" onclick="cargarPagina('alumnos')">👥 Alumnos</div>
-        </div>
-        <div class="nav-item">
-          <div class="nav-link" onclick="cargarPagina('cursos')">📚 Cursos</div>
-        </div>
-        <div class="nav-item">
-          <div class="nav-link" onclick="cargarPagina('pagos')">💰 Pagos</div>
-        </div>
-        <div class="nav-item">
-          <div class="nav-link" onclick="cargarPagina('matriculas')">📋 Matrículas</div>
-        </div>
-        ` : ''}
-
-        <div class="nav-item" style="margin-top: 40px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
-          <button class="btn btn-logout" onclick="handleLogout()">Cerrar Sesión</button>
-        </div>
-      </div>
-
-      <div style="flex: 1; display: flex; flex-direction: column;">
-        <div class="topbar">
-          <div class="topbar-title">Sistema de Gestión Académica</div>
-          <div>
-            <span style="margin-right: 20px; color: #7f8c8d;">Rol: <strong>${state.usuario.tipo_usuario}</strong></span>
+        <form id="loginForm" class="login-form" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" placeholder="tu@email.com" required>
           </div>
-        </div>
 
-        <div class="content" id="content" style="flex: 1; overflow-y: auto;">
-          <div class="loading">
-            <div class="spinner"></div>
-            <p>Cargando...</p>
+          <div class="form-group">
+            <label for="password">Contraseña</label>
+            <input type="password" id="password" placeholder="••••••••" required>
+          </div>
+
+          <button type="submit" class="btn-login" id="btnLogin">Ingresar</button>
+        </form>
+
+        <div class="login-divider">O usa una cuenta de prueba</div>
+
+        <div class="demo-credentials">
+          <h3>👤 Cuentas de Demostración</h3>
+          <ul class="demo-credentials-list">
+            <li class="demo-credentials-item" onclick="rellenarFormulario('director@colegio.com', 'password123')">
+              <span class="demo-credentials-item-icon">👔</span>
+              <div class="demo-credentials-item-text">
+                <div class="demo-credentials-item-role">Director</div>
+                <div class="demo-credentials-item-email">director@colegio.com</div>
+              </div>
+            </li>
+            <li class="demo-credentials-item" onclick="rellenarFormulario('luis@estudiante.com', 'password123')">
+              <span class="demo-credentials-item-icon">👨‍🎓</span>
+              <div class="demo-credentials-item-text">
+                <div class="demo-credentials-item-role">Alumno</div>
+                <div class="demo-credentials-item-email">luis@estudiante.com</div>
+              </div>
+            </li>
+            <li class="demo-credentials-item" onclick="rellenarFormulario('juan@colegio.com', 'password123')">
+              <span class="demo-credentials-item-icon">👨‍🏫</span>
+              <div class="demo-credentials-item-text">
+                <div class="demo-credentials-item-role">Docente</div>
+                <div class="demo-credentials-item-email">juan@colegio.com</div>
+              </div>
+            </li>
+            <li class="demo-credentials-item" onclick="rellenarFormulario('admin@colegio.com', 'password123')">
+              <span class="demo-credentials-item-icon">🔧</span>
+              <div class="demo-credentials-item-text">
+                <div class="demo-credentials-item-role">Administrador</div>
+                <div class="demo-credentials-item-email">admin@colegio.com</div>
+              </div>
+            </li>
+          </ul>
+          <div class="demo-credentials-password">
+            🔑 Contraseña: <strong>password123</strong>
           </div>
         </div>
       </div>
     </div>
   `;
 
-  cargarPagina('inicio');
+  // Focus en primer campo
+  setTimeout(() => document.getElementById('email').focus(), 100);
 }
 
-// ============================================
-// MANEJADORES DE EVENTOS
-// ============================================
+function rellenarFormulario(email, password) {
+  document.getElementById('email').value = email;
+  document.getElementById('password').value = password;
+  document.getElementById('password').focus();
+  mostrarAlerta('info', `Formulario rellenado con ${email}`, 2000);
+}
 
 async function handleLogin(event) {
   event.preventDefault();
 
   const email = document.getElementById('email').value;
   const password = document.getElementById('password').value;
-  const errorDiv = document.getElementById('loginError');
+  const btnLogin = document.getElementById('btnLogin');
+
+  if (!email || !password) {
+    mostrarAlerta('warning', 'Por favor completa todos los campos');
+    return;
+  }
+
+  establecerBotonEstado(btnLogin, true);
 
   try {
     const response = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({ email, password })
     });
 
@@ -161,33 +186,168 @@ async function handleLogin(event) {
       localStorage.setItem('token', state.token);
       localStorage.setItem('usuario', JSON.stringify(state.usuario));
 
-      mostrarDashboard();
+      mostrarAlerta('success', `¡Bienvenido ${state.usuario.nombre}!`, 1500);
+
+      setTimeout(() => {
+        mostrarDashboard();
+      }, 500);
     } else {
-      errorDiv.textContent = data.mensaje || 'Error al iniciar sesión';
-      errorDiv.classList.add('show');
+      const errorMsg = data.mensaje || 'Error en la autenticación';
+      mostrarAlerta('error', errorMsg);
+      establecerBotonEstado(btnLogin, false, 'Ingresar');
     }
   } catch (error) {
-    errorDiv.textContent = 'Error de conexión: ' + error.message;
-    errorDiv.classList.add('show');
+    console.error('Error de login:', error);
+    mostrarAlerta('error',
+      '❌ No se puede conectar con el servidor. Asegúrate de que:<br>• El API Gateway esté corriendo (npm run dev)<br>• Accedas desde http://localhost:3000 (no desde otro puerto)');
+    establecerBotonEstado(btnLogin, false, 'Ingresar');
   }
 }
 
-function handleLogout() {
-  localStorage.removeItem('token');
-  localStorage.removeItem('usuario');
-  state.usuario = null;
-  state.token = null;
-  mostrarLogin();
+// ============================================
+// DASHBOARD
+// ============================================
+
+function mostrarDashboard() {
+  state.paginaActual = 'dashboard';
+  document.getElementById('app').innerHTML = `
+    <div class="dashboard-wrapper">
+      <div class="sidebar">
+        <div class="sidebar-header">
+          <span class="login-header-icon">🎓</span>
+          <h3>${state.usuario.nombre}</h3>
+          <p>${state.usuario.tipo_usuario}</p>
+        </div>
+
+        <nav class="sidebar-menu">
+          <div class="nav-item">
+            <div class="nav-link active" onclick="cargarPagina('inicio', this)">
+              <i class="bi bi-speedometer2 nav-link-icon"></i>
+              Inicio
+            </div>
+          </div>
+
+          ${state.usuario.tipo_usuario === 'alumno' ? `
+          <div class="nav-item">
+            <div class="nav-link" onclick="cargarPagina('mis-cursos', this)">
+              <i class="bi bi-book nav-link-icon"></i>
+              Mis Cursos
+            </div>
+          </div>
+          <div class="nav-item">
+            <div class="nav-link" onclick="cargarPagina('mis-notas', this)">
+              <i class="bi bi-pencil-square nav-link-icon"></i>
+              Mis Notas
+            </div>
+          </div>
+          <div class="nav-item">
+            <div class="nav-link" onclick="cargarPagina('mis-pagos', this)">
+              <i class="bi bi-credit-card nav-link-icon"></i>
+              Mis Pagos
+            </div>
+          </div>
+          <div class="nav-item">
+            <div class="nav-link" onclick="cargarPagina('asistencia', this)">
+              <i class="bi bi-check-circle nav-link-icon"></i>
+              Asistencia
+            </div>
+          </div>
+          ` : ''}
+
+          ${state.usuario.tipo_usuario === 'docente' ? `
+          <div class="nav-item">
+            <div class="nav-link" onclick="cargarPagina('mis-cursos', this)">
+              <i class="bi bi-book nav-link-icon"></i>
+              Mis Cursos
+            </div>
+          </div>
+          <div class="nav-item">
+            <div class="nav-link" onclick="cargarPagina('calificaciones', this)">
+              <i class="bi bi-pencil-square nav-link-icon"></i>
+              Calificaciones
+            </div>
+          </div>
+          <div class="nav-item">
+            <div class="nav-link" onclick="cargarPagina('asistencia', this)">
+              <i class="bi bi-check-circle nav-link-icon"></i>
+              Asistencia
+            </div>
+          </div>
+          ` : ''}
+
+          ${(state.usuario.tipo_usuario === 'administrativo' || state.usuario.tipo_usuario === 'director') ? `
+          <div class="nav-item">
+            <div class="nav-link" onclick="cargarPagina('alumnos', this)">
+              <i class="bi bi-people nav-link-icon"></i>
+              Alumnos
+            </div>
+          </div>
+          <div class="nav-item">
+            <div class="nav-link" onclick="cargarPagina('cursos', this)">
+              <i class="bi bi-book nav-link-icon"></i>
+              Cursos
+            </div>
+          </div>
+          <div class="nav-item">
+            <div class="nav-link" onclick="cargarPagina('pagos', this)">
+              <i class="bi bi-credit-card nav-link-icon"></i>
+              Pagos
+            </div>
+          </div>
+          <div class="nav-item">
+            <div class="nav-link" onclick="cargarPagina('matriculas', this)">
+              <i class="bi bi-list-check nav-link-icon"></i>
+              Matrículas
+            </div>
+          </div>
+          ` : ''}
+        </nav>
+
+        <div class="sidebar-footer">
+          <button class="btn-logout" onclick="handleLogout()">
+            <i class="bi bi-box-arrow-left"></i> Cerrar Sesión
+          </button>
+        </div>
+      </div>
+
+      <div class="dashboard-main">
+        <div class="topbar">
+          <div class="topbar-title">Sistema de Gestión Académica</div>
+          <div class="topbar-info">
+            <span><strong>👤 ${state.usuario.nombre}</strong></span>
+            <span class="topbar-role">${state.usuario.tipo_usuario.toUpperCase()}</span>
+          </div>
+        </div>
+
+        <div class="content" id="content">
+          <div class="text-center">
+            <div class="loading-spinner"></div>
+            <p style="color: var(--gray); margin-top: 15px;">Cargando...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  cargarPagina('inicio', document.querySelector('.nav-link.active'));
 }
 
-function cargarPagina(pagina) {
-  // Actualizar navegación
-  document.querySelectorAll('.nav-link').forEach(link => {
-    link.classList.remove('active');
-  });
-  event.target.classList.add('active');
+function handleLogout() {
+  if (confirm('¿Deseas cerrar sesión?')) {
+    localStorage.removeItem('token');
+    localStorage.removeItem('usuario');
+    state.usuario = null;
+    state.token = null;
+    mostrarLogin();
+  }
+}
 
-  // Cargar contenido
+function cargarPagina(pagina, elemento) {
+  if (elemento) {
+    document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+    elemento.classList.add('active');
+  }
+
   const content = document.getElementById('content');
 
   switch (pagina) {
@@ -227,40 +387,62 @@ function cargarPagina(pagina) {
 
 function mostrarInicio(content) {
   content.innerHTML = `
-    <h2>Bienvenido, ${state.usuario.nombre}</h2>
+    <h2 style="margin-bottom: 25px;">Bienvenido, <strong>${state.usuario.nombre}</strong></h2>
+
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-number">7</div>
         <div class="stat-label">Servicios Activos</div>
       </div>
       <div class="stat-card">
-        <div class="stat-number">100%</div>
+        <div class="stat-number">✅</div>
         <div class="stat-label">Sistema Operativo</div>
       </div>
       <div class="stat-card">
         <div class="stat-number">2024-1</div>
         <div class="stat-label">Período Académico</div>
       </div>
+      <div class="stat-card">
+        <div class="stat-number">∞</div>
+        <div class="stat-label">Escalabilidad</div>
+      </div>
     </div>
 
     <div class="card">
       <div class="card-header">
-        📋 Información del Sistema
+        <i class="bi bi-info-circle"></i> Información del Sistema
       </div>
       <div class="card-body">
-        <p><strong>Sistema:</strong> Gestión Académica SOA</p>
+        <p><strong>Nombre del Sistema:</strong> Gestión Académica SOA</p>
         <p><strong>Versión:</strong> 1.0.0</p>
-        <p><strong>Arquitectura:</strong> Microservicios</p>
-        <p><strong>Servicios:</strong></p>
+        <p><strong>Arquitectura:</strong> Microservicios Distribuidos</p>
+        <p><strong>Servicios Disponibles:</strong></p>
         <ul>
-          <li>✅ API Gateway (Puerto 3000)</li>
-          <li>✅ Servicio de Alumnos (Puerto 3001)</li>
-          <li>✅ Servicio de Matrículas (Puerto 3002)</li>
-          <li>✅ Servicio de Profesores (Puerto 3003)</li>
-          <li>✅ Servicio de Cursos (Puerto 3004)</li>
-          <li>✅ Servicio de Pagos (Puerto 3005)</li>
-          <li>✅ Servicio de Notificaciones (Puerto 3006)</li>
-          <li>✅ Servicio de Asistencia (Puerto 3007)</li>
+          <li><strong>API Gateway</strong> (Puerto 3000) - Autenticación y proxy</li>
+          <li><strong>Servicio de Alumnos</strong> (Puerto 3001) - CRUD de estudiantes</li>
+          <li><strong>Servicio de Matrículas</strong> (Puerto 3002) - Inscripciones</li>
+          <li><strong>Servicio de Profesores</strong> (Puerto 3003) - Gestión docentes</li>
+          <li><strong>Servicio de Cursos</strong> (Puerto 3004) - Gestión académica</li>
+          <li><strong>Servicio de Pagos</strong> (Puerto 3005) - Transacciones</li>
+          <li><strong>Servicio de Notificaciones</strong> (Puerto 3006) - Emails/SMS</li>
+          <li><strong>Servicio de Asistencia</strong> (Puerto 3007) - Control de asistencia</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <i class="bi bi-shield-check"></i> Reglas de Negocio Implementadas
+      </div>
+      <div class="card-body">
+        <ul>
+          <li>✅ <strong>RN-001:</strong> Asignación única de aula por periodo</li>
+          <li>✅ <strong>RN-002:</strong> Registro de notas en plazo</li>
+          <li>✅ <strong>RN-003:</strong> Control diario de asistencia</li>
+          <li>✅ <strong>RN-004:</strong> Restricción de matrícula por deuda</li>
+          <li>✅ <strong>RN-005:</strong> Acceso restringido para padres</li>
+          <li>✅ <strong>RN-006:</strong> Notificación automática de inasistencias</li>
+          <li>✅ <strong>RN-007:</strong> Validación de datos obligatorios</li>
         </ul>
       </div>
     </div>
@@ -269,14 +451,12 @@ function mostrarInicio(content) {
 
 function mostrarAlumnos(content) {
   content.innerHTML = `
-    <h2>Gestión de Alumnos</h2>
+    <h2>👥 Gestión de Alumnos</h2>
     <div class="card">
-      <div class="card-header">
-        👥 Lista de Alumnos
-      </div>
+      <div class="card-header">Lista de Alumnos</div>
       <div class="card-body">
-        <p>Funcionalidad para gestionar alumnos disponible con API.</p>
-        <p><small>Endpoint: GET /api/alumnos</small></p>
+        <p>Funcionalidad disponible a través de la API.</p>
+        <p><code>GET /api/alumnos</code></p>
       </div>
     </div>
   `;
@@ -284,14 +464,11 @@ function mostrarAlumnos(content) {
 
 function mostrarMisCursos(content) {
   content.innerHTML = `
-    <h2>Mis Cursos</h2>
+    <h2>📚 Mis Cursos</h2>
     <div class="card">
-      <div class="card-header">
-        📚 Cursos Inscritos
-      </div>
+      <div class="card-header">Cursos Inscritos</div>
       <div class="card-body">
-        <p>Viendo cursos disponibles...</p>
-        <p><small>Endpoint: GET /api/matriculas</small></p>
+        <p>Cargando información de cursos...</p>
       </div>
     </div>
   `;
@@ -299,13 +476,11 @@ function mostrarMisCursos(content) {
 
 function mostrarMisNotas(content) {
   content.innerHTML = `
-    <h2>Mis Notas</h2>
+    <h2>📝 Mis Notas</h2>
     <div class="card">
-      <div class="card-header">
-        📝 Calificaciones
-      </div>
+      <div class="card-header">Calificaciones por Curso</div>
       <div class="card-body">
-        <p>Viendo calificaciones...</p>
+        <p>Cargando calificaciones...</p>
       </div>
     </div>
   `;
@@ -313,13 +488,11 @@ function mostrarMisNotas(content) {
 
 function mostrarMisPagos(content) {
   content.innerHTML = `
-    <h2>Mis Pagos</h2>
+    <h2>💰 Mis Pagos</h2>
     <div class="card">
-      <div class="card-header">
-        💰 Estado de Pagos
-      </div>
+      <div class="card-header">Estado de Pagos</div>
       <div class="card-body">
-        <p>Viendo estado de pagos...</p>
+        <p>Cargando estado de pagos...</p>
       </div>
     </div>
   `;
@@ -327,13 +500,11 @@ function mostrarMisPagos(content) {
 
 function mostrarAsistencia(content) {
   content.innerHTML = `
-    <h2>Asistencia</h2>
+    <h2>✅ Asistencia</h2>
     <div class="card">
-      <div class="card-header">
-        ✅ Registro de Asistencia
-      </div>
+      <div class="card-header">Registro de Asistencia</div>
       <div class="card-body">
-        <p>Viendo asistencia...</p>
+        <p>Cargando asistencia...</p>
       </div>
     </div>
   `;
@@ -341,13 +512,11 @@ function mostrarAsistencia(content) {
 
 function mostrarCursos(content) {
   content.innerHTML = `
-    <h2>Gestión de Cursos</h2>
+    <h2>📚 Cursos</h2>
     <div class="card">
-      <div class="card-header">
-        📚 Cursos Disponibles
-      </div>
+      <div class="card-header">Gestión de Cursos</div>
       <div class="card-body">
-        <p>Viendo cursos...</p>
+        <p>Cargando lista de cursos...</p>
       </div>
     </div>
   `;
@@ -355,13 +524,11 @@ function mostrarCursos(content) {
 
 function mostrarPagos(content) {
   content.innerHTML = `
-    <h2>Gestión de Pagos</h2>
+    <h2>💰 Pagos</h2>
     <div class="card">
-      <div class="card-header">
-        💰 Pagos Registrados
-      </div>
+      <div class="card-header">Gestión de Pagos</div>
       <div class="card-body">
-        <p>Viendo pagos...</p>
+        <p>Cargando pagos...</p>
       </div>
     </div>
   `;
@@ -369,28 +536,12 @@ function mostrarPagos(content) {
 
 function mostrarMatriculas(content) {
   content.innerHTML = `
-    <h2>Gestión de Matrículas</h2>
+    <h2>📋 Matrículas</h2>
     <div class="card">
-      <div class="card-header">
-        📋 Matrículas
-      </div>
+      <div class="card-header">Gestión de Matrículas</div>
       <div class="card-body">
-        <p>Viendo matrículas...</p>
+        <p>Cargando matrículas...</p>
       </div>
     </div>
   `;
-}
-
-// Helper function para llamadas API autenticadas
-async function fetchAPI(endpoint, options = {}) {
-  const headers = {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${state.token}`,
-    ...options.headers
-  };
-
-  return fetch(`${API_BASE}${endpoint}`, {
-    ...options,
-    headers
-  });
 }

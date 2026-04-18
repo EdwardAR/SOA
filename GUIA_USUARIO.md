@@ -5,7 +5,7 @@
 ### 1. **Levantar el Sistema Completo**
 
 ```bash
-cd c:\Users\edwar\Downloads\UTP_MARZO_2026\SOA
+
 npm run dev
 ```
 
