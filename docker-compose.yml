@@ -19,7 +19,7 @@ services:
       - NOTIFICACIONES_SERVICE_URL=http://notificaciones-service:3006
       - ASISTENCIA_SERVICE_URL=http://asistencia-service:3007
       - DB_PATH=/app/database/colegio.db
-      - JWT_SECRET=clave_secreta_produccion_cambiar
+      - JWT_SECRET=${JWT_SECRET}
     volumes:
       - ./database:/app/database
     depends_on:
