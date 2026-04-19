@@ -248,5 +248,5 @@ Docente: Cesar Augusto Minguillo Rubio
 
 ---
 
-**Última actualización**: Abril 2024
+**Última actualización**: Abril 2025
 **Estado**: ✅ Producción
