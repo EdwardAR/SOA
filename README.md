@@ -2,42 +2,71 @@
 
 Sistema completo de Gestión Académica basado en Arquitectura Orientada a Servicios (SOA) con microservicios independientes.
 
+## ⚡ Quick Start (3 Pasos)
+
+```bash
+npm install            # 1. Instalar dependencias
+npm run db:init       # 2. Inicializar BD con datos
+npm run dev           # 3. Ejecutar sistema
+```
+
+**Listo**. Accede en: **http://localhost:3000**
+
+---
+
+## 🔑 Credenciales de Prueba
+
+| Rol | Email | Contraseña |
+|-----|-------|-----------|
+| Director | director@colegio.com | password123 |
+| Administrativo | admin@colegio.com | password123 |
+| Docente | juan@colegio.com | password123 |
+| Alumno | luis@estudiante.com | password123 |
+
+---
+
 ## 📋 Requisitos Previos
 
 - **Node.js**: v16.0.0 o superior
 - **npm**: v7.0.0 o superior
 - **SQLite3**: Incluido en el proyecto
 
-## 🚀 Instalación y Levantamiento Rápido
+---
 
-### 1. Clonar o descargar el proyecto
+## 📊 Datos Insertados
 
-```bash
-cd SOA
-```
+Al ejecutar `npm run db:init` se cargan automáticamente:
 
-### 2. Instalar dependencias
+- **7 Usuarios**: Director, Admin, 2 Docentes, 2 Alumnos, 1 Padre
+- **5 Cursos**: Matemáticas 4to/5to, Lenguaje, Física, Química
+- **4+ Matrículas**: Alumnos inscritos en cursos
+- **4+ Pagos**: Estados (pagado, pendiente, cancelado)
 
+---
+
+## 🚀 Instalación Completa
+
+### 1. Instalar dependencias
 ```bash
 npm install
 ```
 
-### 3. Inicializar la base de datos
-
+### 2. Inicializar base de datos
 ```bash
 npm run db:init
 ```
 
-Este comando creará el archivo `database/colegio.db` e insertará datos de prueba.
+Este comando:
+- Crea el archivo `database/colegio.db`
+- Genera todas las tablas del schema
+- Inserta datos de prueba completos
 
-### 4. Iniciar todos los servicios
-
+### 3. Iniciar todos los servicios
 ```bash
 npm run dev
 ```
 
-Este comando levantará en paralelo:
-
+Levanta en paralelo:
 - **API Gateway** (Puerto 3000)
 - **Servicio de Alumnos** (Puerto 3001)
 - **Servicio de Matrículas** (Puerto 3002)
@@ -47,18 +76,23 @@ Este comando levantará en paralelo:
 - **Servicio de Notificaciones** (Puerto 3006)
 - **Servicio de Asistencia** (Puerto 3007)
 
-### 5. Acceder al portal
+### 4. Acceder al portal
+Abre: **http://localhost:3000**
 
-Abre tu navegador en: **http://localhost:3000**
+---
 
-## 👤 Credenciales de Prueba
+## 🌐 URLs de Servicios
 
-| Rol | Email | Contraseña |
-|-----|-------|-----------|
-| Director | director@colegio.com | password123 |
-| Alumno | luis@estudiante.com | password123 |
-| Docente | juan@colegio.com | password123 |
-| Admin | admin@colegio.com | password123 |
+```
+API Gateway:       http://localhost:3000
+Cursos API:        http://localhost:3004/cursos
+Pagos API:         http://localhost:3005/pagos
+Alumnos API:       http://localhost:3001/alumnos
+Matrículas API:    http://localhost:3002/matriculas
+Asistencia API:    http://localhost:3007/asistencia
+```
+
+---
 
 ## 🏗️ Arquitectura
 
@@ -80,6 +114,8 @@ Abre tu navegador en: **http://localhost:3000**
 - **Índices optimizados** para mejor rendimiento
 - **Foreign keys** habilitadas para integridad referencial
 
+---
+
 ## 📊 Reglas de Negocio Implementadas
 
 | Regla | Descripción | Servicio |
@@ -92,6 +128,8 @@ Abre tu navegador en: **http://localhost:3000**
 | RN-006 | Notificación automática de inasistencias | Notificaciones & Asistencia |
 | RN-007 | Validación de datos obligatorios | Todos |
 
+---
+
 ## 🔐 Seguridad
 
 - **JWT (JSON Web Tokens)** para autenticación
@@ -99,6 +137,8 @@ Abre tu navegador en: **http://localhost:3000**
 - **Validación de entrada** en todos los endpoints
 - **CORS** configurado
 - **Hash de contraseñas** con bcryptjs
+
+---
 
 ## 📡 Endpoints Principales
 
@@ -133,6 +173,15 @@ GET          /api/pagos-alumno/:alumno_id
 GET          /api/deuda/:alumno_id (RN-004)
 ```
 
+### Cursos
+```
+GET  /api/cursos
+GET  /api/cursos/:id
+POST /api/cursos
+PUT  /api/cursos/:id
+GET  /api/cursos/:id/estudiantes
+```
+
 ### Asistencia
 ```
 GET  /api/asistencia
@@ -147,30 +196,56 @@ POST /api/notificaciones
 POST /api/notificaciones/inasistencia (RN-006)
 ```
 
+---
+
 ## 🛠️ Comandos Útiles
 
 ```bash
-# Iniciar en modo desarrollo
+# Iniciar en modo desarrollo (todos los servicios)
 npm run dev
 
 # Iniciar solo el gateway
 npm start
 
 # Iniciar servicios individuales
-npm run alumnos       # Puerto 3001
-npm run matricula     # Puerto 3002
-npm run profesores    # Puerto 3003
-npm run cursos        # Puerto 3004
-npm run pagos         # Puerto 3005
-npm run notificaciones # Puerto 3006
-npm run asistencia    # Puerto 3007
+npm run alumnos           # Puerto 3001
+npm run matricula         # Puerto 3002
+npm run profesores        # Puerto 3003
+npm run cursos            # Puerto 3004
+npm run pagos             # Puerto 3005
+npm run notificaciones    # Puerto 3006
+npm run asistencia        # Puerto 3007
 
 # Reinicializar base de datos
 npm run db:init
 
+# Verificar datos en BD
+npm run db:verify
+
 # Ejecutar tests
 npm test
 ```
+
+---
+
+## 📝 Cambios Realizados (Datos)
+
+### ✅ Archivos Modificados
+- `database/init.js` - Mejorado para insertar datos completos
+- `database/verify-data.js` - Visualización mejorada de datos
+- `package.json` - Scripts agregados: db:init, db:verify
+
+### ✅ Archivos Creados
+- `.env` - Configuración del proyecto con variables de entorno
+
+### ✅ Datos Insertados
+- 7 Usuarios con roles diferenciados
+- 5 Cursos activos en diferentes niveles
+- 4+ Matrículas de alumnos
+- 4+ Pagos con estados variados
+- Información completa en todos los módulos
+
+---
 
 ## 🔄 Flujo de Matrícula Completo
 
@@ -181,7 +256,9 @@ npm test
 5. **Se registra en base de datos**
 6. **Se notifica a padre** (RN-006)
 
-## 📝 Desarrollo
+---
+
+## 📚 Desarrollo
 
 ### Agregar un nuevo endpoint
 
@@ -207,6 +284,8 @@ app.get('/alumnos/por-grado/:grado', async (req, res) => {
 });
 ```
 
+---
+
 ## 🐛 Troubleshooting
 
 ### Error: "Puerto ya en uso"
@@ -223,11 +302,74 @@ npm run db:init
 ### Error de CORS
 Verificar que `ALLOWED_ORIGINS` en `.env` incluya el dominio del frontend.
 
-## 📚 Documentación Adicional
+### Los módulos muestran "Cargando..."
+```bash
+# Asegúrate de ejecutar antes de npm run dev:
+npm run db:init
+```
 
-- [API Documentation](./docs/API.md) - Documentación completa de endpoints
-- [Architecture](./docs/ARCHITECTURE.md) - Detalles de la arquitectura
-- [Database Schema](./database/schema.sql) - Estructura de la base de datos
+### Resetear base de datos
+```bash
+# Elimina y reinicializa
+rm database/colegio.db
+npm run db:init
+```
+
+---
+
+## 📁 Estructura del Proyecto
+
+```
+SOA/
+├── api-gateway/                 # Gateway principal
+│   └── gateway.js
+├── services/                    # Microservicios
+│   ├── alumnos-service/
+│   ├── matricula-service/
+│   ├── profesores-service/
+│   ├── cursos-service/
+│   ├── pagos-service/
+│   ├── notificaciones-service/
+│   └── asistencia-service/
+├── config/                      # Configuración
+├── database/
+│   ├── colegio.db              # BD SQLite
+│   ├── schema.sql              # Esquema
+│   ├── init.js                 # Inicializador
+│   └── verify-data.js          # Verificador
+├── shared/                      # Código compartido
+│   ├── utils.js                # Utilidades
+│   └── validators.js           # Validadores
+├── docs/                        # Documentación técnica
+│   ├── API.md                  # Documentación de APIs
+│   └── ARCHITECTURE.md         # Detalles de arquitectura
+├── .env                         # Variables de entorno
+├── package.json                 # Dependencias
+├── README.md                    # Este archivo
+└── docker-compose.yml           # Configuración Docker
+```
+
+---
+
+## ✨ Diferencias Antes vs Después
+
+| Aspecto | Antes | Después |
+|--------|-------|---------|
+| Módulo Cursos | "Cargando..." | 5 cursos visibles |
+| Módulo Pagos | "Cargando..." | 4+ pagos con estados |
+| Módulo Alumnos | Sin datos | 2+ alumnos listados |
+| Módulo Matrículas | Vacío | 4+ inscritos visibles |
+| Información | Genérica | Diferenciada por rol |
+
+---
+
+## 📖 Documentación Técnica
+
+- **API Documentation** - Ver `docs/API.md`
+- **Architecture** - Ver `docs/ARCHITECTURE.md`
+- **Database Schema** - Ver `database/schema.sql`
+
+---
 
 ## 👥 Equipo de Desarrollo
 
@@ -235,18 +377,23 @@ Verificar que `ALLOWED_ORIGINS` en `.env` incluya el dominio del frontend.
 - Naomi Caballero Caceres (U21205215)
 - Maria Celeste Cuba Hinostroza (U21232415)
 
+---
+
 ## 📄 Licencia
 
 MIT - Proyecto Educativo
 
+---
+
 ## 🎓 Institución
 
-Universidad Tecnológica del Perú (UTP)
-Facultad de Ingeniería
-Curso: Arquitectura Orientada al Servicio (SOA)
-Docente: Cesar Augusto Minguillo Rubio
+**Universidad Tecnológica del Perú (UTP)**
+- Facultad: Ingeniería
+- Curso: Arquitectura Orientada al Servicio (SOA)
+- Docente: Cesar Augusto Minguillo Rubio
 
 ---
 
-**Última actualización**: Abril 2025
-**Estado**: ✅ Producción
+**Estado**: ✅ Producción  
+**Última actualización**: Abril 2026  
+**Versión**: 1.0.0

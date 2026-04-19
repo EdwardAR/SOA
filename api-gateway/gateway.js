@@ -168,23 +168,30 @@ app.get('/api/matriculas', authMiddleware, proxyServicio('matricula'));
 app.post('/api/matriculas', authMiddleware, requireRole(['administrativo', 'alumno']), proxyServicio('matricula'));
 app.get('/api/matriculas/:id', authMiddleware, proxyServicio('matricula'));
 app.put('/api/matriculas/:id', authMiddleware, requireRole(['administrativo']), proxyServicio('matricula'));
+app.get('/api/matriculas-alumno/:alumno_id', authMiddleware, proxyServicio('matricula'));
 
 // PROFESORES
 app.get('/api/profesores', authMiddleware, proxyServicio('profesores'));
 app.get('/api/profesores/:id', authMiddleware, proxyServicio('profesores'));
 app.post('/api/profesores', authMiddleware, requireRole(['director']), proxyServicio('profesores'));
 app.put('/api/profesores/:id', authMiddleware, requireRole(['director']), proxyServicio('profesores'));
+app.get('/api/profesores/:id/cursos', authMiddleware, proxyServicio('profesores'));
 
 // CURSOS
 app.get('/api/cursos', authMiddleware, proxyServicio('cursos'));
 app.get('/api/cursos/:id', authMiddleware, proxyServicio('cursos'));
 app.post('/api/cursos', authMiddleware, requireRole(['director', 'administrativo']), proxyServicio('cursos'));
 app.put('/api/cursos/:id', authMiddleware, requireRole(['director', 'administrativo']), proxyServicio('cursos'));
+app.get('/api/cursos/:id/estudiantes', authMiddleware, proxyServicio('cursos'));
+app.get('/api/cursos-profesor/:profesor_id', authMiddleware, proxyServicio('cursos'));
 
 // PAGOS
 app.get('/api/pagos', authMiddleware, proxyServicio('pagos'));
 app.post('/api/pagos', authMiddleware, proxyServicio('pagos'));
 app.get('/api/pagos/:id', authMiddleware, proxyServicio('pagos'));
+app.put('/api/pagos/:id/procesar', authMiddleware, proxyServicio('pagos'));
+app.get('/api/pagos-alumno/:alumno_id', authMiddleware, proxyServicio('pagos'));
+app.get('/api/deuda/:alumno_id', authMiddleware, proxyServicio('pagos'));
 
 // NOTIFICACIONES
 app.get('/api/notificaciones', authMiddleware, proxyServicio('notificaciones'));
@@ -194,6 +201,10 @@ app.post('/api/notificaciones', authMiddleware, proxyServicio('notificaciones'))
 app.get('/api/asistencia', authMiddleware, proxyServicio('asistencia'));
 app.post('/api/asistencia', authMiddleware, requireRole(['docente']), proxyServicio('asistencia'));
 app.get('/api/asistencia/:id', authMiddleware, proxyServicio('asistencia'));
+app.put('/api/asistencia/:id', authMiddleware, proxyServicio('asistencia'));
+app.get('/api/asistencia-alumno/:alumno_id', authMiddleware, proxyServicio('asistencia'));
+app.get('/api/asistencia-curso/:curso_id', authMiddleware, proxyServicio('asistencia'));
+app.get('/api/reporte-inasistencias/:fecha', authMiddleware, proxyServicio('asistencia'));
 
 // ============================================
 // RUTAS DE UTILIDAD

@@ -15,7 +15,8 @@
     "notificaciones": "nodemon services/notificaciones-service/server.js",
     "asistencia": "nodemon services/asistencia-service/server.js",
     "test": "jest --detectOpenHandles",
-    "db:init": "node database/init.js"
+    "db:init": "node database/init.js",
+    "db:verify": "node database/verify-data.js"
   },
   "keywords": [
     "SOA",

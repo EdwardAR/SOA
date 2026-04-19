@@ -29,20 +29,24 @@ db.serialize(() => {
   // Dividir y ejecutar cada sentencia SQL
   const statements = schema.split(';').filter(stmt => stmt.trim());
 
+  let completed = 0;
+  const total = statements.length;
+
   statements.forEach((statement, index) => {
     db.run(statement + ';', (err) => {
-      if (err) {
+      if (err && !err.message.includes('already exists')) {
         console.error(`Error en sentencia ${index + 1}:`, err);
+      }
+      completed++;
+      if (completed === total) {
+        console.log('✓ Schema de base de datos creado');
+        // Ejecutar seed de datos
+        setTimeout(() => {
+          seedDatabase();
+        }, 500);
       }
     });
   });
-
-  console.log('✓ Schema de base de datos creado');
-
-  // Ejecutar seed de datos
-  setTimeout(() => {
-    seedDatabase();
-  }, 1000);
 });
 
 async function seedDatabase() {
@@ -141,33 +145,37 @@ async function seedDatabase() {
     console.log('✓ Profesores creados');
 
     // Insertar alumnos
-    const alumno1 = {
-      id: uuidv4(),
-      usuario_id: alumno1Id,
-      numero_matricula: 'MAT001',
-      apellido_paterno: 'Sanchez',
-      primer_nombre: 'Luis',
-      numero_documento: '12345678',
-      padre_id: padreId,
-      datos_completos: true,
-      deuda_pendiente: false,
-      periodo_academico: '2024-1'
-    };
+    const alumnos = [
+      {
+        id: uuidv4(),
+        usuario_id: alumno1Id,
+        numero_matricula: 'MAT001',
+        apellido_paterno: 'Sanchez',
+        primer_nombre: 'Luis',
+        numero_documento: '12345678',
+        padre_id: padreId,
+        datos_completos: true,
+        deuda_pendiente: false,
+        periodo_academico: '2024-1'
+      },
+      {
+        id: uuidv4(),
+        usuario_id: alumno2Id,
+        numero_matricula: 'MAT002',
+        apellido_paterno: 'Torres',
+        primer_nombre: 'Sofia',
+        numero_documento: '87654321',
+        datos_completos: true,
+        deuda_pendiente: false,
+        periodo_academico: '2024-1'
+      }
+    ];
 
-    const alumno2 = {
-      id: uuidv4(),
-      usuario_id: alumno2Id,
-      numero_matricula: 'MAT002',
-      apellido_paterno: 'Torres',
-      primer_nombre: 'Sofia',
-      numero_documento: '87654321',
-      datos_completos: true,
-      deuda_pendiente: false,
-      periodo_academico: '2024-1'
-    };
-
-    await insertAlumno(alumno1);
-    await insertAlumno(alumno2);
+    const alumnoIds = [];
+    for (const alumno of alumnos) {
+      await insertAlumno(alumno);
+      alumnoIds.push(alumno.id);
+    }
     console.log('✓ Alumnos creados');
 
     // Insertar cursos
@@ -195,14 +203,52 @@ async function seedDatabase() {
       capacidad_maxima: 30
     };
 
-    await insertCurso(curso1);
-    await insertCurso(curso2);
-    console.log('✓ Cursos creados');
+    const curso3 = {
+      id: uuidv4(),
+      codigo: 'MAT-002',
+      nombre: 'Matemáticas 5to A',
+      grado_nivel: '5to',
+      seccion: 'A',
+      profesor_id: profesor1.id,
+      aula_asignada: '5-A',
+      periodo_academico: '2024-1',
+      capacidad_maxima: 35
+    };
+
+    const curso4 = {
+      id: uuidv4(),
+      codigo: 'FIS-001',
+      nombre: 'Física 5to A',
+      grado_nivel: '5to',
+      seccion: 'A',
+      profesor_id: profesor2.id,
+      aula_asignada: '5-A',
+      periodo_academico: '2024-1',
+      capacidad_maxima: 35
+    };
+
+    const curso5 = {
+      id: uuidv4(),
+      codigo: 'QUI-001',
+      nombre: 'Química 5to B',
+      grado_nivel: '5to',
+      seccion: 'B',
+      profesor_id: profesor1.id,
+      aula_asignada: '5-B',
+      periodo_academico: '2024-1',
+      capacidad_maxima: 32
+    };
+
+    const cursos = [curso1, curso2, curso3, curso4, curso5];
+    for (const curso of cursos) {
+      await insertCurso(curso);
+    }
+    console.log('✓ Cursos creados (5 cursos)');
 
     // Insertar matrículas
     const matricula1 = {
       id: uuidv4(),
-      alumno_id: alumno1.id,
+      alumno_id: alumnoIds[0],
       curso_id: curso1.id,
       aula_asignada: '4-A',
       periodo_academico: '2024-1'
@@ -210,31 +256,87 @@ async function seedDatabase() {
 
     const matricula2 = {
       id: uuidv4(),
-      alumno_id: alumno2.id,
-      curso_id: curso1.id,
+      alumno_id: alumnoIds[1],
+      curso_id: curso2.id,
       aula_asignada: '4-A',
       periodo_academico: '2024-1'
     };
 
-    await insertMatricula(matricula1);
-    await insertMatricula(matricula2);
-    console.log('✓ Matrículas creadas');
-
-    // Insertar pagos
-    const pago = {
+    const matricula3 = {
       id: uuidv4(),
-      alumno_id: alumno1.id,
-      monto: 500.00,
-      concepto: 'Matrícula Semestre 2024-1',
-      periodo_academico: '2024-1',
-      estado: 'pagado',
-      metodo_pago: 'transferencia'
+      alumno_id: alumnoIds[0],
+      curso_id: curso3.id,
+      aula_asignada: '5-A',
+      periodo_academico: '2024-1'
     };
 
-    await insertPago(pago);
-    console.log('✓ Pagos creados');
+    const matricula4 = {
+      id: uuidv4(),
+      alumno_id: alumnoIds[1],
+      curso_id: curso5.id,
+      aula_asignada: '5-B',
+      periodo_academico: '2024-1'
+    };
+
+    const matriculas = [matricula1, matricula2, matricula3, matricula4];
+    for (const matricula of matriculas) {
+      await insertMatricula(matricula);
+    }
+    console.log('✓ Matrículas creadas (4 matrículas)');
+
+    // Insertar pagos
+    const pagos = [
+      {
+        id: uuidv4(),
+        alumno_id: alumnoIds[0],
+        monto: 350.00,
+        concepto: 'Pensión Marzo 2024',
+        periodo_academico: '2024-1',
+        estado: 'pagado',
+        metodo_pago: 'transferencia'
+      },
+      {
+        id: uuidv4(),
+        alumno_id: alumnoIds[1],
+        monto: 350.00,
+        concepto: 'Pensión Marzo 2024',
+        periodo_academico: '2024-1',
+        estado: 'pendiente',
+        metodo_pago: null
+      },
+      {
+        id: uuidv4(),
+        alumno_id: alumnoIds[1],
+        monto: 200.00,
+        concepto: 'Uniforme Escolar',
+        periodo_academico: '2024-1',
+        estado: 'pendiente',
+        metodo_pago: null
+      },
+      {
+        id: uuidv4(),
+        alumno_id: alumnoIds[0],
+        monto: 150.00,
+        concepto: 'Carnet Estudiantil',
+        periodo_academico: '2024-1',
+        estado: 'pagado',
+        metodo_pago: 'efectivo'
+      }
+    ];
+
+    for (const pago of pagos) {
+      await insertPago(pago);
+    }
+    console.log('✓ Pagos creados (4 pagos)');
 
     console.log('\n✅ Base de datos inicializada correctamente\n');
+    console.log('📊 Resumen de datos insertados:');
+    console.log('   - 7 usuarios');
+    console.log('   - 2 profesores');
+    console.log('   - 2 alumnos');
+    console.log('   - 5 cursos');
+    console.log('   - 4 matrículas');
+    console.log('   - 4 pagos\n');
     console.log('📝 Credenciales de prueba:');
     console.log('   Director: director@colegio.com / password123');
     console.log('   Alumno: luis@estudiante.com / password123');
