@@ -13,7 +13,7 @@ Sistema completo de Gestión Académica basado en Arquitectura Orientada a Servi
 ### 1. Clonar o descargar el proyecto
 
 ```bash
-cd c:\Users\edwar\Downloads\UTP_MARZO_2026\SOA
+cd SOA
 ```
 
 ### 2. Instalar dependencias
