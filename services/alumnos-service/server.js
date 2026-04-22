@@ -100,7 +100,7 @@ app.post('/alumnos', asyncHandler(async (req, res) => {
        alumnoData.apellido_materno || null, alumnoData.primer_nombre, alumnoData.segundo_nombre || null,
        alumnoData.numero_documento, alumnoData.genero || null, alumnoData.direccion || null,
        alumnoData.telefono || null, alumnoData.email_contacto || null, alumnoData.padre_id || null,
-       alumnoData.datos_completos || true, false, alumnoData.periodo_academico || '2024-1']
+       alumnoData.datos_completos || true, false, alumnoData.periodo_academico || '2026-1']
     );
 
     res.status(201).json(respuestaExito(

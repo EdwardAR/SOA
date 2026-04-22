@@ -621,7 +621,7 @@ async function mostrarInicio(content) {
         </div>
         <div class="stat-card">
           <div class="stat-icon"><i class="bi bi-calendar-event"></i></div>
-          <div class="stat-number">2024-1</div>
+          <div class="stat-number">2026-1</div>
           <div class="stat-label">Período Actual</div>
         </div>
         <div class="stat-card">
@@ -649,7 +649,7 @@ async function mostrarInicio(content) {
         </div>
         <div class="stat-card">
           <div class="stat-icon"><i class="bi bi-calendar-event"></i></div>
-          <div class="stat-number">2024-1</div>
+          <div class="stat-number">2026-1</div>
           <div class="stat-label">Período Actual</div>
         </div>
       `;
@@ -672,7 +672,7 @@ async function mostrarInicio(content) {
         </div>
         <div class="stat-card">
           <div class="stat-icon"><i class="bi bi-calendar-event"></i></div>
-          <div class="stat-number">2024-1</div>
+          <div class="stat-number">2026-1</div>
           <div class="stat-label">Período Actual</div>
         </div>
       `;
@@ -798,7 +798,7 @@ async function mostrarMisCursos(content) {
         curso: c.nombre || c.nombre_curso,
         codigo: c.codigo || 'N/A',
         profesor: c.profesor || 'N/A',
-        periodo: c.periodo || '2024-1',
+        periodo: c.periodo || '2026-1',
         estado: crearBadge(c.estado || 'activo')
       })),
       () => [`<button class="btn-sm btn-info"><i class="bi bi-eye"></i></button>`]
@@ -939,7 +939,7 @@ async function mostrarCursos(content) {
         codigo: c.codigo,
         profesor: c.profesor_nombre || 'N/A',
         estudiantes: c.total_estudiantes || 0,
-        periodo: c.periodo_academico || '2024-1'
+        periodo: c.periodo_academico || '2026-1'
       })),
       (fila, idx) => [
         `<button class="btn-sm btn-info"><i class="bi bi-eye"></i></button>`,
@@ -1025,7 +1025,7 @@ async function mostrarMatriculas(content) {
       matriculas.map(m => ({
         alumno: m.nombre_alumno || m.alumno_nombre || 'N/A',
         curso: m.nombre_curso || m.curso_nombre || 'N/A',
-        periodo: m.periodo_academico || '2024-1',
+        periodo: m.periodo_academico || '2026-1',
         fecha: new Date(m.fecha_matricula).toLocaleDateString('es-PE'),
         estado: crearBadge(m.estado || 'activo')
       })),

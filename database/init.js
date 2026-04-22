@@ -156,7 +156,7 @@ async function seedDatabase() {
         padre_id: padreId,
         datos_completos: true,
         deuda_pendiente: false,
-        periodo_academico: '2024-1'
+        periodo_academico: '2026-1'
       },
       {
         id: uuidv4(),
@@ -167,7 +167,7 @@ async function seedDatabase() {
         numero_documento: '87654321',
         datos_completos: true,
         deuda_pendiente: false,
-        periodo_academico: '2024-1'
+        periodo_academico: '2026-1'
       }
     ];
 
@@ -187,7 +187,7 @@ async function seedDatabase() {
       seccion: 'A',
       profesor_id: profesor1.id,
       aula_asignada: '4-A',
-      periodo_academico: '2024-1',
+      periodo_academico: '2026-1',
       capacidad_maxima: 30
     };
 
@@ -199,7 +199,7 @@ async function seedDatabase() {
       seccion: 'A',
       profesor_id: profesor2.id,
       aula_asignada: '4-A',
-      periodo_academico: '2024-1',
+      periodo_academico: '2026-1',
       capacidad_maxima: 30
     };
 
@@ -211,7 +211,7 @@ async function seedDatabase() {
       seccion: 'A',
       profesor_id: profesor1.id,
       aula_asignada: '5-A',
-      periodo_academico: '2024-1',
+      periodo_academico: '2026-1',
       capacidad_maxima: 35
     };
 
@@ -223,7 +223,7 @@ async function seedDatabase() {
       seccion: 'A',
       profesor_id: profesor2.id,
       aula_asignada: '5-A',
-      periodo_academico: '2024-1',
+      periodo_academico: '2026-1',
       capacidad_maxima: 35
     };
 
@@ -235,7 +235,7 @@ async function seedDatabase() {
       seccion: 'B',
       profesor_id: profesor1.id,
       aula_asignada: '5-B',
-      periodo_academico: '2024-1',
+      periodo_academico: '2026-1',
       capacidad_maxima: 32
     };
 
@@ -251,7 +251,7 @@ async function seedDatabase() {
       alumno_id: alumnoIds[0],
       curso_id: curso1.id,
       aula_asignada: '4-A',
-      periodo_academico: '2024-1'
+      periodo_academico: '2026-1'
     };
 
     const matricula2 = {
@@ -259,7 +259,7 @@ async function seedDatabase() {
       alumno_id: alumnoIds[1],
       curso_id: curso2.id,
       aula_asignada: '4-A',
-      periodo_academico: '2024-1'
+      periodo_academico: '2026-1'
     };
 
     const matricula3 = {
@@ -267,7 +267,7 @@ async function seedDatabase() {
       alumno_id: alumnoIds[0],
       curso_id: curso3.id,
       aula_asignada: '5-A',
-      periodo_academico: '2024-1'
+      periodo_academico: '2026-1'
     };
 
     const matricula4 = {
@@ -275,7 +275,7 @@ async function seedDatabase() {
       alumno_id: alumnoIds[1],
       curso_id: curso5.id,
       aula_asignada: '5-B',
-      periodo_academico: '2024-1'
+      periodo_academico: '2026-1'
     };
 
     const matriculas = [matricula1, matricula2, matricula3, matricula4];
@@ -291,7 +291,7 @@ async function seedDatabase() {
         alumno_id: alumnoIds[0],
         monto: 350.00,
         concepto: 'Pensión Marzo 2024',
-        periodo_academico: '2024-1',
+        periodo_academico: '2026-1',
         estado: 'pagado',
         metodo_pago: 'transferencia'
       },
@@ -300,7 +300,7 @@ async function seedDatabase() {
         alumno_id: alumnoIds[1],
         monto: 350.00,
         concepto: 'Pensión Marzo 2024',
-        periodo_academico: '2024-1',
+        periodo_academico: '2026-1',
         estado: 'pendiente',
         metodo_pago: null
       },
@@ -309,7 +309,7 @@ async function seedDatabase() {
         alumno_id: alumnoIds[1],
         monto: 200.00,
         concepto: 'Uniforme Escolar',
-        periodo_academico: '2024-1',
+        periodo_academico: '2026-1',
         estado: 'pendiente',
         metodo_pago: null
       },
@@ -318,7 +318,7 @@ async function seedDatabase() {
         alumno_id: alumnoIds[0],
         monto: 150.00,
         concepto: 'Carnet Estudiantil',
-        periodo_academico: '2024-1',
+        periodo_academico: '2026-1',
         estado: 'pagado',
         metodo_pago: 'efectivo'
       }
