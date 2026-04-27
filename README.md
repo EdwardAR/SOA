@@ -6,10 +6,30 @@ Sistema completo de **Gestión Académica** basado en **Arquitectura Orientada a
 
 ## ⚡ Quick Start (3 Pasos)
 
+### Windows (Recomendado)
 ```bash
-npm install                              # 1. Instalar dependencias (1 min)
-npm run db:init                          # 2. Inicializar BD con datos (30 seg)
-npm start & cd frontend && npm start     # 3. Levantar sistema
+.\start-all.bat
+```
+Esto abre dos ventanas automáticamente:
+- Backend API (puerto 3000)
+- Frontend React (puerto 3001)
+
+### Linux / Mac
+```bash
+./start-all.sh
+```
+
+### Manual (Todos los SO)
+**Terminal 1 - Backend:**
+```bash
+cd api-gateway
+npm start
+```
+
+**Terminal 2 - Frontend:**
+```bash
+cd frontend
+npm start
 ```
 
 **✅ Listo**. Accede en:
@@ -375,6 +395,20 @@ SOA/
 
 ## 🐛 Troubleshooting
 
+### ⚠️ Login falla con "Error al iniciar sesión"
+
+**Solución:**
+1. Asegúrate de que el Backend esté ejecutándose en puerto 3000
+2. Verifica que la BD esté inicializada
+3. Reinicia ambos servicios:
+   ```bash
+   # Windows
+   .\start-all.bat
+   
+   # Linux/Mac
+   ./start-all.sh
+   ```
+
 ### Puerto en uso
 ```bash
 # Cambiar en .env
@@ -384,18 +418,43 @@ ALUMNOS_SERVICE_PORT=3011
 
 ### BD no encontrada
 ```bash
-npm run db:init
+node config/init-db.js
 ```
 
-### Servicio no responde
+### Backend no responde
 ```bash
-npm run verify
+# Verificar que está ejecutándose
+curl http://localhost:3000/api/health
+
+# Si no funciona, reiniciar:
+# Windows: .\start-all.bat
+# Linux: ./start-all.sh
 ```
 
-### Resetear BD
+### Resetear BD completamente
 ```bash
-rm database/colegio.db
-npm run db:init
+node config/init-db.js
+```
+
+### Frontend no carga
+```bash
+# Limpiar cache de npm
+cd frontend
+rm -r node_modules package-lock.json
+npm install
+npm start
+```
+
+### Error: EADDRINUSE (puerto ya en uso)
+```bash
+# Windows - Buscar proceso en puerto 3000
+netstat -ano | findstr :3000
+
+# Matar proceso (reemplaza PID con el número encontrado)
+taskkill /PID <PID> /F
+
+# Linux/Mac
+lsof -ti:3000 | xargs kill -9
 ```
 
 ---
