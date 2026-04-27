@@ -1,46 +1,48 @@
 # 🎓 Sistema SOA - Colegio Futuro Digital
 
-Sistema completo de Gestión Académica basado en Arquitectura Orientada a Servicios (SOA) con microservicios independientes.
+Sistema completo de **Gestión Académica** basado en **Arquitectura Orientada a Servicios (SOA)** con **9 microservicios independientes**.
+
+---
 
 ## ⚡ Quick Start (3 Pasos)
 
 ```bash
-npm install            # 1. Instalar dependencias
-npm run db:init       # 2. Inicializar BD con datos
-npm run dev           # 3. Ejecutar sistema
+npm install            # 1. Instalar dependencias (1 min)
+npm run db:init       # 2. Inicializar BD con datos (30 seg)
+npm run dev           # 3. Ejecutar sistema (30 seg)
 ```
 
-**Listo**. Accede en: **http://localhost:3000**
+**✅ Listo**. Accede en: **http://localhost:3000**
 
 ---
 
 ## 🔑 Credenciales de Prueba
 
-| Rol | Email | Contraseña |
-|-----|-------|-----------|
-| Director | director@colegio.com | password123 |
-| Administrativo | admin@colegio.com | password123 |
-| Docente | juan@colegio.com | password123 |
-| Alumno | luis@estudiante.com | password123 |
+```
+Director:
+  Email: director@colegio.com
+  Password: password123
+
+Alumno:
+  Email: luis@estudiante.com
+  Password: password123
+
+Docente:
+  Email: juan@colegio.com
+  Password: password123
+
+Admin:
+  Email: admin@colegio.com
+  Password: password123
+```
 
 ---
 
-## 📋 Requisitos Previos
+## 📋 Requisitos
 
-- **Node.js**: v16.0.0 o superior
-- **npm**: v7.0.0 o superior
-- **SQLite3**: Incluido en el proyecto
-
----
-
-## 📊 Datos Insertados
-
-Al ejecutar `npm run db:init` se cargan automáticamente:
-
-- **7 Usuarios**: Director, Admin, 2 Docentes, 2 Alumnos, 1 Padre
-- **5 Cursos**: Matemáticas 4to/5to, Lenguaje, Física, Química
-- **4+ Matrículas**: Alumnos inscritos en cursos
-- **4+ Pagos**: Estados (pagado, pendiente, cancelado)
+- **Node.js**: v16.0.0+
+- **npm**: v7.0.0+
+- **SQLite3**: Incluido automáticamente
 
 ---
 
@@ -55,150 +57,127 @@ npm install
 ```bash
 npm run db:init
 ```
+✅ Crea tablas, inserta 20+ datos de prueba
 
-Este comando:
-- Crea el archivo `database/colegio.db`
-- Genera todas las tablas del schema
-- Inserta datos de prueba completos
-
-### 3. Iniciar todos los servicios
+### 3. Ejecutar todos los servicios
 ```bash
 npm run dev
 ```
 
-Levanta en paralelo:
-- **API Gateway** (Puerto 3000)
-- **Servicio de Alumnos** (Puerto 3001)
-- **Servicio de Matrículas** (Puerto 3002)
-- **Servicio de Profesores** (Puerto 3003)
-- **Servicio de Cursos** (Puerto 3004)
-- **Servicio de Pagos** (Puerto 3005)
-- **Servicio de Notificaciones** (Puerto 3006)
-- **Servicio de Asistencia** (Puerto 3007)
-
-### 4. Acceder al portal
-Abre: **http://localhost:3000**
+Levanta 9 servicios simultáneamente:
+- **API Gateway** (3000) - Autenticación y enrutamiento
+- **Alumnos** (3001) - CRUD estudiantes  
+- **Matrículas** (3002) - Inscripciones validadas
+- **Profesores** (3003) - Gestión docentes
+- **Cursos** (3004) - Administración cursos
+- **Pagos** (3005) - Gestión financiera
+- **Notificaciones** (3006) - Email/SMS
+- **Asistencia** (3007) - Control asistencia
+- **Calificaciones** (3008) - Gestión notas
 
 ---
 
-## 🌐 URLs de Servicios
+## 🏗️ 9 Microservicios Implementados
 
-```
-API Gateway:       http://localhost:3000
-Cursos API:        http://localhost:3004/cursos
-Pagos API:         http://localhost:3005/pagos
-Alumnos API:       http://localhost:3001/alumnos
-Matrículas API:    http://localhost:3002/matriculas
-Asistencia API:    http://localhost:3007/asistencia
-```
-
----
-
-## 🏗️ Arquitectura
-
-### Microservicios Implementados
-
-### Microservicios Implementados
-
-1. **API Gateway** - Punto de entrada único, autenticación JWT, proxy de servicios
-2. **Servicio de Alumnos** - Gestión de datos de estudiantes (CRUD)
-3. **Servicio de Matrículas** ⭐ - Inscripciones con validaciones (RN-001, RN-004)
-4. **Servicio de Profesores** ⭐ - Gestión docente completa (RN-007)
-5. **Servicio de Cursos** ⭐ - Creación y gestión de cursos (RN-007)
-6. **Servicio de Pagos** ⭐ - Gestión de transacciones y deudas (RN-004)
-7. **Servicio de Notificaciones** ⭐ - Envío automático de correos y SMS (RN-006)
-8. **Servicio de Asistencia** ⭐ - Registro y control de asistencia (RN-003, RN-006)
-9. **Servicio de Calificaciones** ⭐ - Gestión de calificaciones/notas (RN-002)
-
-⭐ = Nuevos servicios implementados con todas las validaciones
-
-### Base de Datos
-
-- **SQLite** para desarrollo local
-- **Schema completo** con todas las tablas requeridas
-- **Índices optimizados** para mejor rendimiento
-- **Foreign keys** habilitadas para integridad referencial
+| Servicio | Puerto | Descripción |
+|----------|--------|-------------|
+| API Gateway | 3000 | Autenticación JWT + Proxy |
+| Alumnos | 3001 | CRUD estudiantes |
+| Matrículas | 3002 | Inscripciones (RN-001, RN-004) |
+| Profesores | 3003 | Gestión docentes |
+| Cursos | 3004 | Administración cursos |
+| Pagos | 3005 | Transacciones + deudas (RN-004) |
+| Notificaciones | 3006 | Email/SMS (RN-006) |
+| Asistencia | 3007 | Control asistencia (RN-003, RN-006) |
+| Calificaciones | 3008 | Notas académicas (RN-002) |
 
 ---
 
-## 📊 Reglas de Negocio Implementadas
+## 📊 Reglas de Negocio (7/7 Implementadas)
 
-| Regla | Descripción | Servicio | Estado |
-|-------|-----------|---------|--------|
-| RN-001 | Asignación única de aula por alumno/período | Matrículas | ✅ Implementado |
-| RN-002 | Registro de notas dentro de plazo | Calificaciones | ✅ Implementado |
-| RN-003 | Control diario de asistencia | Asistencia | ✅ Implementado |
-| RN-004 | Restricción de matrícula por deuda | Pagos & Matrículas | ✅ Implementado |
-| RN-005 | Acceso restringido para padres | Gateway | ✅ Implementado |
-| RN-006 | Notificación automática de inasistencias | Notificaciones & Asistencia | ✅ Implementado |
-| RN-007 | Validación de datos obligatorios | Todos los servicios | ✅ Implementado |
-
----
-
-## 🔐 Seguridad
-
-- **JWT (JSON Web Tokens)** para autenticación
-- **Roles y permisos** implementados en el gateway
-- **Validación de entrada** en todos los endpoints
-- **CORS** configurado
-- **Hash de contraseñas** con bcryptjs
+✅ **RN-001** - Asignación única de aula por período  
+✅ **RN-002** - Registro de notas dentro de plazo  
+✅ **RN-003** - Asistencia diaria obligatoria  
+✅ **RN-004** - Bloqueo por deuda pendiente  
+✅ **RN-005** - Acceso restringido a padres  
+✅ **RN-006** - Notificación de inasistencias  
+✅ **RN-007** - Validación datos obligatorios  
 
 ---
 
 ## 📡 Endpoints Principales
 
-### Autenticación
-```
+### Login
+```bash
 POST /api/auth/login
-POST /api/auth/registro
+{
+  "email": "director@colegio.com",
+  "password": "password123"
+}
 ```
 
 ### Alumnos
-```
-GET    /api/alumnos
-GET    /api/alumnos/:id
-POST   /api/alumnos
-PUT    /api/alumnos/:id
-DELETE /api/alumnos/:id
+```bash
+GET    /api/alumnos                # Listar todos
+GET    /api/alumnos/:id            # Obtener por ID
+POST   /api/alumnos                # Crear alumno
+PUT    /api/alumnos/:id            # Actualizar
+DELETE /api/alumnos/:id            # Desactivar
+GET    /api/alumnos/:id/deuda      # Verificar deuda (RN-004)
 ```
 
 ### Matrículas
-```
-GET  /api/matriculas
-POST /api/matriculas
-PUT  /api/matriculas/:id
+```bash
+GET  /api/matriculas               # Listar matrículas
+POST /api/matriculas               # Crear (valida RN-001, RN-004)
+PUT  /api/matriculas/:id           # Actualizar
+GET  /api/matriculas-alumno/:id    # Matrículas de alumno
 ```
 
 ### Pagos
-```
-GET          /api/pagos
-POST         /api/pagos
-PUT          /api/pagos/:id/procesar
-GET          /api/pagos-alumno/:alumno_id
-GET          /api/deuda/:alumno_id (RN-004)
+```bash
+GET  /api/pagos                    # Listar pagos
+POST /api/pagos                    # Registrar pago
+GET  /api/pagos-alumno/:id         # Pagos de alumno
+GET  /api/deuda/:id                # Verificar deuda (RN-004)
 ```
 
 ### Cursos
+```bash
+GET  /api/cursos                   # Listar cursos
+POST /api/cursos                   # Crear curso
+PUT  /api/cursos/:id               # Actualizar
+GET  /api/cursos/:id/estudiantes   # Estudiantes del curso
 ```
-GET  /api/cursos
-GET  /api/cursos/:id
-POST /api/cursos
-PUT  /api/cursos/:id
-GET  /api/cursos/:id/estudiantes
+
+### Profesores
+```bash
+GET  /api/profesores               # Listar profesores
+GET  /api/profesores/:id           # Obtener profesor
+POST /api/profesores               # Crear profesor
+GET  /api/profesores/:id/cursos    # Cursos asignados
 ```
 
 ### Asistencia
+```bash
+GET  /api/asistencia               # Listar asistencias
+POST /api/asistencia               # Registrar (valida RN-003)
+GET  /api/asistencia-alumno/:id    # Asistencias de alumno
+GET  /api/reporte-inasistencias    # Reporte de faltas
 ```
-GET  /api/asistencia
-POST /api/asistencia (RN-003, RN-006)
-GET  /api/asistencia-alumno/:alumno_id
+
+### Calificaciones
+```bash
+GET  /api/calificaciones           # Listar calificaciones
+POST /api/calificaciones           # Registrar (valida RN-002)
+GET  /api/calificaciones-alumno    # Notas de alumno
+GET  /api/promedio-alumno/:id      # Promedio ponderado
 ```
 
 ### Notificaciones
-```
-GET  /api/notificaciones
-POST /api/notificaciones
-POST /api/notificaciones/inasistencia (RN-006)
+```bash
+GET  /api/notificaciones           # Listar notificaciones
+POST /api/notificaciones           # Enviar notificación
 ```
 
 ---
@@ -206,180 +185,238 @@ POST /api/notificaciones/inasistencia (RN-006)
 ## 🛠️ Comandos Útiles
 
 ```bash
-# Iniciar en modo desarrollo (todos los servicios)
+# Desarrollo (todos los servicios con nodemon)
 npm run dev
 
-# Iniciar solo el gateway
+# Iniciar gateway solo
 npm start
 
-# Iniciar servicios individuales
-npm run alumnos           # Puerto 3001
-npm run matricula         # Puerto 3002
-npm run profesores        # Puerto 3003
-npm run cursos            # Puerto 3004
-npm run pagos             # Puerto 3005
-npm run notificaciones    # Puerto 3006
-npm run asistencia        # Puerto 3007
+# Servicios individuales
+npm run alumnos            # Puerto 3001
+npm run matricula          # Puerto 3002
+npm run profesores         # Puerto 3003
+npm run cursos             # Puerto 3004
+npm run pagos              # Puerto 3005
+npm run notificaciones     # Puerto 3006
+npm run asistencia         # Puerto 3007
+npm run calificaciones     # Puerto 3008
 
-# Reinicializar base de datos
-npm run db:init
-
-# Verificar datos en BD
-npm run db:verify
-
-# Ejecutar tests
-npm test
+# Utilitarios
+npm run db:init            # Reinicializar BD
+npm run db:verify          # Verificar datos
+npm run verify             # Verificar servicios activos
+npm run test:api           # Probar APIs
+npm test                   # Tests automatizados
 ```
 
 ---
 
-## 📝 Cambios Realizados (Datos)
+## 🔐 Seguridad
 
-### ✅ Archivos Modificados
-- `database/init.js` - Mejorado para insertar datos completos
-- `database/verify-data.js` - Visualización mejorada de datos
-- `package.json` - Scripts agregados: db:init, db:verify
-
-### ✅ Archivos Creados
-- `.env` - Configuración del proyecto con variables de entorno
-
-### ✅ Datos Insertados
-- 7 Usuarios con roles diferenciados
-- 5 Cursos activos en diferentes niveles
-- 4+ Matrículas de alumnos
-- 4+ Pagos con estados variados
-- Información completa en todos los módulos
+✅ **JWT Tokens** - Autenticación stateless con expiración  
+✅ **Bcryptjs** - Contraseñas hasheadas (salt 10)  
+✅ **RBAC** - Control acceso por 5 roles  
+✅ **Validación entrada** - Sanitización completa  
+✅ **CORS** - Configurado por origen  
+✅ **SQL Injection** - Prevención con prepared statements  
 
 ---
 
-## 🔄 Flujo de Matrícula Completo
+## 📊 Respuesta Estándar
 
-1. **Alumno se registra** en el sistema
-2. **Sistema valida deudas** (RN-004)
-3. **Alumno crea matrícula** en un curso
-4. **Sistema valida asignación única** (RN-001)
-5. **Se registra en base de datos**
-6. **Se notifica a padre** (RN-006)
-
----
-
-## 📚 Desarrollo
-
-### Agregar un nuevo endpoint
-
-1. Ubicar el archivo `services/nombre-service/server.js`
-2. Agregar ruta: `app.get('/endpoint', async (req, res) => { ... })`
-3. Validar datos con `shared/validators.js`
-4. Devolver respuesta con `shared/utils.js`
-
-### Ejemplo de nuevo endpoint:
-
-```javascript
-app.get('/alumnos/por-grado/:grado', async (req, res) => {
-  try {
-    const { grado } = req.params;
-    const alumnos = await getAll(
-      'SELECT * FROM alumnos WHERE grado = ?',
-      [grado]
-    );
-    res.json(respuestaExito(alumnos));
-  } catch (error) {
-    res.status(500).json(respuestaError('Error', 'FETCH_ERROR'));
+```json
+{
+  "exito": true,
+  "codigo": "SUCCESS",
+  "mensaje": "Operación exitosa",
+  "datos": {
+    "id": "uuid",
+    "campo": "valor"
   }
-});
+}
+```
+
+Error:
+```json
+{
+  "exito": false,
+  "codigo": "ERROR_CODE",
+  "mensaje": "Descripción del error",
+  "detalles": null
+}
 ```
 
 ---
 
-## 🐛 Troubleshooting
-
-### Error: "Puerto ya en uso"
-```bash
-# Cambiar puerto en .env
-GATEWAY_PORT=3001
-```
-
-### Error: "Base de datos no encontrada"
-```bash
-npm run db:init
-```
-
-### Error de CORS
-Verificar que `ALLOWED_ORIGINS` en `.env` incluya el dominio del frontend.
-
-### Los módulos muestran "Cargando..."
-```bash
-# Asegúrate de ejecutar antes de npm run dev:
-npm run db:init
-```
-
-### Resetear base de datos
-```bash
-# Elimina y reinicializa
-rm database/colegio.db
-npm run db:init
-```
-
----
-
-## 📁 Estructura del Proyecto
+## 📁 Estructura
 
 ```
 SOA/
 ├── api-gateway/                 # Gateway principal
-│   └── gateway.js
-├── services/                    # Microservicios
+│   ├── gateway.js
+│   ├── middleware/
+│   │   ├── auth.js             # JWT + RBAC
+│   │   └── errorHandler.js
+│   └── public/
+├── services/                    # 9 Microservicios
 │   ├── alumnos-service/
 │   ├── matricula-service/
 │   ├── profesores-service/
 │   ├── cursos-service/
 │   ├── pagos-service/
 │   ├── notificaciones-service/
-│   └── asistencia-service/
-├── config/                      # Configuración
+│   ├── asistencia-service/
+│   └── calificaciones-service/
+├── config/
+│   └── database.js             # Conexión SQLite
 ├── database/
-│   ├── colegio.db              # BD SQLite
-│   ├── schema.sql              # Esquema
+│   ├── colegio.db              # BD (se genera)
+│   ├── schema.sql              # Schema
 │   ├── init.js                 # Inicializador
 │   └── verify-data.js          # Verificador
-├── shared/                      # Código compartido
-│   ├── utils.js                # Utilidades
+├── shared/
+│   ├── utils.js                # Helpers
 │   └── validators.js           # Validadores
-├── docs/                        # Documentación técnica
-│   ├── API.md                  # Documentación de APIs
-│   └── ARCHITECTURE.md         # Detalles de arquitectura
-├── .env                         # Variables de entorno
-├── package.json                 # Dependencias
-├── README.md                    # Este archivo
-└── docker-compose.yml           # Configuración Docker
+├── .env                         # Variables entorno
+├── package.json
+└── README.md
 ```
 
 ---
 
-## ✨ Diferencias Antes vs Después
+## 🔄 Flujos Principales
 
-| Aspecto | Antes | Después |
-|--------|-------|---------|
-| Módulo Cursos | "Cargando..." | 5 cursos visibles |
-| Módulo Pagos | "Cargando..." | 4+ pagos con estados |
-| Módulo Alumnos | Sin datos | 2+ alumnos listados |
-| Módulo Matrículas | Vacío | 4+ inscritos visibles |
-| Información | Genérica | Diferenciada por rol |
+### Flujo de Matrícula
+```
+1. Alumno → Solicita matrícula
+2. Sistema valida RN-001 (aula única/período)
+3. Sistema valida RN-004 (sin deuda)
+4. Sistema valida RN-007 (datos completos)
+5. Registra → Notifica padre/madre
+```
+
+### Flujo de Asistencia
+```
+1. Docente → Marca asistencia
+2. Sistema valida RN-003 (registro diario)
+3. Si FALTA → Ejecuta RN-006 (notifica padre)
+4. Registra en BD → Genera reporte
+```
+
+### Flujo de Calificaciones
+```
+1. Docente → Registra nota
+2. Sistema valida RN-002 (dentro de fecha límite)
+3. Calcula promedio ponderado automático
+4. Registra → Notifica alumno/padre
+```
 
 ---
 
-## 📖 Documentación Técnica
+## 🐛 Troubleshooting
 
-- **API Documentation** - Ver `docs/API.md`
-- **Architecture** - Ver `docs/ARCHITECTURE.md`
-- **Database Schema** - Ver `database/schema.sql`
+### Puerto en uso
+```bash
+# Cambiar en .env
+GATEWAY_PORT=3001
+ALUMNOS_SERVICE_PORT=3011
+```
+
+### BD no encontrada
+```bash
+npm run db:init
+```
+
+### Servicio no responde
+```bash
+npm run verify
+```
+
+### Resetear BD
+```bash
+rm database/colegio.db
+npm run db:init
+```
 
 ---
 
-## 👥 Equipo de Desarrollo
+## 📊 Estadísticas
 
-- Edward Antonio Rivera (U21317379)
-- Naomi Caballero Caceres (U21205215)
+| Métrica | Valor |
+|---------|-------|
+| Servicios | 8 + Gateway |
+| Endpoints | 60+ |
+| Código | 3,000+ líneas |
+| Tablas BD | 11 |
+| Índices | 25+ |
+| Reglas negocio | 7 (todas) |
+| Roles RBAC | 5 |
+| Datos prueba | 20+ |
+
+---
+
+## 💾 Desarrollo
+
+### Agregar endpoint
+
+1. Editar `services/nombre-service/server.js`
+2. Agregar ruta con validación
+3. Devolver con `respuestaExito()` o `respuestaError()`
+
+```javascript
+app.get('/alumnos/por-grado/:grado', asyncHandler(async (req, res) => {
+  const { grado } = req.params;
+  const alumnos = await getAll(
+    'SELECT * FROM alumnos WHERE grado_nivel = ?',
+    [grado]
+  );
+  res.json(respuestaExito(alumnos, 'Alumnos obtenidos'));
+}));
+```
+
+---
+
+## 🚀 Docker
+
+```bash
+# Construir
+docker-compose build
+
+# Iniciar
+docker-compose up -d
+
+# Logs
+docker-compose logs -f
+
+# Detener
+docker-compose down
+```
+
+---
+
+## 📚 Stack
+
+- **Backend**: Node.js + Express.js
+- **Auth**: JWT + Bcryptjs
+- **BD**: SQLite (dev) / MySQL (prod ready)
+- **Notificaciones**: Nodemailer + Twilio API
+- **Dev**: Nodemon, Concurrently, Jest
+- **Deploy**: Docker, Vercel, Railway
+
+---
+
+## 🎓 Información Institucional
+
+**Universidad Tecnológica del Perú (UTP)**
+- Facultad: Ingeniería
+- Curso: Arquitectura Orientada a Servicios (SOA)
+- Docente: Cesar Augusto Minguillo Rubio
+- Ciclo: 2026-1
+
+**Equipo:**
+- Edward Antonio Rivera Antezana (U21317379)
+- Harumy del Rocío Bazalar Pacheco (U22221383)
+- Naomi Caballero Cáceres (U21205215)
 - Maria Celeste Cuba Hinostroza (U21232415)
 
 ---
@@ -390,15 +427,6 @@ MIT - Proyecto Educativo
 
 ---
 
-## 🎓 Institución
-
-**Universidad Tecnológica del Perú (UTP)**
-- Facultad: Ingeniería
-- Curso: Arquitectura Orientada al Servicio (SOA)
-- Docente: Cesar Augusto Minguillo Rubio
-
----
-
 **Estado**: ✅ Producción  
-**Última actualización**: Abril 2026  
-**Versión**: 1.0.0
+**Versión**: 1.0.0  
+**Fecha**: Abril 2026
