@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const { initDatabase, getOne, getAll, runQuery } = require('../../config/database');
+const { errorHandler, asyncHandler } = require('../../api-gateway/middleware/errorHandler');
 const { respuestaExito, respuestaError, generarId, obtenerParametrosPaginacion } = require('../../shared/utils');
 const { validadores } = require('../../shared/validators');
 
@@ -12,253 +13,312 @@ const PORT = process.env.ASISTENCIA_SERVICE_PORT || 3007;
 app.use(cors());
 app.use(express.json());
 
-// GET asistencias
-app.get('/asistencia', async (req, res) => {
-  try {
-    const { pagina, limite, offset } = obtenerParametrosPaginacion(req);
+// ============================================
+// ENDPOINTS: ASISTENCIA
+// ============================================
 
-    const asistencias = await getAll(
-      `SELECT a.*, al.primer_nombre, al.apellido_paterno, c.nombre as curso_nombre
-       FROM asistencias a
-       JOIN alumnos al ON a.alumno_id = al.id
-       JOIN cursos c ON a.curso_id = c.id
-       ORDER BY a.fecha DESC
-       LIMIT ? OFFSET ?`,
-      [limite, offset]
-    );
+// GET todas las asistencias (con paginación)
+app.get('/asistencia', asyncHandler(async (req, res) => {
+  const { pagina, limite, offset } = obtenerParametrosPaginacion(req);
 
-    const totalResult = await getOne('SELECT COUNT(*) as total FROM asistencias');
+  const asistencias = await getAll(
+    `SELECT a.*, al.primer_nombre, al.apellido_paterno, c.nombre as curso_nombre
+     FROM asistencias a
+     JOIN alumnos al ON a.alumno_id = al.id
+     JOIN cursos c ON a.curso_id = c.id
+     ORDER BY a.fecha DESC
+     LIMIT ? OFFSET ?`,
+    [limite, offset]
+  );
 
-    res.json(respuestaExito({
-      asistencias,
-      paginacion: {
-        pagina,
-        limite,
-        total: totalResult.total,
-        total_paginas: Math.ceil(totalResult.total / limite)
-      }
-    }));
-  } catch (error) {
-    res.status(500).json(respuestaError('Error al obtener asistencias', 'FETCH_ERROR', error.message));
-  }
-});
+  const totalResult = await getOne('SELECT COUNT(*) as total FROM asistencias');
+
+  res.json(respuestaExito({
+    asistencias,
+    paginacion: {
+      pagina,
+      limite,
+      total: totalResult.total,
+      total_paginas: Math.ceil(totalResult.total / limite)
+    }
+  }, 'Asistencias obtenidas'));
+}));
 
 // GET asistencia por ID
-app.get('/asistencia/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
+app.get('/asistencia/:id', asyncHandler(async (req, res) => {
+  const { id } = req.params;
 
-    const asistencia = await getOne(
-      `SELECT a.*, al.primer_nombre, c.nombre as curso_nombre
-       FROM asistencias a
-       JOIN alumnos al ON a.alumno_id = al.id
-       JOIN cursos c ON a.curso_id = c.id
-       WHERE a.id = ?`,
-      [id]
-    );
-
-    if (!asistencia) {
-      return res.status(404).json(respuestaError('Asistencia no encontrada'));
-    }
-
-    res.json(respuestaExito(asistencia));
-  } catch (error) {
-    res.status(500).json(respuestaError('Error al obtener asistencia', 'FETCH_ERROR', error.message));
+  if (!validadores.esUUIDValido(id)) {
+    return res.status(400).json(respuestaError('ID inválido', 'INVALID_ID'));
   }
-});
 
-// POST registrar asistencia (RN-003: Control de asistencia)
-app.post('/asistencia', async (req, res) => {
-  try {
-    const { alumno_id, curso_id, fecha, estado, motivo_falta } = req.body;
+  const asistencia = await getOne(
+    `SELECT a.*, al.primer_nombre, al.apellido_paterno, c.nombre as curso_nombre
+     FROM asistencias a
+     JOIN alumnos al ON a.alumno_id = al.id
+     JOIN cursos c ON a.curso_id = c.id
+     WHERE a.id = ?`,
+    [id]
+  );
 
-    if (!alumno_id || !curso_id || !fecha || !estado) {
-      return res.status(400).json(respuestaError('Datos incompletos'));
-    }
+  if (!asistencia) {
+    return res.status(404).json(respuestaError('Asistencia no encontrada', 'NOT_FOUND'));
+  }
 
-    if (!validadores.esEstadoAsistenciaValido(estado)) {
-      return res.status(400).json(respuestaError('Estado de asistencia inválido'));
-    }
+  res.json(respuestaExito(asistencia, 'Asistencia obtenida'));
+}));
 
-    if (!validadores.esFechaValida(fecha)) {
-      return res.status(400).json(respuestaError('Fecha inválida'));
-    }
+// POST registrar asistencia (RN-003, RN-006)
+app.post('/asistencia', asyncHandler(async (req, res) => {
+  const { alumno_id, curso_id, fecha, estado, motivo_falta } = req.body;
 
-    // Verificar si ya existe registro para ese día
-    const existente = await getOne(
-      'SELECT id FROM asistencias WHERE alumno_id = ? AND curso_id = ? AND fecha = ?',
-      [alumno_id, curso_id, fecha]
-    );
+  // Validar datos obligatorios (RN-007)
+  if (!alumno_id || !curso_id || !fecha || !estado) {
+    return res.status(400).json(respuestaError('Datos incompletos requeridos', 'MISSING_DATA'));
+  }
 
-    if (existente) {
-      return res.status(409).json(respuestaError('Ya existe un registro de asistencia para este día'));
-    }
+  if (!validadores.esEstadoAsistenciaValido(estado)) {
+    return res.status(400).json(respuestaError('Estado de asistencia inválido', 'INVALID_STATE'));
+  }
 
-    const asistenciaId = generarId();
+  if (!validadores.esFechaValida(fecha)) {
+    return res.status(400).json(respuestaError('Fecha inválida', 'INVALID_DATE'));
+  }
 
-    await runQuery(
-      `INSERT INTO asistencias (id, alumno_id, curso_id, fecha, estado, registrada, motivo_falta)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [asistenciaId, alumno_id, curso_id, fecha, estado, true, motivo_falta || null]
-    );
+  // RN-003: Verificar si ya existe registro para ese día
+  const existente = await getOne(
+    'SELECT id FROM asistencias WHERE alumno_id = ? AND curso_id = ? AND fecha = ?',
+    [alumno_id, curso_id, fecha]
+  );
 
-    // RN-006: Si es FALTA, enviar notificación automática
-    if (estado === 'FALTA') {
-      try {
-        const alumno = await getOne('SELECT padre_id FROM alumnos WHERE id = ?', [alumno_id]);
-
-        if (alumno && alumno.padre_id) {
-          // Llamar al servicio de notificaciones
-          const urlNotificaciones = `${process.env.NOTIFICACIONES_SERVICE_URL || 'http://localhost:3006'}/notificaciones/inasistencia`;
-
-          await axios.post(urlNotificaciones, {
-            alumno_id,
-            padre_id: alumno.padre_id,
-            motivo: motivo_falta || 'Falta sin justificar',
-            fecha
-          }).catch(err => console.error('Error al enviar notificación:', err.message));
-        }
-      } catch (error) {
-        console.error('Error al procesando notificación:', error.message);
-        // Continuar incluso si falla la notificación
-      }
-    }
-
-    res.status(201).json(respuestaExito(
-      { id: asistenciaId, alumno_id, curso_id, fecha, estado, registrada: true },
-      'Asistencia registrada',
-      'ASISTENCIA_REGISTERED'
+  if (existente) {
+    return res.status(409).json(respuestaError(
+      'Ya existe un registro de asistencia para este día',
+      'ATTENDANCE_EXISTS'
     ));
-  } catch (error) {
-    res.status(500).json(respuestaError('Error al registrar asistencia', 'CREATE_ERROR', error.message));
   }
-});
+
+  const asistenciaId = generarId();
+
+  await runQuery(
+    `INSERT INTO asistencias (id, alumno_id, curso_id, fecha, estado, registrada, motivo_falta)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [asistenciaId, alumno_id, curso_id, fecha, estado, true, motivo_falta || null]
+  );
+
+  // RN-006: Si es FALTA, enviar notificación automática a padre
+  if (estado === 'FALTA') {
+    try {
+      const alumno = await getOne('SELECT padre_id FROM alumnos WHERE id = ?', [alumno_id]);
+
+      if (alumno && alumno.padre_id) {
+        const urlNotificaciones = `${process.env.NOTIFICACIONES_SERVICE_URL || 'http://localhost:3006'}/notificaciones/inasistencia`;
+
+        await axios.post(urlNotificaciones, {
+          alumno_id,
+          padre_id: alumno.padre_id,
+          motivo: motivo_falta || 'Falta sin justificar',
+          fecha
+        }).catch(err => console.error('Error al enviar notificación:', err.message));
+      }
+    } catch (error) {
+      console.error('Error procesando notificación:', error.message);
+    }
+  }
+
+  res.status(201).json(respuestaExito(
+    { id: asistenciaId, alumno_id, curso_id, fecha, estado, registrada: true },
+    'Asistencia registrada exitosamente',
+    'ASISTENCIA_REGISTERED'
+  ));
+}));
 
 // PUT actualizar asistencia
-app.put('/asistencia/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { estado, motivo_falta } = req.body;
+app.put('/asistencia/:id', asyncHandler(async (req, res) => {
+  const { id } = req.params;
 
-    const asistencia = await getOne('SELECT * FROM asistencias WHERE id = ?', [id]);
+  if (!validadores.esUUIDValido(id)) {
+    return res.status(400).json(respuestaError('ID inválido', 'INVALID_ID'));
+  }
 
-    if (!asistencia) {
-      return res.status(404).json(respuestaError('Asistencia no encontrada'));
+  const asistencia = await getOne('SELECT * FROM asistencias WHERE id = ?', [id]);
+
+  if (!asistencia) {
+    return res.status(404).json(respuestaError('Asistencia no encontrada', 'NOT_FOUND'));
+  }
+
+  const campos = [];
+  const valores = [];
+
+  for (const [clave, valor] of Object.entries(req.body)) {
+    if (valor !== undefined && clave !== 'id') {
+      campos.push(`${clave} = ?`);
+      valores.push(valor);
     }
-
-    await runQuery(
-      `UPDATE asistencias SET estado = ?, motivo_falta = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id = ?`,
-      [estado, motivo_falta || asistencia.motivo_falta, id]
-    );
-
-    res.json(respuestaExito({ id, estado }, 'Asistencia actualizada'));
-  } catch (error) {
-    res.status(500).json(respuestaError('Error al actualizar asistencia', 'UPDATE_ERROR', error.message));
   }
-});
 
-// GET asistencias por alumno
-app.get('/asistencia-alumno/:alumno_id', async (req, res) => {
-  try {
-    const { alumno_id } = req.params;
-
-    const asistencias = await getAll(
-      `SELECT id, fecha, estado, motivo_falta FROM asistencias
-       WHERE alumno_id = ?
-       ORDER BY fecha DESC`,
-      [alumno_id]
-    );
-
-    // Calcular estadísticas
-    const presente = asistencias.filter(a => a.estado === 'PRESENTE').length;
-    const falta = asistencias.filter(a => a.estado === 'FALTA').length;
-    const justificado = asistencias.filter(a => a.estado === 'JUSTIFICADO').length;
-    const porcentajeAsistencia = asistencias.length > 0 ?
-      ((presente / asistencias.length) * 100).toFixed(2) : 0;
-
-    res.json(respuestaExito({
-      asistencias,
-      estadisticas: {
-        presente,
-        falta,
-        justificado,
-        total: asistencias.length,
-        porcentaje_asistencia: porcentajeAsistencia
-      }
-    }));
-  } catch (error) {
-    res.status(500).json(respuestaError('Error al obtener asistencias', 'FETCH_ERROR', error.message));
+  if (campos.length === 0) {
+    return res.status(400).json(respuestaError('No hay campos para actualizar'));
   }
-});
+
+  valores.push(id);
+  const query = `UPDATE asistencias SET ${campos.join(', ')}, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id = ?`;
+
+  await runQuery(query, valores);
+
+  const asistenciaActualizada = await getOne('SELECT * FROM asistencias WHERE id = ?', [id]);
+
+  res.json(respuestaExito(asistenciaActualizada, 'Asistencia actualizada', 'ASISTENCIA_UPDATED'));
+}));
+
+// GET asistencias por alumno con estadísticas
+app.get('/asistencia-alumno/:alumno_id', asyncHandler(async (req, res) => {
+  const { alumno_id } = req.params;
+  const { pagina, limite, offset } = obtenerParametrosPaginacion(req);
+
+  const asistencias = await getAll(
+    `SELECT id, fecha, estado, motivo_falta FROM asistencias
+     WHERE alumno_id = ?
+     ORDER BY fecha DESC
+     LIMIT ? OFFSET ?`,
+    [alumno_id, limite, offset]
+  );
+
+  const allAsistencias = await getAll(
+    'SELECT estado FROM asistencias WHERE alumno_id = ?',
+    [alumno_id]
+  );
+
+  const totalResult = await getOne('SELECT COUNT(*) as total FROM asistencias WHERE alumno_id = ?', [alumno_id]);
+
+  // Calcular estadísticas
+  const presente = allAsistencias.filter(a => a.estado === 'PRESENTE').length;
+  const falta = allAsistencias.filter(a => a.estado === 'FALTA').length;
+  const justificado = allAsistencias.filter(a => a.estado === 'JUSTIFICADO').length;
+  const porcentajeAsistencia = allAsistencias.length > 0 ?
+    ((presente / allAsistencias.length) * 100).toFixed(2) : 0;
+
+  res.json(respuestaExito({
+    asistencias,
+    estadisticas: {
+      presente,
+      falta,
+      justificado,
+      total: allAsistencias.length,
+      porcentaje_asistencia: parseFloat(porcentajeAsistencia)
+    },
+    paginacion: {
+      pagina,
+      limite,
+      total: totalResult.total,
+      total_paginas: Math.ceil(totalResult.total / limite)
+    }
+  }, 'Asistencias del alumno obtenidas'));
+}));
 
 // GET asistencias por curso y fecha
-app.get('/asistencia-curso/:curso_id', async (req, res) => {
-  try {
-    const { curso_id } = req.params;
-    const { fecha } = req.query;
+app.get('/asistencia-curso/:curso_id', asyncHandler(async (req, res) => {
+  const { curso_id } = req.params;
+  const { fecha, pagina, limite, offset } = { ...req.query, ...obtenerParametrosPaginacion(req) };
 
-    let query = `SELECT a.*, al.primer_nombre, al.apellido_paterno
-                 FROM asistencias a
-                 JOIN alumnos al ON a.alumno_id = al.id
-                 WHERE a.curso_id = ?`;
-    const params = [curso_id];
+  let query = `SELECT a.*, al.primer_nombre, al.apellido_paterno
+               FROM asistencias a
+               JOIN alumnos al ON a.alumno_id = al.id
+               WHERE a.curso_id = ?`;
+  const params = [curso_id];
 
-    if (fecha) {
-      query += ' AND a.fecha = ?';
-      params.push(fecha);
+  if (fecha) {
+    if (!validadores.esFechaValida(fecha)) {
+      return res.status(400).json(respuestaError('Fecha inválida', 'INVALID_DATE'));
     }
-
-    query += ' ORDER BY al.apellido_paterno, al.primer_nombre';
-
-    const asistencias = await getAll(query, params);
-
-    res.json(respuestaExito(asistencias));
-  } catch (error) {
-    res.status(500).json(respuestaError('Error al obtener asistencias', 'FETCH_ERROR', error.message));
+    query += ' AND a.fecha = ?';
+    params.push(fecha);
   }
-});
+
+  query += ' ORDER BY al.apellido_paterno, al.primer_nombre LIMIT ? OFFSET ?';
+  params.push(limite, offset);
+
+  const asistencias = await getAll(query, params);
+
+  let countQuery = 'SELECT COUNT(*) as total FROM asistencias WHERE curso_id = ?';
+  const countParams = [curso_id];
+  if (fecha) {
+    countQuery += ' AND fecha = ?';
+    countParams.push(fecha);
+  }
+
+  const totalResult = await getOne(countQuery, countParams);
+
+  res.json(respuestaExito({
+    asistencias,
+    paginacion: {
+      pagina,
+      limite,
+      total: totalResult.total,
+      total_paginas: Math.ceil(totalResult.total / limite)
+    }
+  }, 'Asistencias del curso obtenidas'));
+}));
 
 // GET reporte de inasistencias (para notificaciones)
-app.get('/reporte-inasistencias/:fecha', async (req, res) => {
-  try {
-    const { fecha } = req.params;
+app.get('/reporte-inasistencias/:fecha', asyncHandler(async (req, res) => {
+  const { fecha } = req.params;
 
-    const inasistencias = await getAll(
-      `SELECT a.*, al.primer_nombre, al.apellido_paterno, al.padre_id
-       FROM asistencias a
-       JOIN alumnos al ON a.alumno_id = al.id
-       WHERE a.fecha = ? AND a.estado = 'FALTA'`,
-      [fecha]
-    );
-
-    res.json(respuestaExito(inasistencias, `Inasistencias del ${fecha}`));
-  } catch (error) {
-    res.status(500).json(respuestaError('Error al obtener reporte', 'FETCH_ERROR', error.message));
+  if (!validadores.esFechaValida(fecha)) {
+    return res.status(400).json(respuestaError('Fecha inválida', 'INVALID_DATE'));
   }
-});
+
+  const inasistencias = await getAll(
+    `SELECT a.*, al.primer_nombre, al.apellido_paterno, al.padre_id
+     FROM asistencias a
+     JOIN alumnos al ON a.alumno_id = al.id
+     WHERE a.fecha = ? AND a.estado = 'FALTA'`,
+    [fecha]
+  );
+
+  res.json(respuestaExito(inasistencias, `Inasistencias del ${fecha}`));
+}));
+
+// ============================================
+// HEALTH CHECK
+// ============================================
 
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', service: 'asistencia-service', port: PORT });
 });
 
+// ============================================
+// MANEJO DE ERRORES
+// ============================================
+
 app.use((req, res) => {
-  res.status(404).json(respuestaError('Ruta no encontrada'));
+  res.status(404).json(respuestaError('Ruta no encontrada', 'NOT_FOUND'));
 });
+
+app.use(errorHandler);
+
+// ============================================
+// INICIAR SERVIDOR
+// ============================================
 
 const iniciarServicio = async () => {
   try {
     await initDatabase();
+    console.log('✓ Base de datos inicializada');
+
     app.listen(PORT, () => {
-      console.log(`\n╔════════════════════════════════════════════╗
+      console.log(`
+╔════════════════════════════════════════════╗
 ║  ✅ SERVICIO DE ASISTENCIA              ✅ ║
 ╠════════════════════════════════════════════╣
 ║  Puerto: ${PORT}                            ║
 ║  Endpoint: http://localhost:${PORT}/asistencia ║
-║  Validaciones: RN-003, RN-006             ║
-╚════════════════════════════════════════════╝\n`);
+║  Validaciones: RN-003, RN-006, RN-007      ║
+╚════════════════════════════════════════════╝
+      `);
     });
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error al iniciar el servicio:', error);
     process.exit(1);
   }
 };

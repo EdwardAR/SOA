@@ -33,7 +33,8 @@ const SERVICIOS = {
   cursos: process.env.CURSOS_SERVICE_URL || 'http://localhost:3004',
   pagos: process.env.PAGOS_SERVICE_URL || 'http://localhost:3005',
   notificaciones: process.env.NOTIFICACIONES_SERVICE_URL || 'http://localhost:3006',
-  asistencia: process.env.ASISTENCIA_SERVICE_URL || 'http://localhost:3007'
+  asistencia: process.env.ASISTENCIA_SERVICE_URL || 'http://localhost:3007',
+  calificaciones: process.env.CALIFICACIONES_SERVICE_URL || 'http://localhost:3008'
 };
 
 // ============================================
@@ -206,6 +207,15 @@ app.get('/api/asistencia-alumno/:alumno_id', authMiddleware, proxyServicio('asis
 app.get('/api/asistencia-curso/:curso_id', authMiddleware, proxyServicio('asistencia'));
 app.get('/api/reporte-inasistencias/:fecha', authMiddleware, proxyServicio('asistencia'));
 
+// CALIFICACIONES
+app.get('/api/calificaciones', authMiddleware, proxyServicio('calificaciones'));
+app.post('/api/calificaciones', authMiddleware, requireRole(['docente']), proxyServicio('calificaciones'));
+app.get('/api/calificaciones/:id', authMiddleware, proxyServicio('calificaciones'));
+app.put('/api/calificaciones/:id', authMiddleware, requireRole(['docente']), proxyServicio('calificaciones'));
+app.get('/api/calificaciones-alumno/:alumno_id', authMiddleware, proxyServicio('calificaciones'));
+app.get('/api/calificaciones-curso/:curso_id', authMiddleware, proxyServicio('calificaciones'));
+app.get('/api/promedio-alumno/:alumno_id', authMiddleware, proxyServicio('calificaciones'));
+
 // ============================================
 // RUTAS DE UTILIDAD
 // ============================================
@@ -264,6 +274,7 @@ const iniciarGateway = async () => {
 ║  • Pagos: ${SERVICIOS.pagos}                  ║
 ║  • Notificaciones: ${SERVICIOS.notificaciones}    ║
 ║  • Asistencia: ${SERVICIOS.asistencia}         ║
+║  • Calificaciones: ${SERVICIOS.calificaciones}  ║
 ╚══════════════════════════════════════════════════════════╝
       `);
     });

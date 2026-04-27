@@ -159,6 +159,24 @@ services:
     networks:
       - soa-network
 
+  # Servicio de Calificaciones
+  calificaciones-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_NAME: calificaciones
+    ports:
+      - "3008:3008"
+    environment:
+      - NODE_ENV=production
+      - CALIFICACIONES_SERVICE_PORT=3008
+      - DB_PATH=/app/database/colegio.db
+    volumes:
+      - ./database:/app/database
+    networks:
+      - soa-network
+
 networks:
   soa-network:
     driver: bridge

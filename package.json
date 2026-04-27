@@ -5,7 +5,7 @@
   "main": "api-gateway/gateway.js",
   "scripts": {
     "start": "node api-gateway/gateway.js",
-    "dev": "concurrently npm:gateway npm:alumnos npm:matricula npm:profesores npm:cursos npm:pagos npm:notificaciones npm:asistencia",
+    "dev": "concurrently npm:gateway npm:alumnos npm:matricula npm:profesores npm:cursos npm:pagos npm:notificaciones npm:asistencia npm:calificaciones",
     "gateway": "nodemon api-gateway/gateway.js",
     "alumnos": "nodemon services/alumnos-service/server.js",
     "matricula": "nodemon services/matricula-service/server.js",
@@ -14,6 +14,9 @@
     "pagos": "nodemon services/pagos-service/server.js",
     "notificaciones": "nodemon services/notificaciones-service/server.js",
     "asistencia": "nodemon services/asistencia-service/server.js",
+    "calificaciones": "nodemon services/calificaciones-service/server.js",
+    "verify": "node verify-services.js",
+    "test:api": "node test-api.js",
     "test": "jest --detectOpenHandles",
     "db:init": "node database/init.js",
     "db:verify": "node database/verify-data.js"

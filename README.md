@@ -98,14 +98,19 @@ Asistencia API:    http://localhost:3007/asistencia
 
 ### Microservicios Implementados
 
+### Microservicios Implementados
+
 1. **API Gateway** - Punto de entrada único, autenticación JWT, proxy de servicios
 2. **Servicio de Alumnos** - Gestión de datos de estudiantes (CRUD)
-3. **Servicio de Matrículas** - Inscripciones con validaciones (RN-001, RN-004)
-4. **Servicio de Profesores** - Gestión docente
-5. **Servicio de Cursos** - Creación y gestión de cursos
-6. **Servicio de Pagos** - Gestión de transacciones y deudas (RN-004)
-7. **Servicio de Notificaciones** - Envío automático de correos y SMS
-8. **Servicio de Asistencia** - Registro y control de asistencia (RN-003, RN-006)
+3. **Servicio de Matrículas** ⭐ - Inscripciones con validaciones (RN-001, RN-004)
+4. **Servicio de Profesores** ⭐ - Gestión docente completa (RN-007)
+5. **Servicio de Cursos** ⭐ - Creación y gestión de cursos (RN-007)
+6. **Servicio de Pagos** ⭐ - Gestión de transacciones y deudas (RN-004)
+7. **Servicio de Notificaciones** ⭐ - Envío automático de correos y SMS (RN-006)
+8. **Servicio de Asistencia** ⭐ - Registro y control de asistencia (RN-003, RN-006)
+9. **Servicio de Calificaciones** ⭐ - Gestión de calificaciones/notas (RN-002)
+
+⭐ = Nuevos servicios implementados con todas las validaciones
 
 ### Base de Datos
 
@@ -118,15 +123,15 @@ Asistencia API:    http://localhost:3007/asistencia
 
 ## 📊 Reglas de Negocio Implementadas
 
-| Regla | Descripción | Servicio |
-|-------|-----------|---------|
-| RN-001 | Asignación única de aula por alumno/período | Matrículas |
-| RN-002 | Registro de notas en plazo | Cursos |
-| RN-003 | Control diario de asistencia | Asistencia |
-| RN-004 | Restricción de matrícula por deuda | Pagos & Matrículas |
-| RN-005 | Acceso restringido para padres | Alumnos |
-| RN-006 | Notificación automática de inasistencias | Notificaciones & Asistencia |
-| RN-007 | Validación de datos obligatorios | Todos |
+| Regla | Descripción | Servicio | Estado |
+|-------|-----------|---------|--------|
+| RN-001 | Asignación única de aula por alumno/período | Matrículas | ✅ Implementado |
+| RN-002 | Registro de notas dentro de plazo | Calificaciones | ✅ Implementado |
+| RN-003 | Control diario de asistencia | Asistencia | ✅ Implementado |
+| RN-004 | Restricción de matrícula por deuda | Pagos & Matrículas | ✅ Implementado |
+| RN-005 | Acceso restringido para padres | Gateway | ✅ Implementado |
+| RN-006 | Notificación automática de inasistencias | Notificaciones & Asistencia | ✅ Implementado |
+| RN-007 | Validación de datos obligatorios | Todos los servicios | ✅ Implementado |
 
 ---
 
