@@ -395,19 +395,25 @@ SOA/
 
 ## 🐛 Troubleshooting
 
-### ⚠️ Login falla con "Error al iniciar sesión"
+### ⚠️ Login falla con "Error al iniciar sesión" (SOLUCIONADO)
 
-**Solución:**
-1. Asegúrate de que el Backend esté ejecutándose en puerto 3000
-2. Verifica que la BD esté inicializada
-3. Reinicia ambos servicios:
-   ```bash
-   # Windows
-   .\start-all.bat
-   
-   # Linux/Mac
-   ./start-all.sh
-   ```
+**Causa**: Configuración de CORS no permitía requests desde http://localhost:3001
+
+**Solución aplicada**:
+1. ✅ Agregado `ALLOWED_ORIGINS` en `.env` con todos los orígenes válidos
+2. ✅ Reiniciado Backend para aplicar cambios CORS
+3. ✅ Agregado logging detallado en:
+   - `frontend/src/context/AuthContext.tsx`
+   - `frontend/src/pages/Login.tsx`
+   - `frontend/src/api/client.ts`
+
+**Para probar el login**:
+- Abre http://localhost:3001 en el navegador
+- Presiona F12 para abrir DevTools → Console
+- Verás logs detallados como: `[AuthContext] Iniciando login...`
+- Prueba con: 
+  - Email: `director@colegio.com`
+  - Password: `password123`
 
 ### Puerto en uso
 ```bash
@@ -580,6 +586,37 @@ docker-compose down
 
 ## 🎨 Mejoras Realizadas (Actualización)
 
+### ✅ Correcciones de Abril 2026
+
+#### Frontend - Alumnos.tsx
+- ✅ Mapeado correcto de campos: `apellido_paterno`, `primer_nombre`, `email_contacto` (en lugar de `nombre`, `email`)
+- ✅ Formulario completo con 6 campos (Matrícula, Documento, Emails, Teléfono)
+- ✅ Tabla dinámica que muestra datos reales de la BD
+- ✅ Logging detallado para debugging
+- ✅ Validación de campos requeridos
+
+#### Frontend - Navbar.tsx
+- ✅ Botón dropdown agrandado (50px mínimo, 1.1rem font size)
+- ✅ Funcionalidad de logout completa
+- ✅ Dropdown menu con "Mi Perfil" y "Cerrar Sesión"
+- ✅ Title tooltip para mejor UX
+
+#### Backend - POST Alumnos
+- ✅ Campos `usuario_id`, `numero_documento` son opcionales (NULL en BD)
+- ✅ Validación de campos obligatorios con mensajes claros
+- ✅ Logging de errores para debugging
+- ✅ Respuesta 201 en creación exitosa
+
+#### Base de Datos
+- ✅ Re-inicializada con 5 alumnos reales + datos relacionados
+- ✅ 3 Profesores con usuarios
+- ✅ 4 Cursos con código y capacidad
+- ✅ 10 Matrículas activas
+- ✅ 15 Registros de Pagos (3 por alumno)
+- ✅ 50 Registros de Asistencia (10 por alumno)
+- ✅ 20 Calificaciones (5 alumnos × 4 cursos)
+- ✅ 5 Notificaciones de prueba
+
 ### Login Page
 - ✅ Diseño moderno con gradiente profesional
 - ✅ Iconos visuales para mejor UX
@@ -602,7 +639,7 @@ Cada página incluye:
 - **Crear**: Modales con validación
 - **Leer**: Tablas dinámicas con datos en tiempo real
 - **Actualizar**: Edición con pre-carga de datos
-- **Eliminar**: Confirmación antes de eliminar
+- **Eliminar**: Confirmación antes de eliminar (soft delete)
 - **Alertas**: Mensajes de éxito/error automáticos
 
 ---
@@ -614,5 +651,5 @@ MIT - Proyecto Educativo
 ---
 
 **Estado**: ✅ Producción  
-**Versión**: 1.0.1  
+**Versión**: 1.0.2  
 **Última Actualización**: Abril 2026

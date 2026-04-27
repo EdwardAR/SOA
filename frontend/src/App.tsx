@@ -24,9 +24,16 @@ const AppContent: React.FC = () => {
   return (
     <div>
       <Navbar />
-      <div style={{ display: 'flex', marginTop: '70px' }}>
+      <div style={{ display: 'flex', marginTop: '70px', minHeight: 'calc(100vh - 70px)' }}>
         <Sidebar />
-        <div style={{ marginLeft: '250px', width: 'calc(100% - 250px)' }}>
+        <div
+          style={{
+            marginLeft: '250px',
+            width: 'calc(100% - 250px)',
+            transition: 'all 0.3s ease-in-out',
+          }}
+          className="main-content"
+        >
           <Routes>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/alumnos" element={<Alumnos />} />
@@ -41,6 +48,22 @@ const AppContent: React.FC = () => {
           </Routes>
         </div>
       </div>
+
+      {/* Responsive Styles */}
+      <style>{`
+        @media (max-width: 991px) {
+          .main-content {
+            margin-left: 0 !important;
+            width: 100% !important;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .navbar-brand span.d-sm-inline {
+            display: none !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };

@@ -15,14 +15,23 @@ const Login: React.FC = () => {
     setLoading(true);
     setError('');
 
+    console.log('[Login] Iniciando intento de login');
+    console.log('[Login] Email:', email);
+
     try {
+      console.log('[Login] Llamando a login()...');
       await login(email, password);
+      console.log('[Login] ✓ Login exitoso, navegando a /dashboard');
       navigate('/dashboard');
     } catch (err: any) {
-      setError(
+      console.error('[Login] ✗ Error capturado:', err);
+      const errorMsg = 
         err.response?.data?.mensaje ||
-        'Error al iniciar sesión. Verifica tus credenciales.'
-      );
+        err.message ||
+        'Error al iniciar sesión. Verifica tus credenciales.';
+      
+      console.error('[Login] Mensaje de error:', errorMsg);
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }

@@ -4,10 +4,12 @@ import Modal from '../components/Modal';
 
 interface Alumno {
   id?: string;
-  nombre: string;
-  email: string;
+  apellido_paterno?: string;
+  primer_nombre?: string;
+  email_contacto?: string;
   telefono?: string;
-  grado?: string;
+  numero_matricula?: string;
+  numero_documento?: string;
   estado?: string;
 }
 
@@ -19,10 +21,12 @@ const Alumnos: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Alumno>({
-    nombre: '',
-    email: '',
+    apellido_paterno: '',
+    primer_nombre: '',
+    email_contacto: '',
     telefono: '',
-    grado: '',
+    numero_matricula: '',
+    numero_documento: '',
   });
 
   useEffect(() => {
@@ -31,17 +35,20 @@ const Alumnos: React.FC = () => {
 
   const fetchAlumnos = async () => {
     try {
+      setLoading(true);
       const response = await alumnosService.getAll();
+      console.log('Response:', response.data);
       setAlumnos(response.data?.datos || []);
+      setError('');
     } catch (err: any) {
+      console.error('Error fetching alumnos:', err);
       setError('Error al cargar alumnos');
-      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -51,14 +58,26 @@ const Alumnos: React.FC = () => {
 
   const handleOpenModal = (alumno?: any) => {
     if (alumno) {
-      setFormData(alumno);
+      setFormData({
+        id: alumno.id,
+        apellido_paterno: alumno.apellido_paterno || '',
+        primer_nombre: alumno.primer_nombre || '',
+        email_contacto: alumno.email_contacto || '',
+        telefono: alumno.telefono || '',
+        numero_matricula: alumno.numero_matricula || '',
+        numero_documento: alumno.numero_documento || '',
+        estado: alumno.estado || 'activo',
+      });
       setEditingId(alumno.id);
     } else {
       setFormData({
-        nombre: '',
-        email: '',
+        apellido_paterno: '',
+        primer_nombre: '',
+        email_contacto: '',
         telefono: '',
-        grado: '',
+        numero_matricula: '',
+        numero_documento: '',
+        estado: 'activo',
       });
       setEditingId(null);
     }
@@ -68,10 +87,12 @@ const Alumnos: React.FC = () => {
   const handleCloseModal = () => {
     setShowModal(false);
     setFormData({
-      nombre: '',
-      email: '',
+      apellido_paterno: '',
+      primer_nombre: '',
+      email_contacto: '',
       telefono: '',
-      grado: '',
+      numero_matricula: '',
+      numero_documento: '',
     });
     setEditingId(null);
   };
@@ -79,6 +100,11 @@ const Alumnos: React.FC = () => {
   const handleSave = async () => {
     try {
       setError('');
+      if (!formData.apellido_paterno || !formData.primer_nombre || !formData.numero_matricula) {
+        setError('Completa los campos obligatorios');
+        return;
+      }
+
       if (editingId) {
         await alumnosService.update(editingId, formData);
         setSuccess('Alumno actualizado correctamente');
@@ -90,6 +116,7 @@ const Alumnos: React.FC = () => {
       fetchAlumnos();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
+      console.error('Save error:', err);
       setError(err.response?.data?.mensaje || 'Error al guardar alumno');
     }
   };
@@ -102,6 +129,7 @@ const Alumnos: React.FC = () => {
         fetchAlumnos();
         setTimeout(() => setSuccess(''), 3000);
       } catch (err: any) {
+        console.error('Delete error:', err);
         setError(err.response?.data?.mensaje || 'Error al eliminar alumno');
       }
     }
@@ -159,11 +187,11 @@ const Alumnos: React.FC = () => {
               <table className="table table-hover">
                 <thead className="table-light">
                   <tr>
-                    <th>ID</th>
+                    <th>Matrícula</th>
                     <th>Nombre</th>
+                    <th>Apellido</th>
                     <th>Email</th>
                     <th>Teléfono</th>
-                    <th>Grado</th>
                     <th>Acciones</th>
                   </tr>
                 </thead>
@@ -178,12 +206,12 @@ const Alumnos: React.FC = () => {
                     alumnos.map((alumno) => (
                       <tr key={alumno.id}>
                         <td>
-                          <small className="text-muted">{alumno.id}</small>
+                          <small className="text-muted">{alumno.numero_matricula}</small>
                         </td>
-                        <td>{alumno.nombre}</td>
-                        <td>{alumno.email}</td>
+                        <td>{alumno.primer_nombre}</td>
+                        <td>{alumno.apellido_paterno}</td>
+                        <td>{alumno.email_contacto || '-'}</td>
                         <td>{alumno.telefono || '-'}</td>
-                        <td>{alumno.grado || '-'}</td>
                         <td>
                           <button
                             className="btn btn-sm btn-primary me-2"
@@ -219,31 +247,78 @@ const Alumnos: React.FC = () => {
       >
         <form>
           <div className="mb-3">
-            <label htmlFor="nombre" className="form-label">
-              Nombre *
+            <label htmlFor="numero_matricula" className="form-label">
+              Número de Matrícula *
             </label>
             <input
               type="text"
               className="form-control"
-              id="nombre"
-              name="nombre"
-              value={formData.nombre}
+              id="numero_matricula"
+              name="numero_matricula"
+              value={formData.numero_matricula}
               onChange={handleInputChange}
+              placeholder="MAT-2024-XXXX"
               required
             />
           </div>
+          <div className="row">
+            <div className="col-md-6">
+              <div className="mb-3">
+                <label htmlFor="apellido_paterno" className="form-label">
+                  Apellido Paterno *
+                </label>
+                <input
+                  type="text"
+                  className="form-control"
+                  id="apellido_paterno"
+                  name="apellido_paterno"
+                  value={formData.apellido_paterno}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+            </div>
+            <div className="col-md-6">
+              <div className="mb-3">
+                <label htmlFor="primer_nombre" className="form-label">
+                  Nombre *
+                </label>
+                <input
+                  type="text"
+                  className="form-control"
+                  id="primer_nombre"
+                  name="primer_nombre"
+                  value={formData.primer_nombre}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+            </div>
+          </div>
           <div className="mb-3">
-            <label htmlFor="email" className="form-label">
-              Email *
+            <label htmlFor="numero_documento" className="form-label">
+              Número de Documento
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              id="numero_documento"
+              name="numero_documento"
+              value={formData.numero_documento}
+              onChange={handleInputChange}
+            />
+          </div>
+          <div className="mb-3">
+            <label htmlFor="email_contacto" className="form-label">
+              Email de Contacto
             </label>
             <input
               type="email"
               className="form-control"
-              id="email"
-              name="email"
-              value={formData.email}
+              id="email_contacto"
+              name="email_contacto"
+              value={formData.email_contacto}
               onChange={handleInputChange}
-              required
             />
           </div>
           <div className="mb-3">
@@ -258,33 +333,6 @@ const Alumnos: React.FC = () => {
               value={formData.telefono}
               onChange={handleInputChange}
             />
-          </div>
-          <div className="mb-3">
-            <label htmlFor="grado" className="form-label">
-              Grado
-            </label>
-            <select
-              className="form-select"
-              id="grado"
-              name="grado"
-              value={formData.grado}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, grado: e.target.value }))
-              }
-            >
-              <option value="">Seleccionar grado</option>
-              <option value="1ro">1ro Primaria</option>
-              <option value="2do">2do Primaria</option>
-              <option value="3ro">3ro Primaria</option>
-              <option value="4to">4to Primaria</option>
-              <option value="5to">5to Primaria</option>
-              <option value="6to">6to Primaria</option>
-              <option value="1ro-sec">1ro Secundaria</option>
-              <option value="2do-sec">2do Secundaria</option>
-              <option value="3ro-sec">3ro Secundaria</option>
-              <option value="4to-sec">4to Secundaria</option>
-              <option value="5to-sec">5to Secundaria</option>
-            </select>
           </div>
         </form>
       </Modal>

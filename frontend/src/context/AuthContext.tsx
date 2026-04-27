@@ -38,15 +38,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const login = async (email: string, password: string) => {
     try {
+      console.log('[AuthContext] Iniciando login para:', email);
+      
       const response = await authService.login(email, password);
+      console.log('[AuthContext] Respuesta recibida:', response);
+      console.log('[AuthContext] response.data:', response.data);
+      
       const { datos } = response.data;
+      console.log('[AuthContext] datos:', datos);
+      
+      if (!datos) {
+        throw new Error('Respuesta inválida: falta el campo "datos"');
+      }
+      
       const { token, usuario } = datos;
-
+      console.log('[AuthContext] token:', token?.substring(0, 30) + '...');
+      console.log('[AuthContext] usuario:', usuario);
+      
+      if (!token) {
+        throw new Error('Respuesta inválida: falta el token');
+      }
+      
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(usuario));
       setToken(token);
       setUser(usuario);
-    } catch (error) {
+      
+      console.log('[AuthContext] ✓ Login exitoso');
+    } catch (error: any) {
+      console.error('[AuthContext] ✗ Error en login:', error);
+      console.error('[AuthContext] Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        fullError: error
+      });
       throw error;
     }
   };

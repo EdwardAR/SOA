@@ -127,10 +127,9 @@ app.post('/api/auth/registro', asyncHandler(async (req, res) => {
 }));
 
 // ============================================
-// RUTAS PROTEGIDAS - Proxy a Servicios
+// RUTAS PROTEGIDAS - Proxy a Servicios (DESHABILITADO - Usando BD directa)
 // ============================================
-
-// Proxy genérico para servicios
+/*
 const proxyServicio = (servicio) => asyncHandler(async (req, res) => {
   try {
     const url = `${SERVICIOS[servicio]}${req.originalUrl.replace(`/api/${servicio}`, '')}`;
@@ -215,6 +214,249 @@ app.put('/api/calificaciones/:id', authMiddleware, requireRole(['docente']), pro
 app.get('/api/calificaciones-alumno/:alumno_id', authMiddleware, proxyServicio('calificaciones'));
 app.get('/api/calificaciones-curso/:curso_id', authMiddleware, proxyServicio('calificaciones'));
 app.get('/api/promedio-alumno/:alumno_id', authMiddleware, proxyServicio('calificaciones'));
+*/
+
+// ============================================
+// RUTAS PROTEGIDAS - Datos directo de BD
+// ============================================
+
+// ALUMNOS desde BD
+app.get('/api/alumnos', authMiddleware, asyncHandler(async (req, res) => {
+  try {
+    const alumnos = await getAll('SELECT * FROM alumnos LIMIT 100');
+    res.json(respuestaExito(alumnos, 'Alumnos obtenidos'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al obtener alumnos'));
+  }
+}));
+
+app.get('/api/alumnos/:id', authMiddleware, asyncHandler(async (req, res) => {
+  try {
+    const alumno = await getOne('SELECT * FROM alumnos WHERE id = ?', [req.params.id]);
+    if (!alumno) return res.status(404).json(respuestaError('Alumno no encontrado'));
+    res.json(respuestaExito(alumno));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al obtener alumno'));
+  }
+}));
+
+// CURSOS desde BD
+app.get('/api/cursos', authMiddleware, asyncHandler(async (req, res) => {
+  try {
+    const cursos = await getAll('SELECT * FROM cursos LIMIT 100');
+    res.json(respuestaExito(cursos, 'Cursos obtenidos'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al obtener cursos'));
+  }
+}));
+
+app.get('/api/cursos/:id', authMiddleware, asyncHandler(async (req, res) => {
+  try {
+    const curso = await getOne('SELECT * FROM cursos WHERE id = ?', [req.params.id]);
+    if (!curso) return res.status(404).json(respuestaError('Curso no encontrado'));
+    res.json(respuestaExito(curso));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al obtener curso'));
+  }
+}));
+
+// PROFESORES desde BD
+app.get('/api/profesores', authMiddleware, asyncHandler(async (req, res) => {
+  try {
+    const profesores = await getAll('SELECT * FROM profesores LIMIT 100');
+    res.json(respuestaExito(profesores, 'Profesores obtenidos'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al obtener profesores'));
+  }
+}));
+
+app.get('/api/profesores/:id', authMiddleware, asyncHandler(async (req, res) => {
+  try {
+    const profesor = await getOne('SELECT * FROM profesores WHERE id = ?', [req.params.id]);
+    if (!profesor) return res.status(404).json(respuestaError('Profesor no encontrado'));
+    res.json(respuestaExito(profesor));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al obtener profesor'));
+  }
+}));
+
+// MATRÍCULAS desde BD
+app.get('/api/matriculas', authMiddleware, asyncHandler(async (req, res) => {
+  try {
+    const matriculas = await getAll('SELECT * FROM matriculas LIMIT 100');
+    res.json(respuestaExito(matriculas, 'Matrículas obtenidas'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al obtener matrículas'));
+  }
+}));
+
+// PAGOS desde BD
+app.get('/api/pagos', authMiddleware, asyncHandler(async (req, res) => {
+  try {
+    const pagos = await getAll('SELECT * FROM pagos LIMIT 100');
+    res.json(respuestaExito(pagos, 'Pagos obtenidos'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al obtener pagos'));
+  }
+}));
+
+// ASISTENCIA desde BD
+app.get('/api/asistencia', authMiddleware, asyncHandler(async (req, res) => {
+  try {
+    const asistencia = await getAll('SELECT * FROM asistencia LIMIT 100');
+    res.json(respuestaExito(asistencia, 'Registros de asistencia obtenidos'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al obtener asistencia'));
+  }
+}));
+
+// CALIFICACIONES desde BD
+app.get('/api/calificaciones', authMiddleware, asyncHandler(async (req, res) => {
+  try {
+    const calificaciones = await getAll('SELECT * FROM calificaciones LIMIT 100');
+    res.json(respuestaExito(calificaciones, 'Calificaciones obtenidas'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al obtener calificaciones'));
+  }
+}));
+
+// NOTIFICACIONES desde BD
+app.get('/api/notificaciones', authMiddleware, asyncHandler(async (req, res) => {
+  try {
+    const notificaciones = await getAll('SELECT * FROM notificaciones LIMIT 100');
+    res.json(respuestaExito(notificaciones, 'Notificaciones obtenidas'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al obtener notificaciones'));
+  }
+}));
+
+// ============================================
+// CREAR/ACTUALIZAR/ELIMINAR - POST, PUT, DELETE
+// ============================================
+
+// POST ALUMNOS
+app.post('/api/alumnos', authMiddleware, requireRole(['administrativo', 'director']), asyncHandler(async (req, res) => {
+  const { usuario_id, numero_matricula, apellido_paterno, primer_nombre, email_contacto, telefono, estado, numero_documento } = req.body;
+  const id = generarId();
+  
+  if (!numero_matricula || !apellido_paterno || !primer_nombre) {
+    return res.status(400).json(respuestaError('Faltan campos requeridos: numero_matricula, apellido_paterno, primer_nombre'));
+  }
+  
+  try {
+    await runQuery(
+      `INSERT INTO alumnos (id, usuario_id, numero_matricula, apellido_paterno, primer_nombre, email_contacto, telefono, numero_documento, estado, fecha_creacion, fecha_actualizacion)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      [id, usuario_id || null, numero_matricula, apellido_paterno, primer_nombre, email_contacto || null, telefono || null, numero_documento || null, estado || 'activo']
+    );
+    res.status(201).json(respuestaExito({ id }, 'Alumno creado exitosamente'));
+  } catch (error) {
+    console.error('Error creating alumno:', error);
+    res.status(500).json(respuestaError('Error al crear alumno: ' + error.message));
+  }
+}));
+
+// PUT ALUMNOS
+app.put('/api/alumnos/:id', authMiddleware, requireRole(['administrativo', 'director']), asyncHandler(async (req, res) => {
+  const { apellido_paterno, primer_nombre, email_contacto, telefono, estado } = req.body;
+  try {
+    await runQuery(
+      `UPDATE alumnos SET apellido_paterno = ?, primer_nombre = ?, email_contacto = ?, telefono = ?, estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP
+       WHERE id = ?`,
+      [apellido_paterno, primer_nombre, email_contacto, telefono, estado, req.params.id]
+    );
+    res.json(respuestaExito({}, 'Alumno actualizado exitosamente'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al actualizar alumno'));
+  }
+}));
+
+// DELETE ALUMNOS (marcar como inactivo)
+app.delete('/api/alumnos/:id', authMiddleware, requireRole(['administrativo', 'director']), asyncHandler(async (req, res) => {
+  try {
+    await runQuery('UPDATE alumnos SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id = ?', ['inactivo', req.params.id]);
+    res.json(respuestaExito({}, 'Alumno desactivado'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al eliminar alumno'));
+  }
+}));
+
+// POST CURSOS
+app.post('/api/cursos', authMiddleware, requireRole(['director', 'administrativo']), asyncHandler(async (req, res) => {
+  const { nombre, codigo, grado, capacidad } = req.body;
+  const id = generarId();
+  try {
+    await runQuery(
+      `INSERT INTO cursos (id, nombre, codigo, grado, capacidad, fecha_creacion, fecha_actualizacion)
+       VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      [id, nombre, codigo, grado, capacidad || 40]
+    );
+    res.status(201).json(respuestaExito({ id }, 'Curso creado exitosamente'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al crear curso'));
+  }
+}));
+
+// PUT CURSOS
+app.put('/api/cursos/:id', authMiddleware, requireRole(['director', 'administrativo']), asyncHandler(async (req, res) => {
+  const { nombre, codigo, grado, capacidad } = req.body;
+  try {
+    await runQuery(
+      `UPDATE cursos SET nombre = ?, codigo = ?, grado = ?, capacidad = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id = ?`,
+      [nombre, codigo, grado, capacidad, req.params.id]
+    );
+    res.json(respuestaExito({}, 'Curso actualizado exitosamente'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al actualizar curso'));
+  }
+}));
+
+// POST PROFESORES
+app.post('/api/profesores', authMiddleware, requireRole(['director']), asyncHandler(async (req, res) => {
+  const { usuario_id, numero_empleado, apellido_paterno, primer_nombre, especialidad, email_contacto, telefono } = req.body;
+  const id = generarId();
+  try {
+    await runQuery(
+      `INSERT INTO profesores (id, usuario_id, numero_empleado, apellido_paterno, primer_nombre, especialidad, email_contacto, telefono, fecha_creacion, fecha_actualizacion)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      [id, usuario_id, numero_empleado, apellido_paterno, primer_nombre, especialidad, email_contacto, telefono]
+    );
+    res.status(201).json(respuestaExito({ id }, 'Profesor creado exitosamente'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al crear profesor'));
+  }
+}));
+
+// PUT PROFESORES
+app.put('/api/profesores/:id', authMiddleware, requireRole(['director']), asyncHandler(async (req, res) => {
+  const { apellido_paterno, primer_nombre, especialidad, email_contacto, telefono } = req.body;
+  try {
+    await runQuery(
+      `UPDATE profesores SET apellido_paterno = ?, primer_nombre = ?, especialidad = ?, email_contacto = ?, telefono = ?, fecha_actualizacion = CURRENT_TIMESTAMP
+       WHERE id = ?`,
+      [apellido_paterno, primer_nombre, especialidad, email_contacto, telefono, req.params.id]
+    );
+    res.json(respuestaExito({}, 'Profesor actualizado exitosamente'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al actualizar profesor'));
+  }
+}));
+
+// POST PAGOS
+app.post('/api/pagos', authMiddleware, asyncHandler(async (req, res) => {
+  const { alumno_id, monto, concepto, estado_pago } = req.body;
+  const id = generarId();
+  try {
+    await runQuery(
+      `INSERT INTO pagos (id, alumno_id, monto, concepto, estado_pago, fecha_pago, fecha_creacion, fecha_actualizacion)
+       VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      [id, alumno_id, monto, concepto, estado_pago || 'pendiente']
+    );
+    res.status(201).json(respuestaExito({ id }, 'Pago registrado exitosamente'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al registrar pago'));
+  }
+}));
 
 // ============================================
 // RUTAS DE UTILIDAD
