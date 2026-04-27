@@ -7,12 +7,14 @@ Sistema completo de **Gestión Académica** basado en **Arquitectura Orientada a
 ## ⚡ Quick Start (3 Pasos)
 
 ```bash
-npm install            # 1. Instalar dependencias (1 min)
-npm run db:init       # 2. Inicializar BD con datos (30 seg)
-npm run dev           # 3. Ejecutar sistema (30 seg)
+npm install                              # 1. Instalar dependencias (1 min)
+npm run db:init                          # 2. Inicializar BD con datos (30 seg)
+npm start & cd frontend && npm start     # 3. Levantar sistema
 ```
 
-**✅ Listo**. Accede en: **http://localhost:3000**
+**✅ Listo**. Accede en:
+- **Frontend**: http://localhost:3001 (React UI)
+- **Backend**: http://localhost:3000 (APIs REST)
 
 ---
 
@@ -77,7 +79,9 @@ Levanta 9 servicios simultáneamente:
 
 ---
 
-## 🏗️ 9 Microservicios Implementados
+## 🏗️ Arquitectura Completa
+
+### Backend: 9 Microservicios Implementados
 
 | Servicio | Puerto | Descripción |
 |----------|--------|-------------|
@@ -90,6 +94,15 @@ Levanta 9 servicios simultáneamente:
 | Notificaciones | 3006 | Email/SMS (RN-006) |
 | Asistencia | 3007 | Control asistencia (RN-003, RN-006) |
 | Calificaciones | 3008 | Notas académicas (RN-002) |
+
+### Frontend: React Application
+
+| Componente | Puerto | Descripción |
+|-----------|--------|-------------|
+| React Frontend | 3001+ | Interfaz gráfica moderna con Bootstrap 5 |
+| Componentes | - | Dashboard, Alumnos, Cursos, Pagos, etc. |
+| Context API | - | Gestión de autenticación y estado |
+| Axios | - | Cliente HTTP integrado con APIs |
 
 ---
 
@@ -184,6 +197,7 @@ POST /api/notificaciones           # Enviar notificación
 
 ## 🛠️ Comandos Útiles
 
+### Backend
 ```bash
 # Desarrollo (todos los servicios con nodemon)
 npm run dev
@@ -207,6 +221,21 @@ npm run db:verify          # Verificar datos
 npm run verify             # Verificar servicios activos
 npm run test:api           # Probar APIs
 npm test                   # Tests automatizados
+```
+
+### Frontend (React)
+```bash
+# Entrar en carpeta frontend
+cd frontend
+
+# Desarrollar
+npm start                  # Levanta en puerto disponible
+
+# Construir para producción
+npm run build
+
+# Ejecutar tests
+npm test
 ```
 
 ---
@@ -267,6 +296,37 @@ SOA/
 │   ├── notificaciones-service/
 │   ├── asistencia-service/
 │   └── calificaciones-service/
+├── frontend/                    # React Application
+│   ├── public/
+│   │   ├── index.html          # HTML root
+│   │   └── favicon.svg
+│   ├── src/
+│   │   ├── api/
+│   │   │   ├── client.ts       # Axios client
+│   │   │   └── services.ts     # API services
+│   │   ├── components/
+│   │   │   ├── Navbar.tsx
+│   │   │   ├── Sidebar.tsx
+│   │   │   └── PrivateRoute.tsx
+│   │   ├── context/
+│   │   │   └── AuthContext.tsx # State management
+│   │   ├── pages/
+│   │   │   ├── Login.tsx
+│   │   │   ├── Dashboard.tsx
+│   │   │   ├── Alumnos.tsx
+│   │   │   ├── Cursos.tsx
+│   │   │   ├── Profesores.tsx
+│   │   │   ├── Matriculas.tsx
+│   │   │   ├── Pagos.tsx
+│   │   │   ├── Notificaciones.tsx
+│   │   │   ├── Asistencia.tsx
+│   │   │   └── Calificaciones.tsx
+│   │   ├── App.tsx             # Routing principal
+│   │   ├── index.tsx           # Entry point
+│   │   └── index.css           # Estilos globales
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── .env
 ├── config/
 │   └── database.js             # Conexión SQLite
 ├── database/
@@ -397,15 +457,53 @@ docker-compose down
 ## 📚 Stack
 
 - **Backend**: Node.js + Express.js
-- **Auth**: JWT + Bcryptjs
+- **Frontend**: React 18 + TypeScript + Bootstrap 5
+- **Auth**: JWT + Bcryptjs + Context API
 - **BD**: SQLite (dev) / MySQL (prod ready)
+- **HTTP Client**: Axios
+- **Routing**: React Router v6
 - **Notificaciones**: Nodemailer + Twilio API
 - **Dev**: Nodemon, Concurrently, Jest
 - **Deploy**: Docker, Vercel, Railway
 
 ---
 
-## 🎓 Información Institucional
+## 🎨 Interfaz Gráfica (React Frontend)
+
+### Pantallas Disponibles
+
+- **Login**: Autenticación con email/contraseña
+- **Dashboard**: Resumen estadístico de toda la plataforma
+- **Alumnos**: CRUD completo de estudiantes
+- **Profesores**: Gestión de docentes
+- **Cursos**: Administración de cursos y capacidad
+- **Matrículas**: Inscripciones validadas
+- **Pagos**: Gestión financiera de la institución
+- **Asistencia**: Registro de asistencia diaria
+- **Calificaciones**: Registro y promedio de notas
+- **Notificaciones**: Centro de notificaciones del sistema
+
+### Características de la UI
+
+✅ **Interfaz moderna** - Bootstrap 5 con diseño responsive  
+✅ **Autenticación** - Login con JWT + localStorage  
+✅ **Rutas protegidas** - Control de acceso por permisos  
+✅ **Tabla dinámica** - Listado de datos con paginación  
+✅ **Sidebar navegable** - Menú lateral con iconos  
+✅ **Navbar con usuario** - Información del usuario logueado  
+✅ **Integración APIs** - Axios con interceptores  
+✅ **Manejo errores** - Messages de error/éxito  
+
+### Ejemplo de Uso
+
+1. Abre http://localhost:3001 (o el puerto que asigne React)
+2. Ingresa credenciales:
+   - Email: `director@colegio.com`
+   - Password: `password123`
+3. Dashboard muestra estadísticas en tiempo real
+4. Navega por el sidebar para acceder a cada módulo
+
+---
 
 **Universidad Tecnológica del Perú (UTP)**
 - Facultad: Ingeniería
