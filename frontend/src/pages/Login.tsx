@@ -82,8 +82,7 @@ const Login: React.FC = () => {
               style={{
                 borderLeft: '4px solid #dc3545',
                 borderRadius: '6px',
-                backgroundColor: '#f8d7da',
-                borderRadius: '6px'
+                backgroundColor: '#f8d7da'
               }}
             >
               <i className="bi bi-exclamation-circle-fill me-2"></i>
