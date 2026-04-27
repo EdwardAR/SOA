@@ -13,7 +13,6 @@ import Calificaciones from './pages/Calificaciones';
 import Notificaciones from './pages/Notificaciones';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
-import PrivateRoute from './components/PrivateRoute';
 
 const AppContent: React.FC = () => {
   const { isAuthenticated } = useAuth();
