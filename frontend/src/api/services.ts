@@ -14,9 +14,9 @@ const createCrudService = (resource: string, includeDelete = true) => {
     delete?: (id: string) => Promise<any>;
   };
 
-  if (includeDelete) {
-    service.delete = (id: string) => apiClient.delete(`${resource}/${id}`);
-  }
+  service.delete = includeDelete
+    ? (id: string) => apiClient.delete(`${resource}/${id}`)
+    : () => Promise.reject(new Error(`Delete operation is not supported for ${resource}`));
 
   return service;
 };
@@ -46,10 +46,10 @@ export const matriculasService = createCrudService('/matriculas');
 export const pagosService = createCrudService('/pagos');
 
 // Asistencia
-export const asistenciaService = createCrudService('/asistencia');
+export const asistenciaService = createCrudService('/asistencia', false);
 
 // Calificaciones
-export const calificacionesService = createCrudService('/calificaciones');
+export const calificacionesService = createCrudService('/calificaciones', false);
 
 // Notificaciones
 export const notificacionesService = {
