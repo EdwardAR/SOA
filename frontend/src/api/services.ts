@@ -16,7 +16,7 @@ const createCrudService = (resource: string, includeDelete = true) => {
 
   service.delete = includeDelete
     ? (id: string | number) => apiClient.delete(`${resource}/${id}`)
-    : () => Promise.reject(new Error(`Delete operation is not supported for ${resource} (no backend endpoint available)`));
+    : () => Promise.reject(new Error(`Delete operation is not supported for ${resource}`));
 
   return service;
 };
