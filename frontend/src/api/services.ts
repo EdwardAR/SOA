@@ -3,20 +3,20 @@ import apiClient from './client';
 const createCrudService = (resource: string, includeDelete = true) => {
   const service = {
     getAll: () => apiClient.get(resource),
-    getById: (id: string) => apiClient.get(`${resource}/${id}`),
+    getById: (id: string | number) => apiClient.get(`${resource}/${id}`),
     create: (data: any) => apiClient.post(resource, data),
-    update: (id: string, data: any) => apiClient.put(`${resource}/${id}`, data),
+    update: (id: string | number, data: any) => apiClient.put(`${resource}/${id}`, data),
   } as {
     getAll: () => Promise<any>;
-    getById: (id: string) => Promise<any>;
+    getById: (id: string | number) => Promise<any>;
     create: (data: any) => Promise<any>;
-    update: (id: string, data: any) => Promise<any>;
-    delete?: (id: string) => Promise<any>;
+    update: (id: string | number, data: any) => Promise<any>;
+    delete?: (id: string | number) => Promise<any>;
   };
 
   service.delete = includeDelete
-    ? (id: string) => apiClient.delete(`${resource}/${id}`)
-    : () => Promise.reject(new Error(`Delete operation is not supported for ${resource}`));
+    ? (id: string | number) => apiClient.delete(`${resource}/${id}`)
+    : () => Promise.reject(new Error(`Delete operation is not supported for ${resource} (no backend endpoint available)`));
 
   return service;
 };
