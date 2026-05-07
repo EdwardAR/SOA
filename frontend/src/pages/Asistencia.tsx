@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { asistenciaService } from '../api/services';
 import Modal from '../components/Modal';
 
-interface Asistencia {
+interface AsistenciaRecord {
   id?: number;
   alumno_id: number;
   fecha: string;
@@ -11,13 +11,13 @@ interface Asistencia {
 }
 
 const Asistencia: React.FC = () => {
-  const [asistencias, setAsistencias] = useState<Asistencia[]>([]);
+  const [asistencias, setAsistencias] = useState<AsistenciaRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [formData, setFormData] = useState<Asistencia>({
+  const [formData, setFormData] = useState<AsistenciaRecord>({
     alumno_id: 0,
     fecha: new Date().toISOString().split('T')[0],
     estado: 'presente',
@@ -42,7 +42,7 @@ const Asistencia: React.FC = () => {
     }
   };
 
-  const handleOpenModal = (asistencia?: Asistencia) => {
+  const handleOpenModal = (asistencia?: AsistenciaRecord) => {
     if (asistencia) {
       setEditingId(asistencia.id || null);
       setFormData(asistencia);

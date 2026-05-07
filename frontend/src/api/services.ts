@@ -1,5 +1,26 @@
 import apiClient from './client';
 
+const createCrudService = (resource: string, includeDelete = true) => {
+  const service = {
+    getAll: () => apiClient.get(resource),
+    getById: (id: string) => apiClient.get(`${resource}/${id}`),
+    create: (data: any) => apiClient.post(resource, data),
+    update: (id: string, data: any) => apiClient.put(`${resource}/${id}`, data),
+  } as {
+    getAll: () => Promise<any>;
+    getById: (id: string) => Promise<any>;
+    create: (data: any) => Promise<any>;
+    update: (id: string, data: any) => Promise<any>;
+    delete?: (id: string) => Promise<any>;
+  };
+
+  if (includeDelete) {
+    service.delete = (id: string) => apiClient.delete(`${resource}/${id}`);
+  }
+
+  return service;
+};
+
 // Auth
 export const authService = {
   login: (email: string, password: string) =>
@@ -10,65 +31,25 @@ export const authService = {
 };
 
 // Alumnos
-export const alumnosService = {
-  getAll: () => apiClient.get('/alumnos'),
-  getById: (id: string) => apiClient.get(`/alumnos/${id}`),
-  create: (data: any) => apiClient.post('/alumnos', data),
-  update: (id: string, data: any) => apiClient.put(`/alumnos/${id}`, data),
-  delete: (id: string) => apiClient.delete(`/alumnos/${id}`),
-};
+export const alumnosService = createCrudService('/alumnos');
 
 // Cursos
-export const cursosService = {
-  getAll: () => apiClient.get('/cursos'),
-  getById: (id: string) => apiClient.get(`/cursos/${id}`),
-  create: (data: any) => apiClient.post('/cursos', data),
-  update: (id: string, data: any) => apiClient.put(`/cursos/${id}`, data),
-  delete: (id: string) => apiClient.delete(`/cursos/${id}`),
-};
+export const cursosService = createCrudService('/cursos');
 
 // Profesores
-export const profesoresService = {
-  getAll: () => apiClient.get('/profesores'),
-  getById: (id: string) => apiClient.get(`/profesores/${id}`),
-  create: (data: any) => apiClient.post('/profesores', data),
-  update: (id: string, data: any) => apiClient.put(`/profesores/${id}`, data),
-  delete: (id: string) => apiClient.delete(`/profesores/${id}`),
-};
+export const profesoresService = createCrudService('/profesores');
 
 // Matrículas
-export const matriculasService = {
-  getAll: () => apiClient.get('/matriculas'),
-  getById: (id: string) => apiClient.get(`/matriculas/${id}`),
-  create: (data: any) => apiClient.post('/matriculas', data),
-  update: (id: string, data: any) => apiClient.put(`/matriculas/${id}`, data),
-  delete: (id: string) => apiClient.delete(`/matriculas/${id}`),
-};
+export const matriculasService = createCrudService('/matriculas');
 
 // Pagos
-export const pagosService = {
-  getAll: () => apiClient.get('/pagos'),
-  getById: (id: string) => apiClient.get(`/pagos/${id}`),
-  create: (data: any) => apiClient.post('/pagos', data),
-  update: (id: string, data: any) => apiClient.put(`/pagos/${id}`, data),
-  delete: (id: string) => apiClient.delete(`/pagos/${id}`),
-};
+export const pagosService = createCrudService('/pagos');
 
 // Asistencia
-export const asistenciaService = {
-  getAll: () => apiClient.get('/asistencia'),
-  getById: (id: string) => apiClient.get(`/asistencia/${id}`),
-  create: (data: any) => apiClient.post('/asistencia', data),
-  update: (id: string, data: any) => apiClient.put(`/asistencia/${id}`, data),
-};
+export const asistenciaService = createCrudService('/asistencia');
 
 // Calificaciones
-export const calificacionesService = {
-  getAll: () => apiClient.get('/calificaciones'),
-  getById: (id: string) => apiClient.get(`/calificaciones/${id}`),
-  create: (data: any) => apiClient.post('/calificaciones', data),
-  update: (id: string, data: any) => apiClient.put(`/calificaciones/${id}`, data),
-};
+export const calificacionesService = createCrudService('/calificaciones');
 
 // Notificaciones
 export const notificacionesService = {
