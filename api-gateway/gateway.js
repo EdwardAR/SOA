@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const bcryptjs = require('bcryptjs');
-const { initDatabase, getDatabase, getOne, runQuery } = require('../config/database');
+const { initDatabase, getDatabase, getOne, getAll, runQuery } = require('../config/database');
 const { authMiddleware, requireRole, generarToken } = require('./middleware/auth');
 const { errorHandler, asyncHandler } = require('./middleware/errorHandler');
 const { respuestaExito, respuestaError, generarId } = require('../shared/utils');
@@ -14,7 +14,7 @@ const GATEWAY_PORT = process.env.GATEWAY_PORT || 3000;
 
 // Configuración de CORS
 const corsOptions = {
-  origin: (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(','),
+  origin: ['http://localhost:3001'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
