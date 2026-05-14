@@ -5,6 +5,7 @@ import {
   profesoresService,
   pagosService,
 } from '../api/services';
+import { API_BASE_URL } from '../api/client';
 
 const Dashboard: React.FC = () => {
   const [stats, setStats] = useState({
@@ -143,7 +144,7 @@ const Dashboard: React.FC = () => {
                   <p className="mb-2">
                     <strong>API Gateway:</strong> 
                     <br />
-                    <code style={{ fontSize: '0.85rem' }}>http://localhost:3000</code>
+                    <code style={{ fontSize: '0.85rem' }}>{API_BASE_URL.replace('/api', '')}</code>
                   </p>
                   <p className="mb-0">
                     <strong>Base de Datos:</strong> 

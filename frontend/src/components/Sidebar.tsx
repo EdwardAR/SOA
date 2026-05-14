@@ -64,7 +64,7 @@ const Sidebar: React.FC = () => {
 
       {/* Sidebar */}
       <div
-        className="sidebar d-flex flex-column h-100"
+        className={`sidebar d-flex flex-column h-100 ${isExpanded ? 'd-block' : 'd-none d-lg-flex'}`}
         style={{
           width: '250px',
           position: 'fixed',
@@ -76,11 +76,8 @@ const Sidebar: React.FC = () => {
           transform: isExpanded ? 'translateX(0)' : 'translateX(-100%)',
           transition: 'transform 0.3s ease-in-out',
           zIndex: 1025,
-          '@media (max-width: 991px)': {
-            boxShadow: '2px 0 5px rgba(0,0,0,0.1)',
-          },
+          boxShadow: isExpanded ? '2px 0 5px rgba(0,0,0,0.1)' : 'none',
         }}
-        className={`sidebar d-flex flex-column h-100 ${isExpanded ? 'd-block' : 'd-none d-lg-flex'}`}
       >
         <div className="p-3 border-bottom" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
           <p className="text-white-50 mb-0" style={{ fontSize: '0.85rem' }}>
