@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { cursosService } from '../api/services';
+import { cursosService, profesoresService } from '../api/services';
 import Modal from '../components/Modal';
+import { generateStructuredCode } from '../utils/codeGenerators';
 
 interface Curso {
   id?: string;
@@ -8,10 +9,14 @@ interface Curso {
   codigo?: string;
   grado?: string;
   capacidad?: number;
+  profesor_id?: string;
+  seccion?: string;
+  salon?: string;
 }
 
 const Cursos: React.FC = () => {
   const [cursos, setCursos] = useState<any[]>([]);
+  const [profesores, setProfesores] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -22,10 +27,14 @@ const Cursos: React.FC = () => {
     codigo: '',
     grado: '',
     capacidad: 40,
+    profesor_id: '',
+    seccion: 'A',
+    salon: '',
   });
 
   useEffect(() => {
     fetchCursos();
+    fetchProfesores();
   }, []);
 
   const fetchCursos = async () => {
@@ -38,6 +47,27 @@ const Cursos: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchProfesores = async () => {
+    try {
+      const response = await profesoresService.getAll();
+      setProfesores(response.data?.datos || []);
+    } catch (err) {
+      console.error('Error cargando profesores para cursos:', err);
+    }
+  };
+
+  const handleAutoGenerateCodigo = () => {
+    setFormData((prev) => ({
+      ...prev,
+      codigo: generateStructuredCode({
+        prefix: 'CUR',
+        rows: cursos,
+        field: 'codigo',
+        padding: 4,
+      }),
+    }));
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -58,6 +88,9 @@ const Cursos: React.FC = () => {
         codigo: '',
         grado: '',
         capacidad: 40,
+        profesor_id: profesores[0]?.id || '',
+        seccion: 'A',
+        salon: '',
       });
       setEditingId(null);
     }
@@ -71,6 +104,9 @@ const Cursos: React.FC = () => {
       codigo: '',
       grado: '',
       capacidad: 40,
+        profesor_id: profesores[0]?.id || '',
+        seccion: 'A',
+        salon: '',
     });
     setEditingId(null);
   };
@@ -162,6 +198,7 @@ const Cursos: React.FC = () => {
                     <th>Nombre</th>
                     <th>Código</th>
                     <th>Grado</th>
+                    <th>Profesor</th>
                     <th>Capacidad</th>
                     <th>Acciones</th>
                   </tr>
@@ -169,7 +206,7 @@ const Cursos: React.FC = () => {
                 <tbody>
                   {cursos.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="text-center py-4 text-muted">
+                      <td colSpan={7} className="text-center py-4 text-muted">
                         No hay cursos registrados
                       </td>
                     </tr>
@@ -184,6 +221,10 @@ const Cursos: React.FC = () => {
                           <span className="badge bg-info">{curso.codigo}</span>
                         </td>
                         <td>{curso.grado || '-'}</td>
+                        <td>
+                          <div className="fw-semibold">{curso.profesor_nombre || '-'}</div>
+                          <small className="text-muted">{curso.profesor_numero_empleado || ''}</small>
+                        </td>
                         <td>
                           <span className="badge bg-secondary">
                             {curso.capacidad}
@@ -241,15 +282,20 @@ const Cursos: React.FC = () => {
             <label htmlFor="codigo" className="form-label">
               Código
             </label>
-            <input
-              type="text"
-              className="form-control"
-              id="codigo"
-              name="codigo"
-              value={formData.codigo}
-              onChange={handleInputChange}
-              placeholder="ej: MAT-001"
-            />
+            <div className="input-group">
+              <input
+                type="text"
+                className="form-control"
+                id="codigo"
+                name="codigo"
+                value={formData.codigo}
+                onChange={handleInputChange}
+                placeholder="CUR-2026-0001"
+              />
+              <button type="button" className="btn btn-outline-secondary" onClick={handleAutoGenerateCodigo}>
+                Generar
+              </button>
+            </div>
           </div>
           <div className="mb-3">
             <label htmlFor="grado" className="form-label">
@@ -270,6 +316,56 @@ const Cursos: React.FC = () => {
               <option value="2do-sec">2do Secundaria</option>
               <option value="3ro-sec">3ro Secundaria</option>
             </select>
+          </div>
+          <div className="mb-3">
+            <label htmlFor="profesor_id" className="form-label">
+              Profesor responsable *
+            </label>
+            <select
+              className="form-select"
+              id="profesor_id"
+              name="profesor_id"
+              value={formData.profesor_id}
+              onChange={handleInputChange}
+              required
+            >
+              <option value="">Seleccionar profesor</option>
+              {profesores.map((profesor) => (
+                <option key={profesor.id} value={profesor.id}>
+                  {profesor.primer_nombre} {profesor.apellido_paterno} ({profesor.numero_empleado || 'sin código'})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="row">
+            <div className="col-md-6 mb-3">
+              <label htmlFor="seccion" className="form-label">
+                Sección
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                id="seccion"
+                name="seccion"
+                value={formData.seccion}
+                onChange={handleInputChange}
+                placeholder="A"
+              />
+            </div>
+            <div className="col-md-6 mb-3">
+              <label htmlFor="salon" className="form-label">
+                Salón
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                id="salon"
+                name="salon"
+                value={formData.salon}
+                onChange={handleInputChange}
+                placeholder="A-101"
+              />
+            </div>
           </div>
           <div className="mb-3">
             <label htmlFor="capacidad" className="form-label">

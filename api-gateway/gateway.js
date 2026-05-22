@@ -13,6 +13,7 @@ const { validadores } = require('../shared/validators');
 
 const app = express();
 const GATEWAY_PORT = process.env.GATEWAY_PORT || 3000;
+const PERIODO_ACADEMICO_DEFECTO = process.env.PERIODO_ACADEMICO || `${new Date().getFullYear()}-1`;
 
 // Configuración de CORS
 const corsOptions = {
@@ -225,7 +226,17 @@ app.get('/api/promedio-alumno/:alumno_id', authMiddleware, proxyServicio('califi
 // ALUMNOS desde BD
 app.get('/api/alumnos', authMiddleware, asyncHandler(async (req, res) => {
   try {
-    const alumnos = await getAll('SELECT * FROM alumnos LIMIT 100');
+    const alumnos = await getAll(`
+      SELECT
+        a.*,
+        TRIM(COALESCE(u.nombre, '') || ' (' || COALESCE(u.email, '') || ')') AS usuario_nombre,
+        COALESCE(p.nombre, '') AS padre_nombre
+      FROM alumnos a
+      LEFT JOIN usuarios u ON u.id = a.usuario_id
+      LEFT JOIN usuarios p ON p.id = a.padre_id
+      ORDER BY a.primer_nombre, a.apellido_paterno
+      LIMIT 100
+    `);
     res.json(respuestaExito(alumnos, 'Alumnos obtenidos'));
   } catch (error) {
     res.status(500).json(respuestaError('Error al obtener alumnos'));
@@ -245,7 +256,17 @@ app.get('/api/alumnos/:id', authMiddleware, asyncHandler(async (req, res) => {
 // CURSOS desde BD
 app.get('/api/cursos', authMiddleware, asyncHandler(async (req, res) => {
   try {
-    const cursos = await getAll('SELECT * FROM cursos LIMIT 100');
+    const cursos = await getAll(`
+      SELECT
+        c.*,
+        TRIM(COALESCE(p.primer_nombre, '') || ' ' || COALESCE(p.apellido_paterno, '')) AS profesor_nombre,
+        p.numero_empleado AS profesor_numero_empleado,
+        p.especialidad AS profesor_especialidad
+      FROM cursos c
+      LEFT JOIN profesores p ON p.id = c.profesor_id
+      ORDER BY c.nombre
+      LIMIT 100
+    `);
     res.json(respuestaExito(cursos, 'Cursos obtenidos'));
   } catch (error) {
     res.status(500).json(respuestaError('Error al obtener cursos'));
@@ -265,7 +286,16 @@ app.get('/api/cursos/:id', authMiddleware, asyncHandler(async (req, res) => {
 // PROFESORES desde BD
 app.get('/api/profesores', authMiddleware, asyncHandler(async (req, res) => {
   try {
-    const profesores = await getAll('SELECT * FROM profesores LIMIT 100');
+    const profesores = await getAll(`
+      SELECT
+        p.*,
+        u.nombre AS usuario_nombre,
+        u.email AS usuario_email
+      FROM profesores p
+      LEFT JOIN usuarios u ON u.id = p.usuario_id
+      ORDER BY p.primer_nombre, p.apellido_paterno
+      LIMIT 100
+    `);
     res.json(respuestaExito(profesores, 'Profesores obtenidos'));
   } catch (error) {
     res.status(500).json(respuestaError('Error al obtener profesores'));
@@ -285,7 +315,22 @@ app.get('/api/profesores/:id', authMiddleware, asyncHandler(async (req, res) => 
 // MATRÍCULAS desde BD
 app.get('/api/matriculas', authMiddleware, asyncHandler(async (req, res) => {
   try {
-    const matriculas = await getAll('SELECT * FROM matriculas LIMIT 100');
+    const matriculas = await getAll(`
+      SELECT
+        m.*,
+        TRIM(COALESCE(a.primer_nombre, '') || ' ' || COALESCE(a.apellido_paterno, '')) AS alumno_nombre,
+        a.numero_matricula AS alumno_numero_matricula,
+        c.nombre AS curso_nombre,
+        c.codigo AS curso_codigo,
+        c.grado AS curso_grado,
+        TRIM(COALESCE(p.primer_nombre, '') || ' ' || COALESCE(p.apellido_paterno, '')) AS profesor_nombre
+      FROM matriculas m
+      LEFT JOIN alumnos a ON a.id = m.alumno_id
+      LEFT JOIN cursos c ON c.id = m.curso_id
+      LEFT JOIN profesores p ON p.id = c.profesor_id
+      ORDER BY m.fecha_matricula DESC
+      LIMIT 100
+    `);
     res.json(respuestaExito(matriculas, 'Matrículas obtenidas'));
   } catch (error) {
     res.status(500).json(respuestaError('Error al obtener matrículas'));
@@ -295,7 +340,16 @@ app.get('/api/matriculas', authMiddleware, asyncHandler(async (req, res) => {
 // PAGOS desde BD
 app.get('/api/pagos', authMiddleware, asyncHandler(async (req, res) => {
   try {
-    const pagos = await getAll('SELECT * FROM pagos LIMIT 100');
+    const pagos = await getAll(`
+      SELECT
+        p.*,
+        TRIM(COALESCE(a.primer_nombre, '') || ' ' || COALESCE(a.apellido_paterno, '')) AS alumno_nombre,
+        a.numero_matricula AS alumno_numero_matricula
+      FROM pagos p
+      LEFT JOIN alumnos a ON a.id = p.alumno_id
+      ORDER BY p.fecha_creacion DESC
+      LIMIT 100
+    `);
     res.json(respuestaExito(pagos, 'Pagos obtenidos'));
   } catch (error) {
     res.status(500).json(respuestaError('Error al obtener pagos'));
@@ -305,7 +359,19 @@ app.get('/api/pagos', authMiddleware, asyncHandler(async (req, res) => {
 // ASISTENCIA desde BD
 app.get('/api/asistencia', authMiddleware, asyncHandler(async (req, res) => {
   try {
-    const asistencia = await getAll('SELECT * FROM asistencias LIMIT 100');
+    const asistencia = await getAll(`
+      SELECT
+        a.*,
+        TRIM(COALESCE(al.primer_nombre, '') || ' ' || COALESCE(al.apellido_paterno, '')) AS alumno_nombre,
+        al.numero_matricula AS alumno_numero_matricula,
+        c.nombre AS curso_nombre,
+        c.codigo AS curso_codigo
+      FROM asistencias a
+      LEFT JOIN alumnos al ON al.id = a.alumno_id
+      LEFT JOIN cursos c ON c.id = a.curso_id
+      ORDER BY a.fecha DESC
+      LIMIT 100
+    `);
     res.json(respuestaExito(asistencia, 'Registros de asistencia obtenidos'));
   } catch (error) {
     console.error('Error al obtener asistencia:', error);
@@ -316,7 +382,18 @@ app.get('/api/asistencia', authMiddleware, asyncHandler(async (req, res) => {
 // CALIFICACIONES desde BD
 app.get('/api/calificaciones', authMiddleware, asyncHandler(async (req, res) => {
   try {
-    const calificaciones = await getAll('SELECT * FROM calificaciones LIMIT 100');
+    const calificaciones = await getAll(`
+      SELECT
+        c.*,
+        TRIM(COALESCE(al.primer_nombre, '') || ' ' || COALESCE(al.apellido_paterno, '')) AS alumno_nombre,
+        al.numero_matricula AS alumno_numero_matricula,
+        cur.nombre AS curso_nombre,
+        cur.codigo AS curso_codigo
+      FROM calificaciones c
+      LEFT JOIN alumnos al ON al.id = c.alumno_id
+      LEFT JOIN cursos cur ON cur.id = c.curso_id
+      LIMIT 100
+    `);
     res.json(respuestaExito(calificaciones, 'Calificaciones obtenidas'));
   } catch (error) {
     res.status(500).json(respuestaError('Error al obtener calificaciones'));
@@ -326,7 +403,17 @@ app.get('/api/calificaciones', authMiddleware, asyncHandler(async (req, res) => 
 // NOTIFICACIONES desde BD
 app.get('/api/notificaciones', authMiddleware, asyncHandler(async (req, res) => {
   try {
-    const notificaciones = await getAll('SELECT * FROM notificaciones LIMIT 100');
+    const notificaciones = await getAll(`
+      SELECT
+        n.*,
+        u.nombre AS destinatario_nombre,
+        u.email AS destinatario_email,
+        u.tipo_usuario AS destinatario_tipo
+      FROM notificaciones n
+      LEFT JOIN usuarios u ON u.id = n.destinatario_id
+      ORDER BY n.fecha_creacion DESC
+      LIMIT 100
+    `);
     res.json(respuestaExito(notificaciones, 'Notificaciones obtenidas'));
   } catch (error) {
     res.status(500).json(respuestaError('Error al obtener notificaciones'));
@@ -339,7 +426,7 @@ app.get('/api/notificaciones', authMiddleware, asyncHandler(async (req, res) => 
 
 // POST ALUMNOS
 app.post('/api/alumnos', authMiddleware, requireRole(['administrativo', 'director']), asyncHandler(async (req, res) => {
-  const { usuario_id, numero_matricula, apellido_paterno, primer_nombre, email_contacto, telefono, estado, numero_documento } = req.body;
+  const { usuario_id, numero_matricula, apellido_paterno, apellido_materno, primer_nombre, segundo_nombre, email_contacto, telefono, estado, numero_documento, genero, fecha_nacimiento, direccion, padre_id, datos_completos, deuda_pendiente, periodo_academico } = req.body;
   const id = generarId();
   
   if (!numero_matricula || !apellido_paterno || !primer_nombre) {
@@ -347,10 +434,50 @@ app.post('/api/alumnos', authMiddleware, requireRole(['administrativo', 'directo
   }
   
   try {
+    let resolvedUsuarioId = usuario_id;
+    if (!resolvedUsuarioId) {
+      const emailGenerado = email_contacto || `${primer_nombre}.${apellido_paterno}.${numero_matricula}@colegio.local`.toLowerCase().replace(/[^a-z0-9@._-]/g, '');
+      const usuarioExistente = await getOne('SELECT id FROM usuarios WHERE email = ?', [emailGenerado]);
+      if (usuarioExistente) {
+        resolvedUsuarioId = usuarioExistente.id;
+      } else {
+        resolvedUsuarioId = generarId();
+        const passwordTemporal = await bcryptjs.hash('password123', 10);
+        await runQuery(
+          `INSERT INTO usuarios (id, nombre, email, password, tipo_usuario, estado)
+           VALUES (?, ?, ?, ?, ?, ?)` ,
+          [resolvedUsuarioId, `${primer_nombre} ${apellido_paterno}`.trim(), emailGenerado, passwordTemporal, 'alumno', 'activo']
+        );
+      }
+    }
+
     await runQuery(
-      `INSERT INTO alumnos (id, usuario_id, numero_matricula, apellido_paterno, primer_nombre, email_contacto, telefono, numero_documento, estado, fecha_creacion, fecha_actualizacion)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-      [id, usuario_id || null, numero_matricula, apellido_paterno, primer_nombre, email_contacto || null, telefono || null, numero_documento || null, estado || 'activo']
+      `INSERT INTO alumnos (
+        id, usuario_id, numero_matricula, apellido_paterno, apellido_materno, primer_nombre, segundo_nombre,
+        numero_documento, genero, fecha_nacimiento, direccion, telefono, email_contacto, padre_id,
+        datos_completos, deuda_pendiente, periodo_academico, estado, fecha_creacion, fecha_actualizacion
+       )
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      [
+        id,
+        resolvedUsuarioId,
+        numero_matricula,
+        apellido_paterno,
+        apellido_materno || null,
+        primer_nombre,
+        segundo_nombre || null,
+        numero_documento || null,
+        genero || null,
+        fecha_nacimiento || null,
+        direccion || null,
+        telefono || null,
+        email_contacto || null,
+        padre_id || null,
+        datos_completos ? 1 : 0,
+        deuda_pendiente ? 1 : 0,
+        periodo_academico || PERIODO_ACADEMICO_DEFECTO,
+        estado || 'activo'
+      ]
     );
     res.status(201).json(respuestaExito({ id }, 'Alumno creado exitosamente'));
   } catch (error) {
@@ -386,13 +513,16 @@ app.delete('/api/alumnos/:id', authMiddleware, requireRole(['administrativo', 'd
 
 // POST CURSOS
 app.post('/api/cursos', authMiddleware, requireRole(['director', 'administrativo']), asyncHandler(async (req, res) => {
-  const { nombre, codigo, grado, capacidad } = req.body;
+  const { nombre, codigo, grado, seccion, profesor_id, salon, capacidad, horario_inicio, horario_fin, estado } = req.body;
   const id = generarId();
+  if (!nombre || !codigo || !grado || !profesor_id) {
+    return res.status(400).json(respuestaError('Faltan campos requeridos: nombre, codigo, grado, profesor_id'));
+  }
   try {
     await runQuery(
-      `INSERT INTO cursos (id, nombre, codigo, grado, capacidad, fecha_creacion, fecha_actualizacion)
-       VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-      [id, nombre, codigo, grado, capacidad || 40]
+      `INSERT INTO cursos (id, nombre, codigo, grado, seccion, profesor_id, salon, capacidad, horario_inicio, horario_fin, estado, fecha_creacion, fecha_actualizacion)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      [id, nombre, codigo, grado, seccion || 'A', profesor_id, salon || null, capacidad || 40, horario_inicio || null, horario_fin || null, estado || 'activo']
     );
     res.status(201).json(respuestaExito({ id }, 'Curso creado exitosamente'));
   } catch (error) {
@@ -416,28 +546,62 @@ app.put('/api/cursos/:id', authMiddleware, requireRole(['director', 'administrat
 
 // POST PROFESORES
 app.post('/api/profesores', authMiddleware, requireRole(['director']), asyncHandler(async (req, res) => {
-  const { usuario_id, numero_empleado, apellido_paterno, primer_nombre, especialidad, email_contacto, telefono } = req.body;
+  const { usuario_id, numero_empleado, apellido_paterno, primer_nombre, especialidad, email_contacto, telefono, numero_documento, estado } = req.body;
   const id = generarId();
   try {
+    await runQuery('BEGIN TRANSACTION');
+
+    let resolvedUsuarioId = usuario_id;
+    const emailProfesor = email_contacto || `${primer_nombre}.${apellido_paterno}.${numero_empleado || id}@colegio.local`.toLowerCase().replace(/[^a-z0-9@._-]/g, '');
+    if (!resolvedUsuarioId) {
+      const usuarioExistente = await getOne('SELECT id FROM usuarios WHERE email = ?', [emailProfesor]);
+      if (usuarioExistente) {
+        resolvedUsuarioId = usuarioExistente.id;
+      } else {
+        resolvedUsuarioId = generarId();
+        const passwordTemporal = await bcryptjs.hash('password123', 10);
+        await runQuery(
+          `INSERT INTO usuarios (id, nombre, email, password, tipo_usuario, estado)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [resolvedUsuarioId, `${primer_nombre} ${apellido_paterno}`.trim(), emailProfesor, passwordTemporal, 'docente', 'activo']
+        );
+      }
+    }
+
     await runQuery(
-      `INSERT INTO profesores (id, usuario_id, numero_empleado, apellido_paterno, primer_nombre, especialidad, email_contacto, telefono, fecha_creacion, fecha_actualizacion)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-      [id, usuario_id, numero_empleado, apellido_paterno, primer_nombre, especialidad, email_contacto, telefono]
+      `INSERT INTO profesores (id, usuario_id, numero_empleado, nombre, apellido_paterno, primer_nombre, especialidad, email, telefono, numero_documento, estado, email_contacto, fecha_contratacion, fecha_creacion, fecha_actualizacion)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_DATE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      [id, resolvedUsuarioId, numero_empleado || null, `${primer_nombre} ${apellido_paterno}`.trim(), apellido_paterno, primer_nombre, especialidad || null, emailProfesor, telefono || null, numero_documento || null, estado || 'activo', emailProfesor]
     );
+
+    await runQuery('COMMIT');
     res.status(201).json(respuestaExito({ id }, 'Profesor creado exitosamente'));
   } catch (error) {
+    await runQuery('ROLLBACK').catch(() => {});
     res.status(500).json(respuestaError('Error al crear profesor'));
   }
 }));
 
 // PUT PROFESORES
 app.put('/api/profesores/:id', authMiddleware, requireRole(['director']), asyncHandler(async (req, res) => {
-  const { apellido_paterno, primer_nombre, especialidad, email_contacto, telefono } = req.body;
+  const { apellido_paterno, primer_nombre, especialidad, email_contacto, telefono, numero_empleado, numero_documento, estado } = req.body;
   try {
     await runQuery(
-      `UPDATE profesores SET apellido_paterno = ?, primer_nombre = ?, especialidad = ?, email_contacto = ?, telefono = ?, fecha_actualizacion = CURRENT_TIMESTAMP
+      `UPDATE profesores SET nombre = ?, apellido_paterno = ?, primer_nombre = ?, numero_empleado = ?, especialidad = ?, email = ?, email_contacto = ?, telefono = ?, numero_documento = ?, estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP
        WHERE id = ?`,
-      [apellido_paterno, primer_nombre, especialidad, email_contacto, telefono, req.params.id]
+      [
+        `${primer_nombre || ''} ${apellido_paterno || ''}`.trim(),
+        apellido_paterno,
+        primer_nombre,
+        numero_empleado || null,
+        especialidad || null,
+        email_contacto || null,
+        email_contacto || null,
+        telefono || null,
+        numero_documento || null,
+        estado || 'activo',
+        req.params.id
+      ]
     );
     res.json(respuestaExito({}, 'Profesor actualizado exitosamente'));
   } catch (error) {
@@ -447,17 +611,194 @@ app.put('/api/profesores/:id', authMiddleware, requireRole(['director']), asyncH
 
 // POST PAGOS
 app.post('/api/pagos', authMiddleware, asyncHandler(async (req, res) => {
-  const { alumno_id, monto, concepto, estado_pago } = req.body;
+  const { alumno_id, monto, concepto, estado_pago, estado, fecha_pago, metodo_pago, observaciones, periodo_academico, fecha_vencimiento, referencia_pago, numero_comprobante } = req.body;
   const id = generarId();
   try {
     await runQuery(
-      `INSERT INTO pagos (id, alumno_id, monto, concepto, estado_pago, fecha_pago, fecha_creacion, fecha_actualizacion)
-       VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-      [id, alumno_id, monto, concepto, estado_pago || 'pendiente']
+      `INSERT INTO pagos (id, alumno_id, monto, concepto, periodo_academico, estado_pago, estado, fecha_vencimiento, fecha_pago, metodo_pago, referencia_pago, numero_comprobante, deuda_pendiente, observaciones, fecha_creacion, fecha_actualizacion)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      [
+        id,
+        alumno_id,
+        monto,
+        concepto,
+        periodo_academico || PERIODO_ACADEMICO_DEFECTO,
+        estado_pago || estado || 'pendiente',
+        estado || estado_pago || 'pendiente',
+        fecha_vencimiento || null,
+        fecha_pago || null,
+        metodo_pago || null,
+        referencia_pago || null,
+        numero_comprobante || null,
+        (estado_pago || estado || 'pendiente') !== 'pagado' ? 1 : 0,
+        observaciones || null
+      ]
     );
     res.status(201).json(respuestaExito({ id }, 'Pago registrado exitosamente'));
   } catch (error) {
     res.status(500).json(respuestaError('Error al registrar pago'));
+  }
+}));
+
+// POST MATRÍCULAS
+app.post('/api/matriculas', authMiddleware, requireRole(['administrativo', 'director']), asyncHandler(async (req, res) => {
+  const { alumno_id, curso_id, fecha_matricula, estado, observaciones, periodo_academico } = req.body;
+  const id = generarId();
+
+  if (!alumno_id || !curso_id) {
+    return res.status(400).json(respuestaError('Faltan campos requeridos: alumno_id, curso_id'));
+  }
+
+  try {
+    await runQuery(
+      `INSERT INTO matriculas (id, alumno_id, curso_id, fecha_matricula, estado, observaciones, fecha_creacion)
+       VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+      [id, alumno_id, curso_id, fecha_matricula || new Date().toISOString().split('T')[0], estado || 'activa', observaciones || null]
+    );
+    res.status(201).json(respuestaExito({ id }, 'Matrícula creada exitosamente'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al crear matrícula: ' + error.message));
+  }
+}));
+
+// POST ASISTENCIAS
+app.post('/api/asistencia', authMiddleware, requireRole(['docente', 'director', 'administrativo']), asyncHandler(async (req, res) => {
+  const { alumno_id, curso_id, fecha, estado, registrada, motivo_falta } = req.body;
+  const id = generarId();
+
+  if (!alumno_id || !curso_id || !fecha) {
+    return res.status(400).json(respuestaError('Faltan campos requeridos: alumno_id, curso_id, fecha'));
+  }
+
+  try {
+    await runQuery(
+      `INSERT INTO asistencias (id, alumno_id, curso_id, fecha, estado, registrada, motivo_falta, fecha_creacion, fecha_actualizacion)
+       VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      [id, alumno_id, curso_id, fecha, estado || 'PRESENTE', registrada ? 1 : 0, motivo_falta || null]
+    );
+    res.status(201).json(respuestaExito({ id }, 'Asistencia registrada exitosamente'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al registrar asistencia: ' + error.message));
+  }
+}));
+
+// POST CALIFICACIONES
+app.post('/api/calificaciones', authMiddleware, requireRole(['docente', 'director', 'administrativo']), asyncHandler(async (req, res) => {
+  const { alumno_id, curso_id, nota, periodo, observaciones } = req.body;
+  const id = generarId();
+
+  if (!alumno_id || !curso_id || nota === undefined || nota === null) {
+    return res.status(400).json(respuestaError('Faltan campos requeridos: alumno_id, curso_id, nota'));
+  }
+
+  try {
+    await runQuery(
+      `INSERT INTO calificaciones (id, alumno_id, curso_id, nota, periodo, observaciones, fecha_creacion, fecha_actualizacion)
+       VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      [id, alumno_id, curso_id, nota, periodo || '1', observaciones || null]
+    );
+    res.status(201).json(respuestaExito({ id }, 'Calificación registrada exitosamente'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al registrar calificación: ' + error.message));
+  }
+}));
+
+// POST NOTIFICACIONES
+app.post('/api/notificaciones', authMiddleware, requireRole(['administrativo', 'director', 'docente']), asyncHandler(async (req, res) => {
+  const { destinatario_id, tipo, mensaje, leida, fecha_lectura } = req.body;
+  const id = generarId();
+
+  if (!destinatario_id || !mensaje) {
+    return res.status(400).json(respuestaError('Faltan campos requeridos: destinatario_id, mensaje'));
+  }
+
+  try {
+    await runQuery(
+      `INSERT INTO notificaciones (id, destinatario_id, tipo, mensaje, leida, fecha_lectura, fecha_creacion)
+       VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+      [id, destinatario_id, tipo || 'informacion', mensaje, leida ? 1 : 0, fecha_lectura || null]
+    );
+    res.status(201).json(respuestaExito({ id }, 'Notificación creada exitosamente'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al crear notificación: ' + error.message));
+  }
+}));
+
+// PUT ASISTENCIAS
+app.put('/api/asistencia/:id', authMiddleware, requireRole(['docente', 'director', 'administrativo']), asyncHandler(async (req, res) => {
+  const { alumno_id, curso_id, fecha, estado, registrada, motivo_falta } = req.body;
+  try {
+    await runQuery(
+      `UPDATE asistencias
+       SET alumno_id = ?, curso_id = ?, fecha = ?, estado = ?, registrada = ?, motivo_falta = ?, fecha_actualizacion = CURRENT_TIMESTAMP
+       WHERE id = ?`,
+      [alumno_id, curso_id, fecha, estado || 'PRESENTE', registrada ? 1 : 0, motivo_falta || null, req.params.id]
+    );
+    res.json(respuestaExito({}, 'Asistencia actualizada exitosamente'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al actualizar asistencia: ' + error.message));
+  }
+}));
+
+// DELETE ASISTENCIAS
+app.delete('/api/asistencia/:id', authMiddleware, requireRole(['docente', 'director', 'administrativo']), asyncHandler(async (req, res) => {
+  try {
+    await runQuery('DELETE FROM asistencias WHERE id = ?', [req.params.id]);
+    res.json(respuestaExito({}, 'Asistencia eliminada exitosamente'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al eliminar asistencia: ' + error.message));
+  }
+}));
+
+// PUT CALIFICACIONES
+app.put('/api/calificaciones/:id', authMiddleware, requireRole(['docente', 'director', 'administrativo']), asyncHandler(async (req, res) => {
+  const { alumno_id, curso_id, nota, periodo, observaciones } = req.body;
+  try {
+    await runQuery(
+      `UPDATE calificaciones
+       SET alumno_id = ?, curso_id = ?, nota = ?, periodo = ?, observaciones = ?, fecha_actualizacion = CURRENT_TIMESTAMP
+       WHERE id = ?`,
+      [alumno_id, curso_id, nota, periodo || '1', observaciones || null, req.params.id]
+    );
+    res.json(respuestaExito({}, 'Calificación actualizada exitosamente'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al actualizar calificación: ' + error.message));
+  }
+}));
+
+// DELETE CALIFICACIONES
+app.delete('/api/calificaciones/:id', authMiddleware, requireRole(['docente', 'director', 'administrativo']), asyncHandler(async (req, res) => {
+  try {
+    await runQuery('DELETE FROM calificaciones WHERE id = ?', [req.params.id]);
+    res.json(respuestaExito({}, 'Calificación eliminada exitosamente'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al eliminar calificación: ' + error.message));
+  }
+}));
+
+// PUT NOTIFICACIONES
+app.put('/api/notificaciones/:id', authMiddleware, requireRole(['administrativo', 'director', 'docente']), asyncHandler(async (req, res) => {
+  const { destinatario_id, tipo, mensaje, leida, fecha_lectura } = req.body;
+  try {
+    await runQuery(
+      `UPDATE notificaciones
+       SET destinatario_id = ?, tipo = ?, mensaje = ?, leida = ?, fecha_lectura = ?
+       WHERE id = ?`,
+      [destinatario_id, tipo || 'informacion', mensaje, leida ? 1 : 0, fecha_lectura || null, req.params.id]
+    );
+    res.json(respuestaExito({}, 'Notificación actualizada exitosamente'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al actualizar notificación: ' + error.message));
+  }
+}));
+
+// DELETE NOTIFICACIONES
+app.delete('/api/notificaciones/:id', authMiddleware, requireRole(['administrativo', 'director', 'docente']), asyncHandler(async (req, res) => {
+  try {
+    await runQuery('DELETE FROM notificaciones WHERE id = ?', [req.params.id]);
+    res.json(respuestaExito({}, 'Notificación eliminada exitosamente'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al eliminar notificación: ' + error.message));
   }
 }));
 

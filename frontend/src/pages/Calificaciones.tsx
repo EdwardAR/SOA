@@ -1,14 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { calificacionesService, alumnosService, cursosService } from '../api/services';
 import Modal from '../components/Modal';
+import { useAuth } from '../context/AuthContext';
+import { can } from '../utils/permissions';
 
 interface Calificacion {
-  id?: number;
-  alumno_id: number;
-  curso_id: number;
+  id?: string;
+  alumno_id: string;
+  curso_id: string;
   nota: number;
   periodo: string;
   observaciones?: string;
+  alumno_nombre?: string;
+  alumno_numero_matricula?: string;
+  curso_nombre?: string;
+  curso_codigo?: string;
 }
 
 const Calificaciones: React.FC = () => {
@@ -17,12 +23,12 @@ const Calificaciones: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [alumnos, setAlumnos] = useState<any[]>([]);
   const [cursos, setCursos] = useState<any[]>([]);
   const [formData, setFormData] = useState<Calificacion>({
-    alumno_id: 0,
-    curso_id: 0,
+    alumno_id: '',
+    curso_id: '',
     nota: 0,
     periodo: '1'
   });
@@ -31,6 +37,12 @@ const Calificaciones: React.FC = () => {
     fetchCalificaciones();
     fetchRelacionados();
   }, []);
+
+  const { user } = useAuth();
+  const role = user?.tipo_usuario;
+  const allowCreate = can(role, 'calificaciones', 'create');
+  const allowEdit = can(role, 'calificaciones', 'edit');
+  const allowDelete = can(role, 'calificaciones', 'delete');
 
   const fetchRelacionados = async () => {
     try {
@@ -61,13 +73,15 @@ const Calificaciones: React.FC = () => {
 
   const handleOpenModal = (calificacion?: Calificacion) => {
     if (calificacion) {
+      if (!allowEdit) return alert('No autorizado para editar calificaciones');
       setEditingId(calificacion.id || null);
-      setFormData(calificacion);
+      setFormData(calificacion as Calificacion);
     } else {
+      if (!allowCreate) return alert('No autorizado para crear calificaciones');
       setEditingId(null);
       setFormData({
-        alumno_id: 0,
-        curso_id: 0,
+        alumno_id: '',
+        curso_id: '',
         nota: 0,
         periodo: '1'
       });
@@ -207,13 +221,15 @@ const Calificaciones: React.FC = () => {
           <div className="card-header bg-primary text-white">
             <div className="d-flex justify-content-between align-items-center">
               <h5 className="mb-0">Listado de Calificaciones</h5>
-              <button 
-                className="btn btn-sm btn-light"
-                onClick={() => handleOpenModal()}
-              >
-                <i className="bi bi-plus-circle me-2"></i>
-                Registrar Calificación
-              </button>
+              {allowCreate && (
+                <button 
+                  className="btn btn-sm btn-light"
+                  onClick={() => handleOpenModal()}
+                >
+                  <i className="bi bi-plus-circle me-2"></i>
+                  Registrar Calificación
+                </button>
+              )}
             </div>
           </div>
           <div className="card-body">
@@ -264,8 +280,22 @@ const Calificaciones: React.FC = () => {
                     {calificaciones.map((calificacion) => (
                       <tr key={calificacion.id}>
                         <td>{calificacion.id}</td>
-                        <td>{getAlumnoNombre(calificacion.alumno_id)}</td>
-                        <td>{getCursoNombre(calificacion.curso_id)}</td>
+                        <td>
+                          <div className="fw-semibold">
+                            {calificacion.alumno_nombre || getAlumnoNombre(calificacion.alumno_id)}
+                          </div>
+                          <small className="text-muted">
+                            {calificacion.alumno_numero_matricula || calificacion.alumno_id}
+                          </small>
+                        </td>
+                        <td>
+                          <div className="fw-semibold">
+                            {calificacion.curso_nombre || getCursoNombre(calificacion.curso_id)}
+                          </div>
+                          <small className="text-muted">
+                            {calificacion.curso_codigo || calificacion.curso_id}
+                          </small>
+                        </td>
                         <td>
                           <strong className={calificacion.nota >= 11 ? 'text-success' : 'text-danger'}>
                             {calificacion.nota}
@@ -285,18 +315,22 @@ const Calificaciones: React.FC = () => {
                           </span>
                         </td>
                         <td>
-                          <button 
-                            className="btn btn-sm btn-primary me-2"
-                            onClick={() => handleOpenModal(calificacion)}
-                          >
-                            <i className="bi bi-pencil"></i>
-                          </button>
-                          <button 
-                            className="btn btn-sm btn-danger"
-                            onClick={() => handleDelete(calificacion.id!)}
-                          >
-                            <i className="bi bi-trash"></i>
-                          </button>
+                          {allowEdit && (
+                            <button 
+                              className="btn btn-sm btn-primary me-2"
+                              onClick={() => handleOpenModal(calificacion)}
+                            >
+                              <i className="bi bi-pencil"></i>
+                            </button>
+                          )}
+                          {allowDelete && (
+                            <button 
+                              className="btn btn-sm btn-danger"
+                              onClick={() => handleDelete(calificacion.id!)}
+                            >
+                              <i className="bi bi-trash"></i>
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -315,24 +349,48 @@ const Calificaciones: React.FC = () => {
         onSave={handleSave}
       >
         <div className="mb-3">
-          <label className="form-label">Alumno ID *</label>
-          <input
-            type="number"
-            className="form-control"
+          <label className="form-label">Alumno *</label>
+          <select
+            className="form-select"
             value={formData.alumno_id}
-            onChange={(e) => setFormData({ ...formData, alumno_id: parseInt(e.target.value) })}
-            placeholder="ID del alumno"
-          />
+            onChange={(e) => setFormData({ ...formData, alumno_id: e.target.value })}
+          >
+            <option value="">Seleccionar alumno</option>
+            {alumnos.map(a => (
+              <option key={a.id} value={a.id}>{a.primer_nombre} {a.apellido_paterno} ({a.numero_matricula})</option>
+            ))}
+            <option value="__other">Otro (manual)</option>
+          </select>
+          {formData.alumno_id === '__other' && (
+            <input
+              className="form-control mt-2"
+              placeholder="Ingrese nombre o ID manualmente"
+              value={formData.observaciones || ''}
+              onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
+            />
+          )}
         </div>
         <div className="mb-3">
-          <label className="form-label">Curso ID *</label>
-          <input
-            type="number"
-            className="form-control"
+          <label className="form-label">Curso *</label>
+          <select
+            className="form-select"
             value={formData.curso_id}
-            onChange={(e) => setFormData({ ...formData, curso_id: parseInt(e.target.value) })}
-            placeholder="ID del curso"
-          />
+            onChange={(e) => setFormData({ ...formData, curso_id: e.target.value })}
+          >
+            <option value="">Seleccionar curso</option>
+            {cursos.map(c => (
+              <option key={c.id} value={c.id}>{c.nombre} ({c.codigo})</option>
+            ))}
+            <option value="__other">Otro (manual)</option>
+          </select>
+          {formData.curso_id === '__other' && (
+            <input
+              className="form-control mt-2"
+              placeholder="Ingrese nombre o ID manualmente"
+              value={formData.observaciones || ''}
+              onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
+            />
+          )}
         </div>
         <div className="mb-3">
           <label className="form-label">Nota * (0-20)</label>

@@ -1,16 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { asistenciaService, alumnosService, cursosService } from '../api/services';
 import Modal from '../components/Modal';
+import { useAuth } from '../context/AuthContext';
+import { can } from '../utils/permissions';
 
 interface AsistenciaRecord {
-  id?: number;
-  alumno_id: number;
-  curso_id?: number;
+  id?: string;
+  alumno_id: string;
+  curso_id?: string;
   fecha: string;
   estado: string;
   observacion?: string;
   registrada?: boolean;
-  motivo_falta?: string;
+  motivo_falta?: string | null;
+  alumno_nombre?: string;
+  alumno_numero_matricula?: string;
+  curso_nombre?: string;
+  curso_codigo?: string;
 }
 
 const Asistencia: React.FC = () => {
@@ -19,11 +25,11 @@ const Asistencia: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [alumnos, setAlumnos] = useState<any[]>([]);
   const [cursos, setCursos] = useState<any[]>([]);
   const [formData, setFormData] = useState<AsistenciaRecord>({
-    alumno_id: 0,
+    alumno_id: '',
     fecha: new Date().toISOString().split('T')[0],
     estado: 'presente',
     observacion: ''
@@ -33,6 +39,12 @@ const Asistencia: React.FC = () => {
     fetchAsistencias();
     fetchRelacionados();
   }, []);
+
+  const { user } = useAuth();
+  const role = user?.tipo_usuario;
+  const allowCreate = can(role, 'asistencia', 'create');
+  const allowEdit = can(role, 'asistencia', 'edit');
+  const allowDelete = can(role, 'asistencia', 'delete');
 
   const fetchRelacionados = async () => {
     try {
@@ -63,12 +75,14 @@ const Asistencia: React.FC = () => {
 
   const handleOpenModal = (asistencia?: AsistenciaRecord) => {
     if (asistencia) {
+      if (!allowEdit) return alert('No autorizado para editar asistencia');
       setEditingId(asistencia.id || null);
-      setFormData(asistencia);
+      setFormData(asistencia as AsistenciaRecord);
     } else {
+      if (!allowCreate) return alert('No autorizado para crear asistencia');
       setEditingId(null);
       setFormData({
-        alumno_id: 0,
+        alumno_id: '',
         fecha: new Date().toISOString().split('T')[0],
         estado: 'presente',
         observacion: ''
@@ -218,13 +232,15 @@ const Asistencia: React.FC = () => {
           <div className="card-header bg-success text-white">
             <div className="d-flex justify-content-between align-items-center">
               <h5 className="mb-0">Listado de Asistencias</h5>
-              <button 
-                className="btn btn-sm btn-light"
-                onClick={() => handleOpenModal()}
-              >
-                <i className="bi bi-plus-circle me-2"></i>
-                Registrar Asistencia
-              </button>
+              {allowCreate && (
+                <button 
+                  className="btn btn-sm btn-light"
+                  onClick={() => handleOpenModal()}
+                >
+                  <i className="bi bi-plus-circle me-2"></i>
+                  Registrar Asistencia
+                </button>
+              )}
             </div>
           </div>
           <div className="card-body">
@@ -275,8 +291,22 @@ const Asistencia: React.FC = () => {
                     {asistencias.map((asistencia) => (
                       <tr key={asistencia.id}>
                         <td>{asistencia.id}</td>
-                        <td>{getAlumnoNombre(asistencia.alumno_id)}</td>
-                        <td>{getCursoNombre(asistencia.curso_id)}</td>
+                        <td>
+                          <div className="fw-semibold">
+                            {asistencia.alumno_nombre || getAlumnoNombre(asistencia.alumno_id)}
+                          </div>
+                          <small className="text-muted">
+                            {asistencia.alumno_numero_matricula || asistencia.alumno_id}
+                          </small>
+                        </td>
+                        <td>
+                          <div className="fw-semibold">
+                            {asistencia.curso_nombre || getCursoNombre(asistencia.curso_id)}
+                          </div>
+                          <small className="text-muted">
+                            {asistencia.curso_codigo || asistencia.curso_id || '-'}
+                          </small>
+                        </td>
                         <td>{new Date(asistencia.fecha).toLocaleDateString()}</td>
                         <td>
                           <span className={`badge bg-${
@@ -288,18 +318,22 @@ const Asistencia: React.FC = () => {
                         <td>{asistencia.motivo_falta || asistencia.observacion || '-'}</td>
                         <td>{asistencia.registrada ? 'Sí' : 'No'}</td>
                         <td>
-                          <button 
-                            className="btn btn-sm btn-primary me-2"
-                            onClick={() => handleOpenModal(asistencia)}
-                          >
-                            <i className="bi bi-pencil"></i>
-                          </button>
-                          <button 
-                            className="btn btn-sm btn-danger"
-                            onClick={() => handleDelete(asistencia.id!)}
-                          >
-                            <i className="bi bi-trash"></i>
-                          </button>
+                          {allowEdit && (
+                            <button 
+                              className="btn btn-sm btn-primary me-2"
+                              onClick={() => handleOpenModal(asistencia)}
+                            >
+                              <i className="bi bi-pencil"></i>
+                            </button>
+                          )}
+                          {allowDelete && (
+                            <button 
+                              className="btn btn-sm btn-danger"
+                              onClick={() => handleDelete(asistencia.id!)}
+                            >
+                              <i className="bi bi-trash"></i>
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -317,16 +351,28 @@ const Asistencia: React.FC = () => {
         onClose={handleCloseModal}
         onSave={handleSave}
       >
-        <div className="mb-3">
-          <label className="form-label">Alumno ID *</label>
-          <input
-            type="number"
-            className="form-control"
-            value={formData.alumno_id}
-            onChange={(e) => setFormData({ ...formData, alumno_id: parseInt(e.target.value) })}
-            placeholder="ID del alumno"
-          />
-        </div>
+          <div className="mb-3">
+            <label className="form-label">Alumno *</label>
+            <select
+              className="form-select"
+              value={formData.alumno_id}
+              onChange={(e) => setFormData({ ...formData, alumno_id: e.target.value })}
+            >
+              <option value="">Seleccionar alumno</option>
+              {alumnos.map(a => (
+                <option key={a.id} value={a.id}>{a.primer_nombre} {a.apellido_paterno} ({a.numero_matricula})</option>
+              ))}
+              <option value="__other">Otro (manual)</option>
+            </select>
+            {formData.alumno_id === '__other' && (
+              <input
+                className="form-control mt-2"
+                placeholder="Ingrese nombre o ID manualmente"
+                value={formData.observacion || ''}
+                onChange={(e) => setFormData({ ...formData, observacion: e.target.value })}
+              />
+            )}
+          </div>
         <div className="mb-3">
           <label className="form-label">Fecha</label>
           <input

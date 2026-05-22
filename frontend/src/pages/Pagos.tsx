@@ -1,17 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { pagosService, alumnosService } from '../api/services';
 import Modal from '../components/Modal';
+import { useAuth } from '../context/AuthContext';
+import { can } from '../utils/permissions';
 
 interface Pago {
-  id?: number;
-  alumno_id: number;
+  id?: string;
+  alumno_id: string;
   monto: number;
   concepto: string;
   estado: string;
-  fecha_pago: string;
-  metodo_pago: string;
+  fecha_pago: string | null;
+  metodo_pago: string | null;
   estado_pago?: string;
-  observaciones?: string;
+  observaciones?: string | null;
+  alumno_nombre?: string;
+  alumno_numero_matricula?: string;
 }
 
 const Pagos: React.FC = () => {
@@ -20,10 +24,10 @@ const Pagos: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [alumnos, setAlumnos] = useState<any[]>([]);
   const [formData, setFormData] = useState<Pago>({
-    alumno_id: 0,
+    alumno_id: '',
     monto: 0,
     concepto: '',
     estado: 'pendiente',
@@ -35,6 +39,12 @@ const Pagos: React.FC = () => {
     fetchPagos();
     fetchAlumnos();
   }, []);
+
+  const { user } = useAuth();
+  const role = user?.tipo_usuario;
+  const allowCreate = can(role, 'pagos', 'create');
+  const allowEdit = can(role, 'pagos', 'edit');
+  const allowDelete = can(role, 'pagos', 'delete');
 
   const fetchAlumnos = async () => {
     try {
@@ -61,9 +71,11 @@ const Pagos: React.FC = () => {
 
   const handleOpenModal = (pago?: Pago) => {
     if (pago) {
+      if (!allowEdit) return alert('No autorizado para editar pagos');
       setEditingId(pago.id || null);
       setFormData(pago);
     } else {
+      if (!allowCreate) return alert('No autorizado para crear pagos');
       setEditingId(null);
       setFormData({
         alumno_id: 0,
@@ -132,8 +144,8 @@ const Pagos: React.FC = () => {
 
   const totals = calculateTotals();
 
-  const getAlumnoNombre = (id: number) => {
-    const alumno = alumnos.find(a => Number(a.id) === Number(id));
+  const getAlumnoNombre = (id: string) => {
+    const alumno = alumnos.find(a => a.id === id);
     return alumno ? `${alumno.primer_nombre} ${alumno.apellido_paterno}` : id;
   };
 
@@ -209,13 +221,15 @@ const Pagos: React.FC = () => {
           <div className="card-header bg-warning text-white">
             <div className="d-flex justify-content-between align-items-center">
               <h5 className="mb-0">Listado de Pagos</h5>
-              <button 
-                className="btn btn-sm btn-light"
-                onClick={() => handleOpenModal()}
-              >
-                <i className="bi bi-plus-circle me-2"></i>
-                Registrar Pago
-              </button>
+              {allowCreate && (
+                <button 
+                  className="btn btn-sm btn-light"
+                  onClick={() => handleOpenModal()}
+                >
+                  <i className="bi bi-plus-circle me-2"></i>
+                  Registrar Pago
+                </button>
+              )}
             </div>
           </div>
           <div className="card-body">
@@ -260,7 +274,14 @@ const Pagos: React.FC = () => {
                     {pagos.map((pago) => (
                       <tr key={pago.id}>
                         <td>{pago.id}</td>
-                        <td>{getAlumnoNombre(pago.alumno_id)}</td>
+                        <td>
+                          <div className="fw-semibold">
+                            {pago.alumno_nombre || getAlumnoNombre(String(pago.alumno_id))}
+                          </div>
+                          <small className="text-muted">
+                            {pago.alumno_numero_matricula || pago.alumno_id}
+                          </small>
+                        </td>
                         <td>
                           <div className="fw-semibold">{pago.concepto}</div>
                           <small className="text-muted">{pago.observaciones || pago.estado_pago || 'Registro de pago'}</small>
@@ -274,18 +295,22 @@ const Pagos: React.FC = () => {
                         <td>{pago.fecha_pago ? new Date(pago.fecha_pago).toLocaleDateString() : '-'}</td>
                         <td>{pago.metodo_pago || '-'}</td>
                         <td>
-                          <button 
-                            className="btn btn-sm btn-primary me-2"
-                            onClick={() => handleOpenModal(pago)}
-                          >
-                            <i className="bi bi-pencil"></i>
-                          </button>
-                          <button 
-                            className="btn btn-sm btn-danger"
-                            onClick={() => handleDelete(pago.id!)}
-                          >
-                            <i className="bi bi-trash"></i>
-                          </button>
+                          {allowEdit && (
+                            <button 
+                              className="btn btn-sm btn-primary me-2"
+                              onClick={() => handleOpenModal(pago)}
+                            >
+                              <i className="bi bi-pencil"></i>
+                            </button>
+                          )}
+                          {allowDelete && (
+                            <button 
+                              className="btn btn-sm btn-danger"
+                              onClick={() => handleDelete(pago.id!)}
+                            >
+                              <i className="bi bi-trash"></i>
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -304,14 +329,26 @@ const Pagos: React.FC = () => {
         onSave={handleSave}
       >
         <div className="mb-3">
-          <label className="form-label">Alumno ID</label>
-          <input
-            type="number"
-            className="form-control"
+          <label className="form-label">Alumno *</label>
+          <select
+            className="form-select"
             value={formData.alumno_id}
-            onChange={(e) => setFormData({ ...formData, alumno_id: parseInt(e.target.value) })}
-            placeholder="Ingresa el ID del alumno"
-          />
+            onChange={(e) => setFormData({ ...formData, alumno_id: e.target.value })}
+          >
+            <option value="">Seleccionar alumno</option>
+            {alumnos.map(a => (
+              <option key={a.id} value={a.id}>{a.primer_nombre} {a.apellido_paterno} ({a.numero_matricula})</option>
+            ))}
+            <option value="__other">Otro (manual)</option>
+          </select>
+          {formData.alumno_id === '__other' && (
+            <input
+              className="form-control mt-2"
+              placeholder="Ingrese nombre o ID manualmente"
+              value={formData.observaciones || ''}
+              onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
+            />
+          )}
         </div>
         <div className="mb-3">
           <label className="form-label">Concepto</label>

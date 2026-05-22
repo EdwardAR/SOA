@@ -34,7 +34,8 @@ db.serialize(() => {
 
   statements.forEach((statement, index) => {
     db.run(statement + ';', (err) => {
-      if (err && !err.message.includes('already exists')) {
+      const isIndexStatement = /CREATE\s+INDEX/i.test(statement);
+      if (err && !err.message.includes('already exists') && !isIndexStatement) {
         console.error(`Error en sentencia ${index + 1}:`, err);
       }
       completed++;
@@ -434,6 +435,114 @@ async function seedDatabase() {
     }
     console.log('✓ Notificaciones creadas (2 registros)');
 
+    // --- Seed adicional: más alumnos relacionados con servicios ---
+    const extraAlumnosCount = 6;
+    const extraAlumnoIds = [];
+    for (let i = 1; i <= extraAlumnosCount; i++) {
+      const uId = uuidv4();
+      const user = {
+        id: uId,
+        nombre: `Estudiante ${i}`,
+        email: `estudiante${i}@colegio.com`,
+        password: hashedPassword,
+        tipo_usuario: 'alumno'
+      };
+      await insertUser(user);
+
+      const padreUId = uuidv4();
+      const padreUser = {
+        id: padreUId,
+        nombre: `Padre ${i}`,
+        email: `padre${i}@colegio.com`,
+        password: hashedPassword,
+        tipo_usuario: 'padre'
+      };
+      await insertUser(padreUser);
+
+      const alumnoId = uuidv4();
+      const alumno = {
+        id: alumnoId,
+        usuario_id: uId,
+        numero_matricula: `MAT1${100 + i}`,
+        apellido_paterno: `Apellido${i}`,
+        primer_nombre: `Alumno${i}`,
+        telefono: `999000${i}`,
+        email_contacto: `estudiante${i}@colegio.com`,
+        numero_documento: `${1000000 + i}`,
+        padre_id: padreUId,
+        datos_completos: true,
+        deuda_pendiente: i % 2 === 0 ? true : false,
+        periodo_academico: '2026-1'
+      };
+      await insertAlumno(alumno);
+      extraAlumnoIds.push(alumnoId);
+
+      // Matricular en un curso aleatorio
+      const cursoAleatorio = cursos[Math.floor(Math.random() * cursos.length)];
+      const mat = {
+        id: uuidv4(),
+        alumno_id: alumnoId,
+        curso_id: cursoAleatorio.id,
+        fecha_matricula: '2026-03-15',
+        periodo_academico: '2026-1',
+        estado: 'activa'
+      };
+      await insertMatricula(mat);
+
+      // Crear un pago asociado
+      const pago = {
+        id: uuidv4(),
+        alumno_id: alumnoId,
+        monto: 300 + (i * 10),
+        concepto: 'Pensión Mensual',
+        periodo_academico: '2026-1',
+        estado_pago: i % 3 === 0 ? 'pagado' : 'pendiente',
+        estado: i % 3 === 0 ? 'pagado' : 'pendiente',
+        fecha_pago: i % 3 === 0 ? '2026-04-01 09:00:00' : null,
+        metodo_pago: i % 3 === 0 ? 'transferencia' : null
+      };
+      await insertPago(pago);
+
+      // Asistencia aleatoria
+      const asis = {
+        id: uuidv4(),
+        alumno_id: alumnoId,
+        curso_id: cursoAleatorio.id,
+        fecha: '2026-05-21',
+        estado: i % 4 === 0 ? 'FALTA' : 'PRESENTE',
+        registrada: true,
+        motivo_falta: i % 4 === 0 ? 'Enfermedad' : null
+      };
+      await insertAsistencia(asis);
+
+      // Calificación ejemplo
+      const cal = {
+        id: uuidv4(),
+        alumno_id: alumnoId,
+        curso_id: cursoAleatorio.id,
+        nota: 10 + i,
+        periodo: '1',
+        tipo_evaluacion: 'parcial',
+        puntuacion: 10 + i,
+        peso: 1.0,
+        observaciones: i % 2 === 0 ? 'Necesita mejorar' : 'Buen trabajo',
+        periodo_academico: '2026-1'
+      };
+      await insertCalificacion(cal);
+
+      // Notificación al padre
+      const noti = {
+        id: uuidv4(),
+        destinatario_id: padreUId,
+        tipo: 'informacion',
+        mensaje: `Se ha registrado la matrícula de ${alumno.primer_nombre} en ${cursoAleatorio.nombre}`,
+        leida: false,
+        fecha_lectura: null
+      };
+      await insertNotificacion(noti);
+    }
+    console.log(`✓ Seed adicional: ${extraAlumnosCount} alumnos y relaciones creadas`);
+
     console.log('\n✅ Base de datos inicializada correctamente\n');
     console.log('📊 Resumen de datos insertados:');
     console.log('   - 7 usuarios');
@@ -504,10 +613,10 @@ function insertUser(user) {
 function insertProfesor(profesor) {
   return new Promise((resolve, reject) => {
     db.run(
-      `INSERT INTO profesores (id, usuario_id, numero_empleado, nombre, apellido_paterno, primer_nombre, email, telefono, especialidad, numero_documento, estado, email_contacto, fecha_contratacion)
+      `INSERT INTO profesores (id, usuario_id, numero_empleado, nombre, apellido_paterno, primer_nombre, especialidad, email, telefono, numero_documento, estado, email_contacto, fecha_contratacion)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_DATE)`,
       [profesor.id, profesor.usuario_id, profesor.numero_empleado, profesor.nombre, profesor.apellido_paterno,
-       profesor.primer_nombre, profesor.email, profesor.telefono, profesor.especialidad,
+       profesor.primer_nombre, profesor.especialidad || null, profesor.email, profesor.telefono,
        profesor.numero_documento || null, profesor.estado || 'activo', profesor.email || null],
       (err) => {
         if (err) reject(err);

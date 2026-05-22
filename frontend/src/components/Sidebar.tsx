@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { filterMenuByRole } from '../utils/permissions';
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
@@ -86,7 +87,7 @@ const Sidebar: React.FC = () => {
         </div>
         <div className="flex-grow-1 overflow-auto">
           <nav className="nav flex-column p-3">
-            {menuItems.map((item) => (
+            {filterMenuByRole(user?.tipo_usuario, menuItems).map((item) => (
               <Link
                 key={item.path}
                 to={item.path}

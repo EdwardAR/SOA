@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { matriculasService, alumnosService, cursosService } from '../api/services';
 import Modal from '../components/Modal';
+import { useAuth } from '../context/AuthContext';
+import { can } from '../utils/permissions';
 
 interface Matricula {
   id?: string;
@@ -30,6 +32,12 @@ const Matriculas: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const { user } = useAuth();
+  const role = user?.tipo_usuario;
+  const allowCreate = can(role, 'matriculas', 'create');
+  const allowEdit = can(role, 'matriculas', 'edit');
+  const allowDelete = can(role, 'matriculas', 'delete');
 
   const fetchData = async () => {
     try {
@@ -61,6 +69,7 @@ const Matriculas: React.FC = () => {
 
   const handleOpenModal = (matricula?: any) => {
     if (matricula) {
+      if (!allowEdit) return alert('No autorizado para editar matrícula');
       setEditingId(matricula.id);
       setFormData({
         id: matricula.id,
@@ -70,6 +79,7 @@ const Matriculas: React.FC = () => {
         estado: matricula.estado || 'activa'
       });
     } else {
+      if (!allowCreate) return alert('No autorizado para crear matrícula');
       setEditingId(null);
       setFormData({
         alumno_id: '',
@@ -170,10 +180,12 @@ const Matriculas: React.FC = () => {
           <div className="card-header bg-info text-white">
             <div className="d-flex justify-content-between align-items-center">
               <h5 className="mb-0">Listado de Matrículas ({matriculas.length})</h5>
-              <button className="btn btn-sm btn-light" onClick={() => handleOpenModal()}>
-                <i className="bi bi-plus-circle me-2"></i>
-                Nueva Matrícula
-              </button>
+              {allowCreate && (
+                <button className="btn btn-sm btn-light" onClick={() => handleOpenModal()}>
+                  <i className="bi bi-plus-circle me-2"></i>
+                  Nueva Matrícula
+                </button>
+              )}
             </div>
           </div>
           <div className="card-body">
@@ -221,8 +233,22 @@ const Matriculas: React.FC = () => {
                     matriculas.map((matricula) => (
                       <tr key={matricula.id}>
                         <td><small className="text-muted">{matricula.id}</small></td>
-                        <td>{getAlumnoNombre(matricula.alumno_id)}</td>
-                        <td>{getCursoNombre(matricula.curso_id)}</td>
+                        <td>
+                          <div className="fw-semibold">
+                            {matricula.alumno_nombre || getAlumnoNombre(matricula.alumno_id)}
+                          </div>
+                          <small className="text-muted">
+                            {matricula.alumno_numero_matricula || matricula.alumno_id}
+                          </small>
+                        </td>
+                        <td>
+                          <div className="fw-semibold">
+                            {matricula.curso_nombre || getCursoNombre(matricula.curso_id)}
+                          </div>
+                          <small className="text-muted">
+                            {matricula.curso_codigo || matricula.curso_id}
+                          </small>
+                        </td>
                         <td>{matricula.fecha_matricula || '-'}</td>
                         <td>{matricula.observaciones || 'Matrícula inicial'}</td>
                         <td>
@@ -231,12 +257,16 @@ const Matriculas: React.FC = () => {
                           </span>
                         </td>
                         <td>
-                          <button className="btn btn-sm btn-primary me-2" onClick={() => handleOpenModal(matricula)} title="Editar">
-                            <i className="bi bi-pencil"></i>
-                          </button>
-                          <button className="btn btn-sm btn-danger" onClick={() => handleDelete(matricula.id)} title="Eliminar">
-                            <i className="bi bi-trash"></i>
-                          </button>
+                          {allowEdit && (
+                            <button className="btn btn-sm btn-primary me-2" onClick={() => handleOpenModal(matricula)} title="Editar">
+                              <i className="bi bi-pencil"></i>
+                            </button>
+                          )}
+                          {allowDelete && (
+                            <button className="btn btn-sm btn-danger" onClick={() => handleDelete(matricula.id)} title="Eliminar">
+                              <i className="bi bi-trash"></i>
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { alumnosService } from '../api/services';
 import Modal from '../components/Modal';
+import { generateStructuredCode } from '../utils/codeGenerators';
 
 interface Alumno {
   id?: string;
@@ -46,6 +47,18 @@ const Alumnos: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAutoGenerateMatricula = () => {
+    setFormData((prev) => ({
+      ...prev,
+      numero_matricula: generateStructuredCode({
+        prefix: 'MAT',
+        rows: alumnos,
+        field: 'numero_matricula',
+        padding: 4,
+      }),
+    }));
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -250,16 +263,21 @@ const Alumnos: React.FC = () => {
             <label htmlFor="numero_matricula" className="form-label">
               Número de Matrícula *
             </label>
-            <input
-              type="text"
-              className="form-control"
-              id="numero_matricula"
-              name="numero_matricula"
-              value={formData.numero_matricula}
-              onChange={handleInputChange}
-              placeholder="MAT-2024-XXXX"
-              required
-            />
+            <div className="input-group">
+              <input
+                type="text"
+                className="form-control"
+                id="numero_matricula"
+                name="numero_matricula"
+                value={formData.numero_matricula}
+                onChange={handleInputChange}
+                placeholder="MAT-2026-0001"
+                required
+              />
+              <button type="button" className="btn btn-outline-secondary" onClick={handleAutoGenerateMatricula}>
+                Generar
+              </button>
+            </div>
           </div>
           <div className="row">
             <div className="col-md-6">

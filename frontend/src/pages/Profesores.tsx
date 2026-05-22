@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { profesoresService } from '../api/services';
 import Modal from '../components/Modal';
+import { generateStructuredCode } from '../utils/codeGenerators';
 
 interface Profesor {
   id?: string;
@@ -48,6 +49,18 @@ const Profesores: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAutoGenerateEmpleado = () => {
+    setFormData((prev) => ({
+      ...prev,
+      numero_empleado: generateStructuredCode({
+        prefix: 'EMP',
+        rows: profesores,
+        field: 'numero_empleado',
+        padding: 4,
+      }),
+    }));
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -226,14 +239,20 @@ const Profesores: React.FC = () => {
             <label htmlFor="numero_empleado" className="form-label">
               Número de Empleado
             </label>
-            <input
-              type="text"
-              className="form-control"
-              id="numero_empleado"
-              name="numero_empleado"
-              value={formData.numero_empleado}
-              onChange={handleInputChange}
-            />
+            <div className="input-group">
+              <input
+                type="text"
+                className="form-control"
+                id="numero_empleado"
+                name="numero_empleado"
+                value={formData.numero_empleado}
+                onChange={handleInputChange}
+                placeholder="EMP-2026-0001"
+              />
+              <button type="button" className="btn btn-outline-secondary" onClick={handleAutoGenerateEmpleado}>
+                Generar
+              </button>
+            </div>
           </div>
           <div className="row">
             <div className="col-md-6">

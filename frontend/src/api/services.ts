@@ -33,6 +33,9 @@ export const authService = {
 // Alumnos
 export const alumnosService = createCrudService('/alumnos');
 
+// Usuarios
+export const usuariosService = createCrudService('/usuarios');
+
 // Cursos
 export const cursosService = createCrudService('/cursos');
 

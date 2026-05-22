@@ -1,14 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { notificacionesService } from '../api/services';
+import { notificacionesService, usuariosService, alumnosService } from '../api/services';
 import Modal from '../components/Modal';
+import { useAuth } from '../context/AuthContext';
+import { can } from '../utils/permissions';
 
 interface Notificacion {
-  id?: number;
-  destinatario_id: number;
+  id?: string;
+  destinatario_id: string;
   tipo: string;
   mensaje: string;
   leida: boolean;
   fecha_creacion?: string;
+  destinatario_nombre?: string;
+  destinatario_email?: string;
+  destinatario_tipo?: string;
 }
 
 const Notificaciones: React.FC = () => {
@@ -17,17 +22,39 @@ const Notificaciones: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Notificacion>({
-    destinatario_id: 0,
+    destinatario_id: '',
     tipo: 'informacion',
     mensaje: '',
     leida: false
   });
+  const [usuarios, setUsuarios] = useState<any[]>([]);
+  const [alumnos, setAlumnos] = useState<any[]>([]);
 
   useEffect(() => {
     fetchNotificaciones();
   }, []);
+
+  useEffect(() => {
+    fetchRelacionados();
+  }, []);
+
+  const fetchRelacionados = async () => {
+    try {
+      const [uResp, aResp] = await Promise.all([usuariosService.getAll(), alumnosService.getAll()]);
+      setUsuarios(uResp.data?.datos || []);
+      setAlumnos(aResp.data?.datos || []);
+    } catch (err) {
+      console.error('Error cargando usuarios/alumnos:', err);
+    }
+  };
+
+  const { user } = useAuth();
+  const role = user?.tipo_usuario;
+  const allowCreate = can(role, 'notificaciones', 'create');
+  const allowEdit = can(role, 'notificaciones', 'edit');
+  const allowDelete = can(role, 'notificaciones', 'delete');
 
   const fetchNotificaciones = async () => {
     try {
@@ -45,12 +72,14 @@ const Notificaciones: React.FC = () => {
 
   const handleOpenModal = (notificacion?: Notificacion) => {
     if (notificacion) {
+      if (!allowEdit) return alert('No autorizado para editar notificaciones');
       setEditingId(notificacion.id || null);
-      setFormData(notificacion);
+      setFormData(notificacion as Notificacion);
     } else {
+      if (!allowCreate) return alert('No autorizado para crear notificaciones');
       setEditingId(null);
       setFormData({
-        destinatario_id: 0,
+        destinatario_id: '',
         tipo: 'informacion',
         mensaje: '',
         leida: false
@@ -88,7 +117,7 @@ const Notificaciones: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!window.confirm('¿Estás seguro de eliminar esta notificación?')) return;
 
     try {
@@ -110,6 +139,15 @@ const Notificaciones: React.FC = () => {
       informaciones: notificaciones.filter(n => n.tipo === 'informacion').length,
       alertas: notificaciones.filter(n => n.tipo === 'alerta').length
     };
+  };
+
+  const getDestinatarioNombre = (id: string) => {
+    if (!id) return '-';
+    const u = usuarios.find((x) => x.id === id);
+    if (u) return u.nombre;
+    const a = alumnos.find((x) => x.id === id);
+    if (a) return `${a.primer_nombre} ${a.apellido_paterno}`;
+    return id;
   };
 
   const getTipoBadge = (tipo: string) => {
@@ -186,13 +224,15 @@ const Notificaciones: React.FC = () => {
           <div className="card-header bg-info text-white">
             <div className="d-flex justify-content-between align-items-center">
               <h5 className="mb-0">Listado de Notificaciones</h5>
-              <button 
-                className="btn btn-sm btn-light"
-                onClick={() => handleOpenModal()}
-              >
-                <i className="bi bi-plus-circle me-2"></i>
-                Nueva Notificación
-              </button>
+              {allowCreate && (
+                <button 
+                  className="btn btn-sm btn-light"
+                  onClick={() => handleOpenModal()}
+                >
+                  <i className="bi bi-plus-circle me-2"></i>
+                  Nueva Notificación
+                </button>
+              )}
             </div>
           </div>
           <div className="card-body">
@@ -242,7 +282,14 @@ const Notificaciones: React.FC = () => {
                     {notificaciones.map((notificacion) => (
                       <tr key={notificacion.id} className={notificacion.leida ? '' : 'table-active'}>
                         <td>{notificacion.id}</td>
-                        <td>{notificacion.destinatario_id}</td>
+                        <td>
+                          <div className="fw-semibold">
+                            {notificacion.destinatario_nombre || getDestinatarioNombre(notificacion.destinatario_id)}
+                          </div>
+                          <small className="text-muted">
+                            {notificacion.destinatario_email || notificacion.destinatario_id}
+                          </small>
+                        </td>
                         <td>
                           <span className={`badge bg-${getTipoBadge(notificacion.tipo)}`}>
                             {notificacion.tipo}
@@ -262,18 +309,22 @@ const Notificaciones: React.FC = () => {
                             : '-'}
                         </td>
                         <td>
-                          <button 
-                            className="btn btn-sm btn-primary me-2"
-                            onClick={() => handleOpenModal(notificacion)}
-                          >
-                            <i className="bi bi-pencil"></i>
-                          </button>
-                          <button 
-                            className="btn btn-sm btn-danger"
-                            onClick={() => handleDelete(notificacion.id!)}
-                          >
-                            <i className="bi bi-trash"></i>
-                          </button>
+                          {allowEdit && (
+                            <button 
+                              className="btn btn-sm btn-primary me-2"
+                              onClick={() => handleOpenModal(notificacion)}
+                            >
+                              <i className="bi bi-pencil"></i>
+                            </button>
+                          )}
+                          {allowDelete && (
+                            <button 
+                              className="btn btn-sm btn-danger"
+                              onClick={() => handleDelete(notificacion.id!)}
+                            >
+                              <i className="bi bi-trash"></i>
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -292,14 +343,33 @@ const Notificaciones: React.FC = () => {
         onSave={handleSave}
       >
         <div className="mb-3">
-          <label className="form-label">Destinatario ID *</label>
-          <input
-            type="number"
-            className="form-control"
-            value={formData.destinatario_id}
-            onChange={(e) => setFormData({ ...formData, destinatario_id: parseInt(e.target.value) })}
-            placeholder="ID del destinatario"
-          />
+          <label className="form-label">Destinatario *</label>
+          <select
+            className="form-select"
+            value={formData.destinatario_id as any}
+            onChange={(e) => setFormData({ ...formData, destinatario_id: e.target.value as any })}
+          >
+            <option value="">Seleccionar destinatario</option>
+            <optgroup label="Usuarios">
+              {usuarios.map(u => (
+                <option key={u.id} value={u.id}>{u.nombre} ({u.tipo_usuario})</option>
+              ))}
+            </optgroup>
+            <optgroup label="Alumnos">
+              {alumnos.map(a => (
+                <option key={a.id} value={a.id}>{a.primer_nombre} {a.apellido_paterno} ({a.numero_matricula})</option>
+              ))}
+            </optgroup>
+            <option value="__other">Otro (manual)</option>
+          </select>
+          {String(formData.destinatario_id) === '__other' && (
+            <input
+              className="form-control mt-2"
+              placeholder="Ingrese nombre o ID manualmente"
+              value={formData.mensaje || ''}
+              onChange={(e) => setFormData({ ...formData, mensaje: e.target.value })}
+            />
+          )}
         </div>
         <div className="mb-3">
           <label className="form-label">Tipo *</label>
