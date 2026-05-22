@@ -112,6 +112,12 @@ const Notificaciones: React.FC = () => {
     };
   };
 
+  const getTipoBadge = (tipo: string) => {
+    if (tipo === 'alerta') return 'danger';
+    if (tipo === 'urgente') return 'warning';
+    return 'info';
+  };
+
   const stats = calculateStats();
 
   return (
@@ -190,6 +196,32 @@ const Notificaciones: React.FC = () => {
             </div>
           </div>
           <div className="card-body">
+            <div className="row g-3 mb-3">
+              <div className="col-md-3">
+                <div className="p-3 bg-light rounded border">
+                  <div className="text-muted small">Notificaciones</div>
+                  <div className="fs-4 fw-bold">{notificaciones.length}</div>
+                </div>
+              </div>
+              <div className="col-md-3">
+                <div className="p-3 bg-light rounded border">
+                  <div className="text-muted small">Leídas</div>
+                  <div className="fs-4 fw-bold">{stats.leidas}</div>
+                </div>
+              </div>
+              <div className="col-md-3">
+                <div className="p-3 bg-light rounded border">
+                  <div className="text-muted small">No leídas</div>
+                  <div className="fs-4 fw-bold">{stats.noleidas}</div>
+                </div>
+              </div>
+              <div className="col-md-3">
+                <div className="p-3 bg-light rounded border">
+                  <div className="text-muted small">Alertas</div>
+                  <div className="fs-4 fw-bold">{stats.alertas}</div>
+                </div>
+              </div>
+            </div>
             <div className="table-responsive">
               {notificaciones.length === 0 ? (
                 <div className="alert alert-info">No hay notificaciones</div>
@@ -212,13 +244,13 @@ const Notificaciones: React.FC = () => {
                         <td>{notificacion.id}</td>
                         <td>{notificacion.destinatario_id}</td>
                         <td>
-                          <span className={`badge bg-${
-                            notificacion.tipo === 'alerta' ? 'danger' : 'info'
-                          }`}>
+                          <span className={`badge bg-${getTipoBadge(notificacion.tipo)}`}>
                             {notificacion.tipo}
                           </span>
                         </td>
-                        <td className={notificacion.leida ? '' : 'fw-bold'}>{notificacion.mensaje}</td>
+                        <td className={notificacion.leida ? '' : 'fw-bold'}>
+                          {notificacion.mensaje}
+                        </td>
                         <td>
                           <span className={`badge bg-${notificacion.leida ? 'success' : 'warning'}`}>
                             {notificacion.leida ? 'Leída' : 'No leída'}

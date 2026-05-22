@@ -1,655 +1,124 @@
-# 🎓 Sistema SOA - Colegio Futuro Digital
+# Sistema SOA - Colegio Futuro Digital
 
-Sistema completo de **Gestión Académica** basado en **Arquitectura Orientada a Servicios (SOA)** con **9 microservicios independientes**.
+Sistema de gestión académica basado en una arquitectura orientada a servicios con API Gateway, frontend en React y base de datos SQLite.
 
----
+## Requisitos
 
-## ⚡ Quick Start (3 Pasos)
+- Node.js 16 o superior
+- npm 7 o superior
+- Docker y docker-compose, solo si quieres usar contenedores
 
-### Windows (Recomendado)
-```bash
-.\start-all.bat
-```
-Esto abre dos ventanas automáticamente:
-- Backend API (puerto 3000)
-- Frontend React (puerto 3001)
+## Instalación local
 
-### Linux / Mac
-```bash
-./start-all.sh
-```
+1. Instala dependencias en la raíz:
 
-### Manual (Todos los SO)
-**Terminal 1 - Backend:**
-```bash
-cd api-gateway
-npm start
-```
-
-**Terminal 2 - Frontend:**
-```bash
-cd frontend
-npm start
-```
-
-**✅ Listo**. Accede en:
-- **Frontend**: http://localhost:3001 (React UI)
-- **Backend**: http://localhost:3000 (APIs REST)
-
----
-
-## 🔑 Credenciales de Prueba
-
-```
-Director:
-  Email: director@colegio.com
-  Password: password123
-
-Alumno:
-  Email: luis@estudiante.com
-  Password: password123
-
-Docente:
-  Email: juan@colegio.com
-  Password: password123
-
-Admin:
-  Email: admin@colegio.com
-  Password: password123
-```
-
----
-
-## 📋 Requisitos
-
-- **Node.js**: v16.0.0+
-- **npm**: v7.0.0+
-- **SQLite3**: Incluido automáticamente
-
----
-
-## 🚀 Instalación Completa
-
-### 1. Instalar dependencias
 ```bash
 npm install
 ```
 
-### 2. Inicializar base de datos
+1. Instala dependencias del frontend:
+
+```bash
+cd frontend
+npm install
+cd ..
+```
+
+1. Inicializa la base de datos y los datos de prueba:
+
 ```bash
 npm run db:init
 ```
-✅ Crea tablas, inserta 20+ datos de prueba
 
-### 3. Ejecutar todos los servicios
+1. Crea un archivo `.env` en la raíz con al menos:
+
+```env
+JWT_SECRET=tu_secreto_aqui
+GATEWAY_PORT=3000
+```
+
+## Cómo levantar el sistema
+
+### Windows
+
+```powershell
+.\start-all.bat
+```
+
+### Desarrollo completo
+
 ```bash
 npm run dev
 ```
 
-Levanta 9 servicios simultáneamente:
-- **API Gateway** (3000) - Autenticación y enrutamiento
-- **Alumnos** (3001) - CRUD estudiantes  
-- **Matrículas** (3002) - Inscripciones validadas
-- **Profesores** (3003) - Gestión docentes
-- **Cursos** (3004) - Administración cursos
-- **Pagos** (3005) - Gestión financiera
-- **Notificaciones** (3006) - Email/SMS
-- **Asistencia** (3007) - Control asistencia
-- **Calificaciones** (3008) - Gestión notas
+### Arranque manual
 
----
+Backend:
 
-## 🏗️ Arquitectura Completa
-
-### Backend: 9 Microservicios Implementados
-
-| Servicio | Puerto | Descripción |
-|----------|--------|-------------|
-| API Gateway | 3000 | Autenticación JWT + Proxy |
-| Alumnos | 3001 | CRUD estudiantes |
-| Matrículas | 3002 | Inscripciones (RN-001, RN-004) |
-| Profesores | 3003 | Gestión docentes |
-| Cursos | 3004 | Administración cursos |
-| Pagos | 3005 | Transacciones + deudas (RN-004) |
-| Notificaciones | 3006 | Email/SMS (RN-006) |
-| Asistencia | 3007 | Control asistencia (RN-003, RN-006) |
-| Calificaciones | 3008 | Notas académicas (RN-002) |
-
-### Frontend: React Application
-
-| Componente | Puerto | Descripción |
-|-----------|--------|-------------|
-| React Frontend | 3001+ | Interfaz gráfica moderna con Bootstrap 5 |
-| Componentes | - | Dashboard, Alumnos, Cursos, Pagos, etc. |
-| Context API | - | Gestión de autenticación y estado |
-| Axios | - | Cliente HTTP integrado con APIs |
-
----
-
-## 📊 Reglas de Negocio (7/7 Implementadas)
-
-✅ **RN-001** - Asignación única de aula por período  
-✅ **RN-002** - Registro de notas dentro de plazo  
-✅ **RN-003** - Asistencia diaria obligatoria  
-✅ **RN-004** - Bloqueo por deuda pendiente  
-✅ **RN-005** - Acceso restringido a padres  
-✅ **RN-006** - Notificación de inasistencias  
-✅ **RN-007** - Validación datos obligatorios  
-
----
-
-## 📡 Endpoints Principales
-
-### Login
 ```bash
-POST /api/auth/login
-{
-  "email": "director@colegio.com",
-  "password": "password123"
-}
-```
-
-### Alumnos
-```bash
-GET    /api/alumnos                # Listar todos
-GET    /api/alumnos/:id            # Obtener por ID
-POST   /api/alumnos                # Crear alumno
-PUT    /api/alumnos/:id            # Actualizar
-DELETE /api/alumnos/:id            # Desactivar
-GET    /api/alumnos/:id/deuda      # Verificar deuda (RN-004)
-```
-
-### Matrículas
-```bash
-GET  /api/matriculas               # Listar matrículas
-POST /api/matriculas               # Crear (valida RN-001, RN-004)
-PUT  /api/matriculas/:id           # Actualizar
-GET  /api/matriculas-alumno/:id    # Matrículas de alumno
-```
-
-### Pagos
-```bash
-GET  /api/pagos                    # Listar pagos
-POST /api/pagos                    # Registrar pago
-GET  /api/pagos-alumno/:id         # Pagos de alumno
-GET  /api/deuda/:id                # Verificar deuda (RN-004)
-```
-
-### Cursos
-```bash
-GET  /api/cursos                   # Listar cursos
-POST /api/cursos                   # Crear curso
-PUT  /api/cursos/:id               # Actualizar
-GET  /api/cursos/:id/estudiantes   # Estudiantes del curso
-```
-
-### Profesores
-```bash
-GET  /api/profesores               # Listar profesores
-GET  /api/profesores/:id           # Obtener profesor
-POST /api/profesores               # Crear profesor
-GET  /api/profesores/:id/cursos    # Cursos asignados
-```
-
-### Asistencia
-```bash
-GET  /api/asistencia               # Listar asistencias
-POST /api/asistencia               # Registrar (valida RN-003)
-GET  /api/asistencia-alumno/:id    # Asistencias de alumno
-GET  /api/reporte-inasistencias    # Reporte de faltas
-```
-
-### Calificaciones
-```bash
-GET  /api/calificaciones           # Listar calificaciones
-POST /api/calificaciones           # Registrar (valida RN-002)
-GET  /api/calificaciones-alumno    # Notas de alumno
-GET  /api/promedio-alumno/:id      # Promedio ponderado
-```
-
-### Notificaciones
-```bash
-GET  /api/notificaciones           # Listar notificaciones
-POST /api/notificaciones           # Enviar notificación
-```
-
----
-
-## 🛠️ Comandos Útiles
-
-### Backend
-```bash
-# Desarrollo (todos los servicios con nodemon)
-npm run dev
-
-# Iniciar gateway solo
-npm start
-
-# Servicios individuales
-npm run alumnos            # Puerto 3001
-npm run matricula          # Puerto 3002
-npm run profesores         # Puerto 3003
-npm run cursos             # Puerto 3004
-npm run pagos              # Puerto 3005
-npm run notificaciones     # Puerto 3006
-npm run asistencia         # Puerto 3007
-npm run calificaciones     # Puerto 3008
-
-# Utilitarios
-npm run db:init            # Reinicializar BD
-npm run db:verify          # Verificar datos
-npm run verify             # Verificar servicios activos
-npm run test:api           # Probar APIs
-npm test                   # Tests automatizados
-```
-
-### Frontend (React)
-```bash
-# Entrar en carpeta frontend
-cd frontend
-
-# Desarrollar
-npm start                  # Levanta en puerto disponible
-
-# Construir para producción
-npm run build
-
-# Ejecutar tests
-npm test
-```
-
----
-
-## 🔐 Seguridad
-
-✅ **JWT Tokens** - Autenticación stateless con expiración  
-✅ **Bcryptjs** - Contraseñas hasheadas (salt 10)  
-✅ **RBAC** - Control acceso por 5 roles  
-✅ **Validación entrada** - Sanitización completa  
-✅ **CORS** - Configurado por origen  
-✅ **SQL Injection** - Prevención con prepared statements  
-
----
-
-## 📊 Respuesta Estándar
-
-```json
-{
-  "exito": true,
-  "codigo": "SUCCESS",
-  "mensaje": "Operación exitosa",
-  "datos": {
-    "id": "uuid",
-    "campo": "valor"
-  }
-}
-```
-
-Error:
-```json
-{
-  "exito": false,
-  "codigo": "ERROR_CODE",
-  "mensaje": "Descripción del error",
-  "detalles": null
-}
-```
-
----
-
-## 📁 Estructura
-
-```
-SOA/
-├── api-gateway/                 # Gateway principal
-│   ├── gateway.js
-│   ├── middleware/
-│   │   ├── auth.js             # JWT + RBAC
-│   │   └── errorHandler.js
-│   └── public/
-├── services/                    # 9 Microservicios
-│   ├── alumnos-service/
-│   ├── matricula-service/
-│   ├── profesores-service/
-│   ├── cursos-service/
-│   ├── pagos-service/
-│   ├── notificaciones-service/
-│   ├── asistencia-service/
-│   └── calificaciones-service/
-├── frontend/                    # React Application
-│   ├── public/
-│   │   ├── index.html          # HTML root
-│   │   └── favicon.svg
-│   ├── src/
-│   │   ├── api/
-│   │   │   ├── client.ts       # Axios client
-│   │   │   └── services.ts     # API services
-│   │   ├── components/
-│   │   │   ├── Navbar.tsx
-│   │   │   ├── Sidebar.tsx
-│   │   │   └── PrivateRoute.tsx
-│   │   ├── context/
-│   │   │   └── AuthContext.tsx # State management
-│   │   ├── pages/
-│   │   │   ├── Login.tsx
-│   │   │   ├── Dashboard.tsx
-│   │   │   ├── Alumnos.tsx
-│   │   │   ├── Cursos.tsx
-│   │   │   ├── Profesores.tsx
-│   │   │   ├── Matriculas.tsx
-│   │   │   ├── Pagos.tsx
-│   │   │   ├── Notificaciones.tsx
-│   │   │   ├── Asistencia.tsx
-│   │   │   └── Calificaciones.tsx
-│   │   ├── App.tsx             # Routing principal
-│   │   ├── index.tsx           # Entry point
-│   │   └── index.css           # Estilos globales
-│   ├── package.json
-│   ├── tsconfig.json
-│   └── .env
-├── config/
-│   └── database.js             # Conexión SQLite
-├── database/
-│   ├── colegio.db              # BD (se genera)
-│   ├── schema.sql              # Schema
-│   ├── init.js                 # Inicializador
-│   └── verify-data.js          # Verificador
-├── shared/
-│   ├── utils.js                # Helpers
-│   └── validators.js           # Validadores
-├── .env                         # Variables entorno
-├── package.json
-└── README.md
-```
-
----
-
-## 🔄 Flujos Principales
-
-### Flujo de Matrícula
-```
-1. Alumno → Solicita matrícula
-2. Sistema valida RN-001 (aula única/período)
-3. Sistema valida RN-004 (sin deuda)
-4. Sistema valida RN-007 (datos completos)
-5. Registra → Notifica padre/madre
-```
-
-### Flujo de Asistencia
-```
-1. Docente → Marca asistencia
-2. Sistema valida RN-003 (registro diario)
-3. Si FALTA → Ejecuta RN-006 (notifica padre)
-4. Registra en BD → Genera reporte
-```
-
-### Flujo de Calificaciones
-```
-1. Docente → Registra nota
-2. Sistema valida RN-002 (dentro de fecha límite)
-3. Calcula promedio ponderado automático
-4. Registra → Notifica alumno/padre
-```
-
----
-
-## 🐛 Troubleshooting
-
-### ⚠️ Login falla con "Error al iniciar sesión" (SOLUCIONADO)
-
-**Causa**: Configuración de CORS no permitía requests desde http://localhost:3001
-
-**Solución aplicada**:
-1. ✅ Agregado `ALLOWED_ORIGINS` en `.env` con todos los orígenes válidos
-2. ✅ Reiniciado Backend para aplicar cambios CORS
-3. ✅ Agregado logging detallado en:
-   - `frontend/src/context/AuthContext.tsx`
-   - `frontend/src/pages/Login.tsx`
-   - `frontend/src/api/client.ts`
-
-**Para probar el login**:
-- Abre http://localhost:3001 en el navegador
-- Presiona F12 para abrir DevTools → Console
-- Verás logs detallados como: `[AuthContext] Iniciando login...`
-- Prueba con: 
-  - Email: `director@colegio.com`
-  - Password: `password123`
-
-### Puerto en uso
-```bash
-# Cambiar en .env
-GATEWAY_PORT=3001
-ALUMNOS_SERVICE_PORT=3011
-```
-
-### BD no encontrada
-```bash
-node config/init-db.js
-```
-
-### Backend no responde
-```bash
-# Verificar que está ejecutándose
-curl http://localhost:3000/api/health
-
-# Si no funciona, reiniciar:
-# Windows: .\start-all.bat
-# Linux: ./start-all.sh
-```
-
-### Resetear BD completamente
-```bash
-node config/init-db.js
-```
-
-### Frontend no carga
-```bash
-# Limpiar cache de npm
-cd frontend
-rm -r node_modules package-lock.json
-npm install
 npm start
 ```
 
-### Error: EADDRINUSE (puerto ya en uso)
-```bash
-# Windows - Buscar proceso en puerto 3000
-netstat -ano | findstr :3000
-
-# Matar proceso (reemplaza PID con el número encontrado)
-taskkill /PID <PID> /F
-
-# Linux/Mac
-lsof -ti:3000 | xargs kill -9
-```
-
----
-
-## 📊 Estadísticas
-
-| Métrica | Valor |
-|---------|-------|
-| Servicios | 8 + Gateway |
-| Endpoints | 60+ |
-| Código | 3,000+ líneas |
-| Tablas BD | 11 |
-| Índices | 25+ |
-| Reglas negocio | 7 (todas) |
-| Roles RBAC | 5 |
-| Datos prueba | 20+ |
-
----
-
-## 💾 Desarrollo
-
-### Agregar endpoint
-
-1. Editar `services/nombre-service/server.js`
-2. Agregar ruta con validación
-3. Devolver con `respuestaExito()` o `respuestaError()`
-
-```javascript
-app.get('/alumnos/por-grado/:grado', asyncHandler(async (req, res) => {
-  const { grado } = req.params;
-  const alumnos = await getAll(
-    'SELECT * FROM alumnos WHERE grado_nivel = ?',
-    [grado]
-  );
-  res.json(respuestaExito(alumnos, 'Alumnos obtenidos'));
-}));
-```
-
----
-
-## 🚀 Docker
+Frontend en Windows:
 
 ```bash
-# Construir
-docker-compose build
-
-# Iniciar
-docker-compose up -d
-
-# Logs
-docker-compose logs -f
-
-# Detener
-docker-compose down
+cd frontend
+npm start
 ```
 
----
+Frontend en Linux o macOS:
 
-## 📚 Stack
+```bash
+cd frontend
+PORT=3001 npm start
+```
 
-- **Backend**: Node.js + Express.js
-- **Frontend**: React 18 + TypeScript + Bootstrap 5
-- **Auth**: JWT + Bcryptjs + Context API
-- **BD**: SQLite (dev) / MySQL (prod ready)
-- **HTTP Client**: Axios
-- **Routing**: React Router v6
-- **Notificaciones**: Nodemailer + Twilio API
-- **Dev**: Nodemon, Concurrently, Jest
-- **Deploy**: Docker, Vercel, Railway
+### Docker
 
----
+```bash
+docker-compose up --build
+```
 
-## 🎨 Interfaz Gráfica (React Frontend)
+## Usuarios de prueba
 
-### Pantallas Disponibles
+Las credenciales de ejemplo se cargan con `npm run db:init`.
 
-- **Login**: Autenticación con email/contraseña
-- **Dashboard**: Resumen estadístico de toda la plataforma
-- **Alumnos**: CRUD completo de estudiantes
-- **Profesores**: Gestión de docentes
-- **Cursos**: Administración de cursos y capacidad
-- **Matrículas**: Inscripciones validadas
-- **Pagos**: Gestión financiera de la institución
-- **Asistencia**: Registro de asistencia diaria
-- **Calificaciones**: Registro y promedio de notas
-- **Notificaciones**: Centro de notificaciones del sistema
+| Usuario | Tipo | Qué prueba en la interfaz | Credenciales |
+| --- | --- | --- | --- |
+| Director | `director` | Acceso completo al dashboard y a todos los módulos | `director@colegio.com` / `password123` |
+| Administrativo | `administrativo` | Gestión de alumnos, matrículas, cursos y pagos | `admin@colegio.com` / `password123` |
+| Docente | `docente` | Consulta de cursos, asistencia y calificaciones | `juan@colegio.com` / `password123` |
+| Alumno | `alumno` | Consulta de información permitida por el sistema | `luis@estudiante.com` / `password123` |
+| Padre / Apoderado | `padre` | Revisión de notificaciones y seguimiento | `padre@colegio.com` / `password123` |
 
-### Características de la UI
+## Qué verás en cada módulo
 
-✅ **Interfaz moderna** - Bootstrap 5 con diseño responsive  
-✅ **Autenticación** - Login con JWT + localStorage  
-✅ **Rutas protegidas** - Control de acceso por permisos  
-✅ **Tabla dinámica** - Listado de datos con paginación  
-✅ **Sidebar navegable** - Menú lateral con iconos  
-✅ **Navbar con usuario** - Información del usuario logueado  
-✅ **Integración APIs** - Axios con interceptores  
-✅ **Manejo errores** - Messages de error/éxito  
+- Dashboard: resumen general con conteos de alumnos, cursos, profesores y pagos.
+- Alumnos: listado de alumnos sembrados en la base de datos.
+- Profesores: listado de docentes con usuario, nombre, especialidad y contacto.
+- Cursos: cursos con código, grado, sección y salón.
+- Matrículas: relación alumno-curso cargada desde SQLite.
+- Pagos: pagos iniciales con estado pagado y pendiente.
+- Asistencia: registros de asistencia sembrados para probar el listado.
+- Calificaciones: notas de ejemplo visibles en el módulo.
+- Notificaciones: notificaciones de prueba visibles en la interfaz.
 
-### Ejemplo de Uso
+## Variables importantes
 
-1. Abre http://localhost:3001 (o el puerto que asigne React)
-2. Ingresa credenciales:
-   - Email: `director@colegio.com`
-   - Password: `password123`
-3. Dashboard muestra estadísticas en tiempo real
-4. Navega por el sidebar para acceder a cada módulo
+- `JWT_SECRET`: clave para firmar el token.
+- `GATEWAY_PORT`: puerto del API Gateway.
+- `ALLOWED_ORIGINS`: lista de orígenes permitidos por CORS, por ejemplo `http://localhost:3001`.
 
----
+## Troubleshooting
 
-**Universidad Tecnológica del Perú (UTP)**
-- Facultad: Ingeniería
-- Curso: Arquitectura Orientada a Servicios (SOA)
-- Docente: Cesar Augusto Minguillo Rubio
-- Ciclo: 2026-1
+- Si el login no responde desde el frontend, revisa que el gateway esté permitiendo `http://localhost:3001` en CORS.
+- Si quieres reiniciar la base de datos, vuelve a ejecutar `npm run db:init`.
+- Si el frontend no abre, revisa que esté corriendo en el puerto `3001`.
 
-**Equipo:**
-- Edward Antonio Rivera Antezana (U21317379)
-- Harumy del Rocío Bazalar Pacheco (U22221383)
-- Naomi Caballero Cáceres (U21205215)
-- Maria Celeste Cuba Hinostroza (U21232415)
+## Estructura general
 
----
-
-## 🎨 Mejoras Realizadas (Actualización)
-
-### ✅ Correcciones de Abril 2026
-
-#### Frontend - Alumnos.tsx
-- ✅ Mapeado correcto de campos: `apellido_paterno`, `primer_nombre`, `email_contacto` (en lugar de `nombre`, `email`)
-- ✅ Formulario completo con 6 campos (Matrícula, Documento, Emails, Teléfono)
-- ✅ Tabla dinámica que muestra datos reales de la BD
-- ✅ Logging detallado para debugging
-- ✅ Validación de campos requeridos
-
-#### Frontend - Navbar.tsx
-- ✅ Botón dropdown agrandado (50px mínimo, 1.1rem font size)
-- ✅ Funcionalidad de logout completa
-- ✅ Dropdown menu con "Mi Perfil" y "Cerrar Sesión"
-- ✅ Title tooltip para mejor UX
-
-#### Backend - POST Alumnos
-- ✅ Campos `usuario_id`, `numero_documento` son opcionales (NULL en BD)
-- ✅ Validación de campos obligatorios con mensajes claros
-- ✅ Logging de errores para debugging
-- ✅ Respuesta 201 en creación exitosa
-
-#### Base de Datos
-- ✅ Re-inicializada con 5 alumnos reales + datos relacionados
-- ✅ 3 Profesores con usuarios
-- ✅ 4 Cursos con código y capacidad
-- ✅ 10 Matrículas activas
-- ✅ 15 Registros de Pagos (3 por alumno)
-- ✅ 50 Registros de Asistencia (10 por alumno)
-- ✅ 20 Calificaciones (5 alumnos × 4 cursos)
-- ✅ 5 Notificaciones de prueba
-
-### Login Page
-- ✅ Diseño moderno con gradiente profesional
-- ✅ Iconos visuales para mejor UX
-- ✅ Validación en tiempo real
-- ✅ Animaciones suaves en inputs
-- ✅ Estados hover mejorados
-- ✅ Errores más descriptivos
-- ✅ Credenciales pre-llenadas para pruebas
-- ✅ Responsive en todos los dispositivos
-
-### Base de Datos
-- ✅ 11 tablas normalizadas
-- ✅ 20+ registros de prueba
-- ✅ Relaciones FOREIGN KEY establecidas
-- ✅ Indices para performance
-- ✅ Script init-db.js para reset rápido
-
-### CRUD Implementado
-Cada página incluye:
-- **Crear**: Modales con validación
-- **Leer**: Tablas dinámicas con datos en tiempo real
-- **Actualizar**: Edición con pre-carga de datos
-- **Eliminar**: Confirmación antes de eliminar (soft delete)
-- **Alertas**: Mensajes de éxito/error automáticos
-
----
-
-## 📄 Licencia
-
-MIT - Proyecto Educativo
-
----
-
-**Estado**: ✅ Producción  
-**Versión**: 1.0.2  
-**Última Actualización**: Abril 2026
+- `api-gateway/`: autenticación, middleware y endpoints principales.
+- `services/`: microservicios del dominio académico.
+- `frontend/`: interfaz React.
+- `database/`: esquema, inicialización y verificación de datos.
+- `config/` y `shared/`: utilidades comunes del backend.

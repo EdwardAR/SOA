@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { asistenciaService } from '../api/services';
+import { asistenciaService, alumnosService, cursosService } from '../api/services';
 import Modal from '../components/Modal';
 
 interface AsistenciaRecord {
   id?: number;
   alumno_id: number;
+  curso_id?: number;
   fecha: string;
   estado: string;
   observacion?: string;
+  registrada?: boolean;
+  motivo_falta?: string;
 }
 
 const Asistencia: React.FC = () => {
@@ -17,6 +20,8 @@ const Asistencia: React.FC = () => {
   const [success, setSuccess] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [alumnos, setAlumnos] = useState<any[]>([]);
+  const [cursos, setCursos] = useState<any[]>([]);
   const [formData, setFormData] = useState<AsistenciaRecord>({
     alumno_id: 0,
     fecha: new Date().toISOString().split('T')[0],
@@ -26,7 +31,21 @@ const Asistencia: React.FC = () => {
 
   useEffect(() => {
     fetchAsistencias();
+    fetchRelacionados();
   }, []);
+
+  const fetchRelacionados = async () => {
+    try {
+      const [alumnosResponse, cursosResponse] = await Promise.all([
+        alumnosService.getAll(),
+        cursosService.getAll()
+      ]);
+      setAlumnos(alumnosResponse.data?.datos || []);
+      setCursos(cursosResponse.data?.datos || []);
+    } catch (err) {
+      console.error('Error cargando relaciones para asistencia:', err);
+    }
+  };
 
   const fetchAsistencias = async () => {
     try {
@@ -103,12 +122,32 @@ const Asistencia: React.FC = () => {
   };
 
   const calculateStats = () => {
+    const normalizedState = (estado: string) => estado.toLowerCase();
+
     return {
-      presentes: asistencias.filter(a => a.estado === 'presente').length,
-      ausentes: asistencias.filter(a => a.estado === 'ausente').length,
-      tardanzas: asistencias.filter(a => a.estado === 'tardanza').length,
+      presentes: asistencias.filter(a => normalizedState(a.estado) === 'presente').length,
+      ausentes: asistencias.filter(a => normalizedState(a.estado) === 'ausente' || normalizedState(a.estado) === 'falta').length,
+      tardanzas: asistencias.filter(a => normalizedState(a.estado) === 'tardanza').length,
       total: asistencias.length
     };
+  };
+
+  const getEstadoClass = (estado: string) => {
+    const normalized = estado.toLowerCase();
+    if (normalized === 'presente') return 'success';
+    if (normalized === 'ausente' || normalized === 'falta') return 'danger';
+    return 'warning';
+  };
+
+  const getAlumnoNombre = (id: number) => {
+    const alumno = alumnos.find(a => Number(a.id) === Number(id));
+    return alumno ? `${alumno.primer_nombre} ${alumno.apellido_paterno}` : id;
+  };
+
+  const getCursoNombre = (id?: number) => {
+    if (!id) return '-';
+    const curso = cursos.find(c => Number(c.id) === Number(id));
+    return curso ? `${curso.nombre} (${curso.codigo || curso.id})` : id;
   };
 
   const stats = calculateStats();
@@ -189,6 +228,32 @@ const Asistencia: React.FC = () => {
             </div>
           </div>
           <div className="card-body">
+            <div className="row g-3 mb-3">
+              <div className="col-md-3">
+                <div className="p-3 bg-light rounded border">
+                  <div className="text-muted small">Registros</div>
+                  <div className="fs-4 fw-bold">{asistencias.length}</div>
+                </div>
+              </div>
+              <div className="col-md-3">
+                <div className="p-3 bg-light rounded border">
+                  <div className="text-muted small">Alumnos</div>
+                  <div className="fs-4 fw-bold">{alumnos.length}</div>
+                </div>
+              </div>
+              <div className="col-md-3">
+                <div className="p-3 bg-light rounded border">
+                  <div className="text-muted small">Cursos</div>
+                  <div className="fs-4 fw-bold">{cursos.length}</div>
+                </div>
+              </div>
+              <div className="col-md-3">
+                <div className="p-3 bg-light rounded border">
+                  <div className="text-muted small">Presentes</div>
+                  <div className="fs-4 fw-bold">{stats.presentes}</div>
+                </div>
+              </div>
+            </div>
             <div className="table-responsive">
               {asistencias.length === 0 ? (
                 <div className="alert alert-info">No hay registros de asistencia</div>
@@ -197,10 +262,12 @@ const Asistencia: React.FC = () => {
                   <thead className="table-light">
                     <tr>
                       <th>ID</th>
-                      <th>Alumno ID</th>
+                      <th>Alumno</th>
+                      <th>Curso</th>
                       <th>Fecha</th>
                       <th>Estado</th>
-                      <th>Observación</th>
+                      <th>Motivo</th>
+                      <th>Registrada</th>
                       <th>Acciones</th>
                     </tr>
                   </thead>
@@ -208,17 +275,18 @@ const Asistencia: React.FC = () => {
                     {asistencias.map((asistencia) => (
                       <tr key={asistencia.id}>
                         <td>{asistencia.id}</td>
-                        <td>{asistencia.alumno_id}</td>
+                        <td>{getAlumnoNombre(asistencia.alumno_id)}</td>
+                        <td>{getCursoNombre(asistencia.curso_id)}</td>
                         <td>{new Date(asistencia.fecha).toLocaleDateString()}</td>
                         <td>
                           <span className={`badge bg-${
-                            asistencia.estado === 'presente' ? 'success' :
-                            asistencia.estado === 'ausente' ? 'danger' : 'warning'
+                            getEstadoClass(asistencia.estado)
                           }`}>
                             {asistencia.estado}
                           </span>
                         </td>
-                        <td>{asistencia.observacion || '-'}</td>
+                        <td>{asistencia.motivo_falta || asistencia.observacion || '-'}</td>
+                        <td>{asistencia.registrada ? 'Sí' : 'No'}</td>
                         <td>
                           <button 
                             className="btn btn-sm btn-primary me-2"

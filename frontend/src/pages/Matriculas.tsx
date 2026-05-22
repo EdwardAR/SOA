@@ -8,6 +8,7 @@ interface Matricula {
   curso_id?: string;
   fecha_matricula?: string;
   estado?: string;
+  observaciones?: string;
 }
 
 const Matriculas: React.FC = () => {
@@ -125,12 +126,18 @@ const Matriculas: React.FC = () => {
 
   const getAlumnoNombre = (id: string) => {
     const alumno = alumnos.find(a => a.id === id);
-    return alumno ? `${alumno.primer_nombre} ${alumno.apellido_paterno}` : '-';
+    return alumno ? `${alumno.primer_nombre} ${alumno.apellido_paterno}` : id;
   };
 
   const getCursoNombre = (id: string) => {
     const curso = cursos.find(c => c.id === id);
-    return curso ? curso.nombre : '-';
+    return curso ? `${curso.nombre} (${curso.codigo || curso.id})` : id;
+  };
+
+  const getEstadoBadge = (estado?: string) => {
+    if (estado === 'activa') return 'success';
+    if (estado === 'suspendida') return 'warning';
+    return 'danger';
   };
 
   return (
@@ -170,13 +177,35 @@ const Matriculas: React.FC = () => {
             </div>
           </div>
           <div className="card-body">
+            <div className="row g-3 mb-3">
+              <div className="col-md-4">
+                <div className="p-3 bg-light rounded border">
+                  <div className="text-muted small">Matrículas</div>
+                  <div className="fs-4 fw-bold">{matriculas.length}</div>
+                </div>
+              </div>
+              <div className="col-md-4">
+                <div className="p-3 bg-light rounded border">
+                  <div className="text-muted small">Alumnos cargados</div>
+                  <div className="fs-4 fw-bold">{alumnos.length}</div>
+                </div>
+              </div>
+              <div className="col-md-4">
+                <div className="p-3 bg-light rounded border">
+                  <div className="text-muted small">Cursos cargados</div>
+                  <div className="fs-4 fw-bold">{cursos.length}</div>
+                </div>
+              </div>
+            </div>
             <div className="table-responsive">
               <table className="table table-hover">
                 <thead className="table-light">
                   <tr>
+                    <th>ID</th>
                     <th>Alumno</th>
                     <th>Curso</th>
                     <th>Fecha</th>
+                    <th>Observaciones</th>
                     <th>Estado</th>
                     <th>Acciones</th>
                   </tr>
@@ -184,18 +213,20 @@ const Matriculas: React.FC = () => {
                 <tbody>
                   {matriculas.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="text-center py-4 text-muted">
+                      <td colSpan={7} className="text-center py-4 text-muted">
                         No hay matrículas registradas
                       </td>
                     </tr>
                   ) : (
                     matriculas.map((matricula) => (
                       <tr key={matricula.id}>
+                        <td><small className="text-muted">{matricula.id}</small></td>
                         <td>{getAlumnoNombre(matricula.alumno_id)}</td>
                         <td>{getCursoNombre(matricula.curso_id)}</td>
                         <td>{matricula.fecha_matricula || '-'}</td>
+                        <td>{matricula.observaciones || 'Matrícula inicial'}</td>
                         <td>
-                          <span className={`badge ${matricula.estado === 'activa' ? 'bg-success' : 'bg-danger'}`}>
+                          <span className={`badge bg-${getEstadoBadge(matricula.estado)}`}>
                             {matricula.estado}
                           </span>
                         </td>

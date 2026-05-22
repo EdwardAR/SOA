@@ -3,7 +3,9 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const bcryptjs = require('bcryptjs');
-const { initDatabase, getDatabase, getOne, runQuery } = require('../config/database');
+const fs = require('fs');
+const path = require('path');
+const { initDatabase, getDatabase, getOne, getAll, runQuery } = require('../config/database');
 const { authMiddleware, requireRole, generarToken } = require('./middleware/auth');
 const { errorHandler, asyncHandler } = require('./middleware/errorHandler');
 const { respuestaExito, respuestaError, generarId } = require('../shared/utils');
@@ -14,7 +16,7 @@ const GATEWAY_PORT = process.env.GATEWAY_PORT || 3000;
 
 // Configuración de CORS
 const corsOptions = {
-  origin: (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(','),
+  origin: (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001').split(','),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -303,9 +305,10 @@ app.get('/api/pagos', authMiddleware, asyncHandler(async (req, res) => {
 // ASISTENCIA desde BD
 app.get('/api/asistencia', authMiddleware, asyncHandler(async (req, res) => {
   try {
-    const asistencia = await getAll('SELECT * FROM asistencia LIMIT 100');
+    const asistencia = await getAll('SELECT * FROM asistencias LIMIT 100');
     res.json(respuestaExito(asistencia, 'Registros de asistencia obtenidos'));
   } catch (error) {
+    console.error('Error al obtener asistencia:', error);
     res.status(500).json(respuestaError('Error al obtener asistencia'));
   }
 }));
@@ -478,7 +481,15 @@ app.get('/api/me', authMiddleware, asyncHandler(async (req, res) => {
 
 // Servir archivo HTML de inicio
 app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/public/index.html');
+  const publicIndexPath = path.join(__dirname, 'public', 'index.html');
+  if (fs.existsSync(publicIndexPath)) {
+    return res.sendFile(publicIndexPath);
+  }
+
+  res.json({
+    status: 'OK',
+    message: 'API Gateway en ejecución'
+  });
 });
 
 // ============================================

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { pagosService } from '../api/services';
+import { pagosService, alumnosService } from '../api/services';
 import Modal from '../components/Modal';
 
 interface Pago {
@@ -10,6 +10,8 @@ interface Pago {
   estado: string;
   fecha_pago: string;
   metodo_pago: string;
+  estado_pago?: string;
+  observaciones?: string;
 }
 
 const Pagos: React.FC = () => {
@@ -19,6 +21,7 @@ const Pagos: React.FC = () => {
   const [success, setSuccess] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [alumnos, setAlumnos] = useState<any[]>([]);
   const [formData, setFormData] = useState<Pago>({
     alumno_id: 0,
     monto: 0,
@@ -30,7 +33,17 @@ const Pagos: React.FC = () => {
 
   useEffect(() => {
     fetchPagos();
+    fetchAlumnos();
   }, []);
+
+  const fetchAlumnos = async () => {
+    try {
+      const response = await alumnosService.getAll();
+      setAlumnos(response.data?.datos || []);
+    } catch (err) {
+      console.error('Error al cargar alumnos para pagos:', err);
+    }
+  };
 
   const fetchPagos = async () => {
     try {
@@ -119,6 +132,17 @@ const Pagos: React.FC = () => {
 
   const totals = calculateTotals();
 
+  const getAlumnoNombre = (id: number) => {
+    const alumno = alumnos.find(a => Number(a.id) === Number(id));
+    return alumno ? `${alumno.primer_nombre} ${alumno.apellido_paterno}` : id;
+  };
+
+  const getPagoBadge = (estado: string) => {
+    if (estado === 'pagado') return 'success';
+    if (estado === 'pendiente') return 'warning';
+    return 'danger';
+  };
+
   return (
     <div className="container-fluid p-4">
       <h1 className="mb-4">
@@ -195,6 +219,26 @@ const Pagos: React.FC = () => {
             </div>
           </div>
           <div className="card-body">
+            <div className="row g-3 mb-3">
+              <div className="col-md-4">
+                <div className="p-3 bg-light rounded border">
+                  <div className="text-muted small">Pagos cargados</div>
+                  <div className="fs-4 fw-bold">{pagos.length}</div>
+                </div>
+              </div>
+              <div className="col-md-4">
+                <div className="p-3 bg-light rounded border">
+                  <div className="text-muted small">Alumnos disponibles</div>
+                  <div className="fs-4 fw-bold">{alumnos.length}</div>
+                </div>
+              </div>
+              <div className="col-md-4">
+                <div className="p-3 bg-light rounded border">
+                  <div className="text-muted small">Monto total</div>
+                  <div className="fs-4 fw-bold">${totals.total.toFixed(2)}</div>
+                </div>
+              </div>
+            </div>
             <div className="table-responsive">
               {pagos.length === 0 ? (
                 <div className="alert alert-info">No hay pagos registrados</div>
@@ -203,7 +247,7 @@ const Pagos: React.FC = () => {
                   <thead className="table-light">
                     <tr>
                       <th>ID</th>
-                      <th>Alumno ID</th>
+                      <th>Alumno</th>
                       <th>Concepto</th>
                       <th>Monto</th>
                       <th>Estado</th>
@@ -216,16 +260,19 @@ const Pagos: React.FC = () => {
                     {pagos.map((pago) => (
                       <tr key={pago.id}>
                         <td>{pago.id}</td>
-                        <td>{pago.alumno_id}</td>
-                        <td>{pago.concepto}</td>
+                        <td>{getAlumnoNombre(pago.alumno_id)}</td>
+                        <td>
+                          <div className="fw-semibold">{pago.concepto}</div>
+                          <small className="text-muted">{pago.observaciones || pago.estado_pago || 'Registro de pago'}</small>
+                        </td>
                         <td>${pago.monto.toFixed(2)}</td>
                         <td>
-                          <span className={`badge bg-${pago.estado === 'pagado' ? 'success' : 'warning'}`}>
+                          <span className={`badge bg-${getPagoBadge(pago.estado)}`}>
                             {pago.estado}
                           </span>
                         </td>
-                        <td>{new Date(pago.fecha_pago).toLocaleDateString()}</td>
-                        <td>{pago.metodo_pago}</td>
+                        <td>{pago.fecha_pago ? new Date(pago.fecha_pago).toLocaleDateString() : '-'}</td>
+                        <td>{pago.metodo_pago || '-'}</td>
                         <td>
                           <button 
                             className="btn btn-sm btn-primary me-2"

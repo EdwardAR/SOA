@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { calificacionesService } from '../api/services';
+import { calificacionesService, alumnosService, cursosService } from '../api/services';
 import Modal from '../components/Modal';
 
 interface Calificacion {
@@ -8,6 +8,7 @@ interface Calificacion {
   curso_id: number;
   nota: number;
   periodo: string;
+  observaciones?: string;
 }
 
 const Calificaciones: React.FC = () => {
@@ -17,6 +18,8 @@ const Calificaciones: React.FC = () => {
   const [success, setSuccess] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [alumnos, setAlumnos] = useState<any[]>([]);
+  const [cursos, setCursos] = useState<any[]>([]);
   const [formData, setFormData] = useState<Calificacion>({
     alumno_id: 0,
     curso_id: 0,
@@ -26,7 +29,21 @@ const Calificaciones: React.FC = () => {
 
   useEffect(() => {
     fetchCalificaciones();
+    fetchRelacionados();
   }, []);
+
+  const fetchRelacionados = async () => {
+    try {
+      const [alumnosResponse, cursosResponse] = await Promise.all([
+        alumnosService.getAll(),
+        cursosService.getAll()
+      ]);
+      setAlumnos(alumnosResponse.data?.datos || []);
+      setCursos(cursosResponse.data?.datos || []);
+    } catch (err) {
+      console.error('Error cargando relaciones para calificaciones:', err);
+    }
+  };
 
   const fetchCalificaciones = async () => {
     try {
@@ -114,6 +131,16 @@ const Calificaciones: React.FC = () => {
 
   const stats = calculateStats();
 
+  const getAlumnoNombre = (id: number) => {
+    const alumno = alumnos.find(a => Number(a.id) === Number(id));
+    return alumno ? `${alumno.primer_nombre} ${alumno.apellido_paterno}` : id;
+  };
+
+  const getCursoNombre = (id: number) => {
+    const curso = cursos.find(c => Number(c.id) === Number(id));
+    return curso ? `${curso.nombre} (${curso.codigo || curso.id})` : id;
+  };
+
   return (
     <div className="container-fluid p-4">
       <h1 className="mb-4">
@@ -190,6 +217,32 @@ const Calificaciones: React.FC = () => {
             </div>
           </div>
           <div className="card-body">
+            <div className="row g-3 mb-3">
+              <div className="col-md-3">
+                <div className="p-3 bg-light rounded border">
+                  <div className="text-muted small">Calificaciones</div>
+                  <div className="fs-4 fw-bold">{calificaciones.length}</div>
+                </div>
+              </div>
+              <div className="col-md-3">
+                <div className="p-3 bg-light rounded border">
+                  <div className="text-muted small">Alumnos</div>
+                  <div className="fs-4 fw-bold">{alumnos.length}</div>
+                </div>
+              </div>
+              <div className="col-md-3">
+                <div className="p-3 bg-light rounded border">
+                  <div className="text-muted small">Cursos</div>
+                  <div className="fs-4 fw-bold">{cursos.length}</div>
+                </div>
+              </div>
+              <div className="col-md-3">
+                <div className="p-3 bg-light rounded border">
+                  <div className="text-muted small">Promedio</div>
+                  <div className="fs-4 fw-bold">{stats.promedio}</div>
+                </div>
+              </div>
+            </div>
             <div className="table-responsive">
               {calificaciones.length === 0 ? (
                 <div className="alert alert-info">No hay calificaciones registradas</div>
@@ -198,10 +251,11 @@ const Calificaciones: React.FC = () => {
                   <thead className="table-light">
                     <tr>
                       <th>ID</th>
-                      <th>Alumno ID</th>
-                      <th>Curso ID</th>
+                      <th>Alumno</th>
+                      <th>Curso</th>
                       <th>Nota</th>
                       <th>Período</th>
+                      <th>Observaciones</th>
                       <th>Estado</th>
                       <th>Acciones</th>
                     </tr>
@@ -210,14 +264,15 @@ const Calificaciones: React.FC = () => {
                     {calificaciones.map((calificacion) => (
                       <tr key={calificacion.id}>
                         <td>{calificacion.id}</td>
-                        <td>{calificacion.alumno_id}</td>
-                        <td>{calificacion.curso_id}</td>
+                        <td>{getAlumnoNombre(calificacion.alumno_id)}</td>
+                        <td>{getCursoNombre(calificacion.curso_id)}</td>
                         <td>
                           <strong className={calificacion.nota >= 11 ? 'text-success' : 'text-danger'}>
                             {calificacion.nota}
                           </strong>
                         </td>
                         <td>P{calificacion.periodo}</td>
+                        <td>{calificacion.observaciones || 'Sin observaciones'}</td>
                         <td>
                           <span className={`badge bg-${
                             calificacion.nota >= 15 ? 'success' :
