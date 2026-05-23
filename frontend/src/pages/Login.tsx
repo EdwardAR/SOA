@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Login: React.FC = () => {
-  const [email, setEmail] = useState('director@colegio.com');
+  const [email, setEmail] = useState('luis.herrera@colegiofuturo.edu');
   const [password, setPassword] = useState('password123');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -230,7 +230,7 @@ const Login: React.FC = () => {
             <div className="mb-2">
               <strong style={{ color: '#667eea' }}>👤 Director:</strong>
               <div style={{ color: '#555', marginTop: '4px', paddingLeft: '16px' }}>
-                📧 <code style={{ background: '#fff', padding: '2px 6px', borderRadius: '4px' }}>director@colegio.com</code>
+                📧 <code style={{ background: '#fff', padding: '2px 6px', borderRadius: '4px' }}>luis.herrera@colegiofuturo.edu</code>
               </div>
               <div style={{ color: '#555', paddingLeft: '16px' }}>
                 🔑 <code style={{ background: '#fff', padding: '2px 6px', borderRadius: '4px' }}>password123</code>

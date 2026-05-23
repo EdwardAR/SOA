@@ -3,11 +3,13 @@ import { matriculasService, alumnosService, cursosService } from '../api/service
 import Modal from '../components/Modal';
 import { useAuth } from '../context/AuthContext';
 import { can } from '../utils/permissions';
+import { useSortableData } from '../utils/tableSort';
 
 interface Matricula {
   id?: string;
   alumno_id?: string;
   curso_id?: string;
+  periodo_academico?: string;
   fecha_matricula?: string;
   estado?: string;
   observaciones?: string;
@@ -25,9 +27,11 @@ const Matriculas: React.FC = () => {
   const [formData, setFormData] = useState<Matricula>({
     alumno_id: '',
     curso_id: '',
+    periodo_academico: `${new Date().getFullYear()}-1`,
     fecha_matricula: new Date().toISOString().split('T')[0],
     estado: 'activa'
   });
+  const { sortConfig, requestSort, sortedRows: matriculasOrdenadas } = useSortableData(matriculas, 'fecha_matricula');
 
   useEffect(() => {
     fetchData();
@@ -75,6 +79,7 @@ const Matriculas: React.FC = () => {
         id: matricula.id,
         alumno_id: matricula.alumno_id,
         curso_id: matricula.curso_id,
+        periodo_academico: matricula.periodo_academico || `${new Date().getFullYear()}-1`,
         fecha_matricula: matricula.fecha_matricula,
         estado: matricula.estado || 'activa'
       });
@@ -84,6 +89,7 @@ const Matriculas: React.FC = () => {
       setFormData({
         alumno_id: '',
         curso_id: '',
+        periodo_academico: `${new Date().getFullYear()}-1`,
         fecha_matricula: new Date().toISOString().split('T')[0],
         estado: 'activa'
       });
@@ -97,8 +103,8 @@ const Matriculas: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!formData.alumno_id || !formData.curso_id) {
-      setError('Por favor selecciona alumno y curso');
+    if (!formData.alumno_id || !formData.curso_id || !formData.periodo_academico) {
+      setError('Por favor selecciona alumno, curso y periodo académico');
       return;
     }
 
@@ -213,24 +219,39 @@ const Matriculas: React.FC = () => {
               <table className="table table-hover">
                 <thead className="table-light">
                   <tr>
-                    <th>ID</th>
-                    <th>Alumno</th>
-                    <th>Curso</th>
-                    <th>Fecha</th>
-                    <th>Observaciones</th>
-                    <th>Estado</th>
+                    <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('id')}>
+                      ID {sortConfig.key === 'id' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                    </th>
+                    <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('alumno_nombre')}>
+                      Alumno {sortConfig.key === 'alumno_nombre' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                    </th>
+                    <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('curso_nombre')}>
+                      Sección académica {sortConfig.key === 'curso_nombre' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                    </th>
+                    <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('periodo_academico')}>
+                      Periodo académico {sortConfig.key === 'periodo_academico' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                    </th>
+                    <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('fecha_matricula')}>
+                      Fecha {sortConfig.key === 'fecha_matricula' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                    </th>
+                    <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('observaciones')}>
+                      Observaciones {sortConfig.key === 'observaciones' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                    </th>
+                    <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('estado')}>
+                      Estado {sortConfig.key === 'estado' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                    </th>
                     <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {matriculas.length === 0 ? (
+                  {matriculasOrdenadas.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="text-center py-4 text-muted">
+                      <td colSpan={8} className="text-center py-4 text-muted">
                         No hay matrículas registradas
                       </td>
                     </tr>
                   ) : (
-                    matriculas.map((matricula) => (
+                    matriculasOrdenadas.map((matricula) => (
                       <tr key={matricula.id}>
                         <td><small className="text-muted">{matricula.id}</small></td>
                         <td>
@@ -246,9 +267,10 @@ const Matriculas: React.FC = () => {
                             {matricula.curso_nombre || getCursoNombre(matricula.curso_id)}
                           </div>
                           <small className="text-muted">
-                            {matricula.curso_codigo || matricula.curso_id}
+                            {matricula.curso_grado || '-'}{matricula.curso_seccion ? ` · ${matricula.curso_seccion}` : ''}
                           </small>
                         </td>
+                        <td>{matricula.periodo_academico || '-'}</td>
                         <td>{matricula.fecha_matricula || '-'}</td>
                         <td>{matricula.observaciones || 'Matrícula inicial'}</td>
                         <td>
@@ -308,7 +330,7 @@ const Matriculas: React.FC = () => {
           </div>
           <div className="mb-3">
             <label htmlFor="curso_id" className="form-label">
-              Curso *
+              Sección académica *
             </label>
             <select
               className="form-select"
@@ -321,10 +343,25 @@ const Matriculas: React.FC = () => {
               <option value="">Seleccionar curso</option>
               {cursos.map((curso) => (
                 <option key={curso.id} value={curso.id}>
-                  {curso.nombre} ({curso.grado})
+                  {curso.nombre} ({curso.grado} · {curso.seccion})
                 </option>
               ))}
             </select>
+          </div>
+          <div className="mb-3">
+            <label htmlFor="periodo_academico" className="form-label">
+              Periodo académico *
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              id="periodo_academico"
+              name="periodo_academico"
+              value={formData.periodo_academico}
+              onChange={handleInputChange}
+              placeholder="2026-1"
+              required
+            />
           </div>
           <div className="mb-3">
             <label htmlFor="fecha_matricula" className="form-label">

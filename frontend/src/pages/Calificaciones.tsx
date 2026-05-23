@@ -3,6 +3,7 @@ import { calificacionesService, alumnosService, cursosService } from '../api/ser
 import Modal from '../components/Modal';
 import { useAuth } from '../context/AuthContext';
 import { can } from '../utils/permissions';
+import { useSortableData } from '../utils/tableSort';
 
 interface Calificacion {
   id?: string;
@@ -32,6 +33,7 @@ const Calificaciones: React.FC = () => {
     nota: 0,
     periodo: '1'
   });
+  const { sortConfig, requestSort, sortedRows: calificacionesOrdenadas } = useSortableData(calificaciones, 'nota');
 
   useEffect(() => {
     fetchCalificaciones();
@@ -266,18 +268,30 @@ const Calificaciones: React.FC = () => {
                 <table className="table table-hover">
                   <thead className="table-light">
                     <tr>
-                      <th>ID</th>
-                      <th>Alumno</th>
-                      <th>Curso</th>
-                      <th>Nota</th>
-                      <th>Período</th>
-                      <th>Observaciones</th>
+                      <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('id')}>
+                        ID {sortConfig.key === 'id' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                      </th>
+                      <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('alumno_nombre')}>
+                        Alumno {sortConfig.key === 'alumno_nombre' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                      </th>
+                      <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('curso_nombre')}>
+                        Curso {sortConfig.key === 'curso_nombre' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                      </th>
+                      <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('nota')}>
+                        Nota {sortConfig.key === 'nota' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                      </th>
+                      <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('periodo')}>
+                        Período {sortConfig.key === 'periodo' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                      </th>
+                      <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('observaciones')}>
+                        Observaciones {sortConfig.key === 'observaciones' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                      </th>
                       <th>Estado</th>
                       <th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {calificaciones.map((calificacion) => (
+                    {calificacionesOrdenadas.map((calificacion) => (
                       <tr key={calificacion.id}>
                         <td>{calificacion.id}</td>
                         <td>

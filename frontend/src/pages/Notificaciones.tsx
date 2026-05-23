@@ -3,6 +3,7 @@ import { notificacionesService, usuariosService, alumnosService } from '../api/s
 import Modal from '../components/Modal';
 import { useAuth } from '../context/AuthContext';
 import { can } from '../utils/permissions';
+import { useSortableData } from '../utils/tableSort';
 
 interface Notificacion {
   id?: string;
@@ -31,6 +32,7 @@ const Notificaciones: React.FC = () => {
   });
   const [usuarios, setUsuarios] = useState<any[]>([]);
   const [alumnos, setAlumnos] = useState<any[]>([]);
+  const { sortConfig, requestSort, sortedRows: notificacionesOrdenadas } = useSortableData(notificaciones, 'fecha_creacion');
 
   useEffect(() => {
     fetchNotificaciones();
@@ -269,17 +271,29 @@ const Notificaciones: React.FC = () => {
                 <table className="table table-hover">
                   <thead className="table-light">
                     <tr>
-                      <th>ID</th>
-                      <th>Para</th>
-                      <th>Tipo</th>
-                      <th>Mensaje</th>
-                      <th>Estado</th>
-                      <th>Fecha</th>
+                      <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('id')}>
+                        ID {sortConfig.key === 'id' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                      </th>
+                      <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('destinatario_nombre')}>
+                        Para {sortConfig.key === 'destinatario_nombre' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                      </th>
+                      <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('tipo')}>
+                        Tipo {sortConfig.key === 'tipo' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                      </th>
+                      <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('mensaje')}>
+                        Mensaje {sortConfig.key === 'mensaje' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                      </th>
+                      <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('leida')}>
+                        Estado {sortConfig.key === 'leida' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                      </th>
+                      <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('fecha_creacion')}>
+                        Fecha {sortConfig.key === 'fecha_creacion' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                      </th>
                       <th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {notificaciones.map((notificacion) => (
+                    {notificacionesOrdenadas.map((notificacion) => (
                       <tr key={notificacion.id} className={notificacion.leida ? '' : 'table-active'}>
                         <td>{notificacion.id}</td>
                         <td>

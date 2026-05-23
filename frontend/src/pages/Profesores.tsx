@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { profesoresService } from '../api/services';
 import Modal from '../components/Modal';
 import { generateStructuredCode } from '../utils/codeGenerators';
+import { useSortableData } from '../utils/tableSort';
 
 interface Profesor {
   id?: string;
@@ -31,6 +32,7 @@ const Profesores: React.FC = () => {
     numero_empleado: '',
     estado: 'activo'
   });
+  const { sortConfig, requestSort, sortedRows: profesoresOrdenados } = useSortableData(profesores, 'numero_empleado');
 
   useEffect(() => {
     fetchProfesores();
@@ -184,24 +186,36 @@ const Profesores: React.FC = () => {
               <table className="table table-hover">
                 <thead className="table-light">
                   <tr>
-                    <th>Empleado</th>
-                    <th>Nombre</th>
-                    <th>Apellido</th>
-                    <th>Email</th>
-                    <th>Especialidad</th>
-                    <th>Teléfono</th>
+                    <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('numero_empleado')}>
+                      Empleado {sortConfig.key === 'numero_empleado' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                    </th>
+                    <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('primer_nombre')}>
+                      Nombre {sortConfig.key === 'primer_nombre' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                    </th>
+                    <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('apellido_paterno')}>
+                      Apellido {sortConfig.key === 'apellido_paterno' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                    </th>
+                    <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('email_contacto')}>
+                      Email {sortConfig.key === 'email_contacto' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                    </th>
+                    <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('especialidad')}>
+                      Especialidad {sortConfig.key === 'especialidad' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                    </th>
+                    <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('telefono')}>
+                      Teléfono {sortConfig.key === 'telefono' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                    </th>
                     <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {profesores.length === 0 ? (
+                  {profesoresOrdenados.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="text-center py-4 text-muted">
                         No hay profesores registrados
                       </td>
                     </tr>
                   ) : (
-                    profesores.map((profesor) => (
+                    profesoresOrdenados.map((profesor) => (
                       <tr key={profesor.id}>
                         <td><small className="text-muted">{profesor.numero_empleado || '-'}</small></td>
                         <td>{profesor.primer_nombre}</td>

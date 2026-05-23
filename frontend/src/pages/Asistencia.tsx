@@ -3,6 +3,7 @@ import { asistenciaService, alumnosService, cursosService } from '../api/service
 import Modal from '../components/Modal';
 import { useAuth } from '../context/AuthContext';
 import { can } from '../utils/permissions';
+import { useSortableData } from '../utils/tableSort';
 
 interface AsistenciaRecord {
   id?: string;
@@ -30,10 +31,12 @@ const Asistencia: React.FC = () => {
   const [cursos, setCursos] = useState<any[]>([]);
   const [formData, setFormData] = useState<AsistenciaRecord>({
     alumno_id: '',
+    curso_id: '',
     fecha: new Date().toISOString().split('T')[0],
-    estado: 'presente',
+    estado: 'PRESENTE',
     observacion: ''
   });
+  const { sortConfig, requestSort, sortedRows: asistenciasOrdenadas } = useSortableData(asistencias, 'fecha');
 
   useEffect(() => {
     fetchAsistencias();
@@ -83,8 +86,9 @@ const Asistencia: React.FC = () => {
       setEditingId(null);
       setFormData({
         alumno_id: '',
+        curso_id: '',
         fecha: new Date().toISOString().split('T')[0],
-        estado: 'presente',
+        estado: 'PRESENTE',
         observacion: ''
       });
     }
@@ -97,17 +101,25 @@ const Asistencia: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!formData.alumno_id) {
-      setError('Por favor selecciona un alumno');
+    if (!formData.alumno_id || !formData.curso_id) {
+      setError('Por favor selecciona alumno y curso');
       return;
     }
 
+    const estadoNormalizado = String(formData.estado || '').toUpperCase();
+    const payload = {
+      ...formData,
+      estado: estadoNormalizado,
+      registrada: true,
+      motivo_falta: formData.observacion || null,
+    };
+
     try {
       if (editingId) {
-        await asistenciaService.update(editingId, formData);
+        await asistenciaService.update(editingId, payload);
         setSuccess('Asistencia actualizada correctamente');
       } else {
-        await asistenciaService.create(formData);
+        await asistenciaService.create(payload);
         setSuccess('Asistencia registrada correctamente');
       }
       handleCloseModal();
@@ -163,6 +175,12 @@ const Asistencia: React.FC = () => {
     const curso = cursos.find(c => Number(c.id) === Number(id));
     return curso ? `${curso.nombre} (${curso.codigo || curso.id})` : id;
   };
+
+  const estadoOptions = [
+    { label: 'Presente', value: 'PRESENTE' },
+    { label: 'Falta', value: 'FALTA' },
+    { label: 'Justificado', value: 'JUSTIFICADO' }
+  ];
 
   const stats = calculateStats();
 
@@ -277,18 +295,32 @@ const Asistencia: React.FC = () => {
                 <table className="table table-hover">
                   <thead className="table-light">
                     <tr>
-                      <th>ID</th>
-                      <th>Alumno</th>
-                      <th>Curso</th>
-                      <th>Fecha</th>
-                      <th>Estado</th>
-                      <th>Motivo</th>
-                      <th>Registrada</th>
+                      <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('id')}>
+                        ID {sortConfig.key === 'id' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                      </th>
+                      <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('alumno_nombre')}>
+                        Alumno {sortConfig.key === 'alumno_nombre' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                      </th>
+                      <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('curso_nombre')}>
+                        Curso {sortConfig.key === 'curso_nombre' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                      </th>
+                      <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('fecha')}>
+                        Fecha {sortConfig.key === 'fecha' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                      </th>
+                      <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('estado')}>
+                        Estado {sortConfig.key === 'estado' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                      </th>
+                      <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('motivo_falta')}>
+                        Motivo {sortConfig.key === 'motivo_falta' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                      </th>
+                      <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('registrada')}>
+                        Registrada {sortConfig.key === 'registrada' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                      </th>
                       <th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {asistencias.map((asistencia) => (
+                    {asistenciasOrdenadas.map((asistencia) => (
                       <tr key={asistencia.id}>
                         <td>{asistencia.id}</td>
                         <td>
@@ -362,16 +394,20 @@ const Asistencia: React.FC = () => {
               {alumnos.map(a => (
                 <option key={a.id} value={a.id}>{a.primer_nombre} {a.apellido_paterno} ({a.numero_matricula})</option>
               ))}
-              <option value="__other">Otro (manual)</option>
             </select>
-            {formData.alumno_id === '__other' && (
-              <input
-                className="form-control mt-2"
-                placeholder="Ingrese nombre o ID manualmente"
-                value={formData.observacion || ''}
-                onChange={(e) => setFormData({ ...formData, observacion: e.target.value })}
-              />
-            )}
+          </div>
+        <div className="mb-3">
+          <label className="form-label">Curso *</label>
+          <select
+            className="form-select"
+            value={formData.curso_id}
+            onChange={(e) => setFormData({ ...formData, curso_id: e.target.value })}
+          >
+            <option value="">Seleccionar curso</option>
+            {cursos.map(curso => (
+              <option key={curso.id} value={curso.id}>{curso.nombre} ({curso.grado} · {curso.seccion})</option>
+            ))}
+          </select>
           </div>
         <div className="mb-3">
           <label className="form-label">Fecha</label>
@@ -387,12 +423,11 @@ const Asistencia: React.FC = () => {
           <select
             className="form-control"
             value={formData.estado}
-            onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
+            onChange={(e) => setFormData({ ...formData, estado: e.target.value.toUpperCase() })}
           >
-            <option value="presente">Presente</option>
-            <option value="ausente">Ausente</option>
-            <option value="tardanza">Tardanza</option>
-            <option value="justificado">Justificado</option>
+            {estadoOptions.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
           </select>
         </div>
         <div className="mb-3">

@@ -3,6 +3,7 @@ import { pagosService, alumnosService } from '../api/services';
 import Modal from '../components/Modal';
 import { useAuth } from '../context/AuthContext';
 import { can } from '../utils/permissions';
+import { useSortableData } from '../utils/tableSort';
 
 interface Pago {
   id?: string;
@@ -17,6 +18,16 @@ interface Pago {
   alumno_nombre?: string;
   alumno_numero_matricula?: string;
 }
+
+const CONCEPTOS_PAGO = [
+  'Matrícula',
+  'Cuota mensual - Mayo',
+  'Cuota mensual - Junio',
+  'Uniforme',
+  'Carnet estudiantil',
+  'Material educativo',
+  'Examen extraordinario'
+];
 
 const Pagos: React.FC = () => {
   const [pagos, setPagos] = useState<Pago[]>([]);
@@ -34,6 +45,7 @@ const Pagos: React.FC = () => {
     fecha_pago: new Date().toISOString().split('T')[0],
     metodo_pago: 'transferencia'
   });
+  const { sortConfig, requestSort, sortedRows: pagosOrdenados } = useSortableData(pagos, 'fecha_pago');
 
   useEffect(() => {
     fetchPagos();
@@ -260,18 +272,32 @@ const Pagos: React.FC = () => {
                 <table className="table table-hover">
                   <thead className="table-light">
                     <tr>
-                      <th>ID</th>
-                      <th>Alumno</th>
-                      <th>Concepto</th>
-                      <th>Monto</th>
-                      <th>Estado</th>
-                      <th>Fecha Pago</th>
-                      <th>Método</th>
-                      <th>Acciones</th>
-                    </tr>
+                        <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('id')}>
+                          ID {sortConfig.key === 'id' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                        </th>
+                        <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('alumno_nombre')}>
+                          Alumno {sortConfig.key === 'alumno_nombre' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                        </th>
+                        <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('concepto')}>
+                          Concepto {sortConfig.key === 'concepto' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                        </th>
+                        <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('monto')}>
+                          Monto {sortConfig.key === 'monto' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                        </th>
+                        <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('estado')}>
+                          Estado {sortConfig.key === 'estado' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                        </th>
+                        <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('fecha_pago')}>
+                          Fecha Pago {sortConfig.key === 'fecha_pago' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                        </th>
+                        <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('metodo_pago')}>
+                          Método {sortConfig.key === 'metodo_pago' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                        </th>
+                        <th>Acciones</th>
+                      </tr>
                   </thead>
                   <tbody>
-                    {pagos.map((pago) => (
+                      {pagosOrdenados.map((pago) => (
                       <tr key={pago.id}>
                         <td>{pago.id}</td>
                         <td>
@@ -352,13 +378,26 @@ const Pagos: React.FC = () => {
         </div>
         <div className="mb-3">
           <label className="form-label">Concepto</label>
-          <input
-            type="text"
-            className="form-control"
+          <select
+            className="form-select"
             value={formData.concepto}
             onChange={(e) => setFormData({ ...formData, concepto: e.target.value })}
-            placeholder="Ej: Matrícula, Cuota Mensual"
-          />
+          >
+            <option value="">Seleccionar concepto</option>
+            {CONCEPTOS_PAGO.map((concepto) => (
+              <option key={concepto} value={concepto}>{concepto}</option>
+            ))}
+            <option value="Otro">Otro</option>
+          </select>
+          {formData.concepto === 'Otro' && (
+            <input
+              type="text"
+              className="form-control mt-2"
+              value={formData.observaciones || ''}
+              onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
+              placeholder="Especifica el concepto"
+            />
+          )}
         </div>
         <div className="mb-3">
           <label className="form-label">Monto</label>

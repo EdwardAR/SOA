@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { alumnosService } from '../api/services';
 import Modal from '../components/Modal';
 import { generateStructuredCode } from '../utils/codeGenerators';
+import { useAuth } from '../context/AuthContext';
+import { can } from '../utils/permissions';
+import { useSortableData } from '../utils/tableSort';
 
 interface Alumno {
   id?: string;
@@ -29,6 +32,12 @@ const Alumnos: React.FC = () => {
     numero_matricula: '',
     numero_documento: '',
   });
+  const { sortConfig, requestSort, sortedRows: alumnosOrdenados } = useSortableData(alumnos, 'numero_matricula');
+  const { user } = useAuth();
+  const role = user?.tipo_usuario;
+  const allowCreate = can(role, 'alumnos', 'create');
+  const allowEdit = can(role, 'alumnos', 'edit');
+  const allowDelete = can(role, 'alumnos', 'delete');
 
   useEffect(() => {
     fetchAlumnos();
@@ -186,13 +195,15 @@ const Alumnos: React.FC = () => {
           <div className="card-header bg-primary text-white">
             <div className="d-flex justify-content-between align-items-center">
               <h5 className="mb-0">Listado de Alumnos ({alumnos.length})</h5>
-              <button
-                className="btn btn-sm btn-light"
-                onClick={() => handleOpenModal()}
-              >
-                <i className="bi bi-plus-circle me-2"></i>
-                Nuevo Alumno
-              </button>
+              {allowCreate && (
+                <button
+                  className="btn btn-sm btn-light"
+                  onClick={() => handleOpenModal()}
+                >
+                  <i className="bi bi-plus-circle me-2"></i>
+                  Nuevo Alumno
+                </button>
+              )}
             </div>
           </div>
           <div className="card-body">
@@ -200,23 +211,33 @@ const Alumnos: React.FC = () => {
               <table className="table table-hover">
                 <thead className="table-light">
                   <tr>
-                    <th>Matrícula</th>
-                    <th>Nombre</th>
-                    <th>Apellido</th>
-                    <th>Email</th>
-                    <th>Teléfono</th>
+                    <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('numero_matricula')}>
+                      Matrícula {sortConfig.key === 'numero_matricula' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                    </th>
+                    <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('primer_nombre')}>
+                      Nombre {sortConfig.key === 'primer_nombre' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                    </th>
+                    <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('apellido_paterno')}>
+                      Apellido {sortConfig.key === 'apellido_paterno' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                    </th>
+                    <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('email_contacto')}>
+                      Email {sortConfig.key === 'email_contacto' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                    </th>
+                    <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('telefono')}>
+                      Teléfono {sortConfig.key === 'telefono' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                    </th>
                     <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {alumnos.length === 0 ? (
+                  {alumnosOrdenados.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="text-center py-4 text-muted">
                         No hay alumnos registrados
                       </td>
                     </tr>
                   ) : (
-                    alumnos.map((alumno) => (
+                    alumnosOrdenados.map((alumno) => (
                       <tr key={alumno.id}>
                         <td>
                           <small className="text-muted">{alumno.numero_matricula}</small>
@@ -226,20 +247,24 @@ const Alumnos: React.FC = () => {
                         <td>{alumno.email_contacto || '-'}</td>
                         <td>{alumno.telefono || '-'}</td>
                         <td>
-                          <button
-                            className="btn btn-sm btn-primary me-2"
-                            onClick={() => handleOpenModal(alumno)}
-                            title="Editar"
-                          >
-                            <i className="bi bi-pencil"></i>
-                          </button>
-                          <button
-                            className="btn btn-sm btn-danger"
-                            onClick={() => handleDelete(alumno.id)}
-                            title="Eliminar"
-                          >
-                            <i className="bi bi-trash"></i>
-                          </button>
+                          {allowEdit && (
+                            <button
+                              className="btn btn-sm btn-primary me-2"
+                              onClick={() => handleOpenModal(alumno)}
+                              title="Editar"
+                            >
+                              <i className="bi bi-pencil"></i>
+                            </button>
+                          )}
+                          {allowDelete && (
+                            <button
+                              className="btn btn-sm btn-danger"
+                              onClick={() => handleDelete(alumno.id)}
+                              title="Eliminar"
+                            >
+                              <i className="bi bi-trash"></i>
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))

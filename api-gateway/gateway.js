@@ -68,6 +68,13 @@ const SERVICIOS = {
   calificaciones: process.env.CALIFICACIONES_SERVICE_URL || 'http://localhost:3008'
 };
 
+const ROLES_CON_ACCESO_TOTAL = new Set(['director', 'administrativo']);
+
+const getProfesorIdPorUsuario = async (usuarioId) => {
+  const profesor = await getOne('SELECT id FROM profesores WHERE usuario_id = ?', [usuarioId]);
+  return profesor?.id || null;
+};
+
 // ============================================
 // RUTAS DE AUTENTICACIÓN (Sin protección)
 // ============================================
@@ -254,17 +261,67 @@ app.get('/api/promedio-alumno/:alumno_id', authMiddleware, proxyServicio('califi
 // ALUMNOS desde BD
 app.get('/api/alumnos', authMiddleware, asyncHandler(async (req, res) => {
   try {
-    const alumnos = await getAll(`
-      SELECT
-        a.*,
-        TRIM(COALESCE(u.nombre, '') || ' (' || COALESCE(u.email, '') || ')') AS usuario_nombre,
-        COALESCE(p.nombre, '') AS padre_nombre
-      FROM alumnos a
-      LEFT JOIN usuarios u ON u.id = a.usuario_id
-      LEFT JOIN usuarios p ON p.id = a.padre_id
-      ORDER BY a.primer_nombre, a.apellido_paterno
-      LIMIT 100
-    `);
+    let alumnos = [];
+    const usuarioId = req.usuario.id;
+    const rol = req.usuario.tipo_usuario;
+
+    if (ROLES_CON_ACCESO_TOTAL.has(rol)) {
+      alumnos = await getAll(`
+        SELECT
+          a.*,
+          TRIM(COALESCE(u.nombre, '') || ' (' || COALESCE(u.email, '') || ')') AS usuario_nombre,
+          COALESCE(p.nombre, '') AS padre_nombre
+        FROM alumnos a
+        LEFT JOIN usuarios u ON u.id = a.usuario_id
+        LEFT JOIN usuarios p ON p.id = a.padre_id
+        ORDER BY a.primer_nombre, a.apellido_paterno
+        LIMIT 100
+      `);
+    } else if (rol === 'alumno') {
+      alumnos = await getAll(`
+        SELECT
+          a.*,
+          TRIM(COALESCE(u.nombre, '') || ' (' || COALESCE(u.email, '') || ')') AS usuario_nombre,
+          COALESCE(p.nombre, '') AS padre_nombre
+        FROM alumnos a
+        LEFT JOIN usuarios u ON u.id = a.usuario_id
+        LEFT JOIN usuarios p ON p.id = a.padre_id
+        WHERE a.usuario_id = ?
+        ORDER BY a.primer_nombre, a.apellido_paterno
+        LIMIT 100
+      `, [usuarioId]);
+    } else if (rol === 'padre') {
+      alumnos = await getAll(`
+        SELECT
+          a.*,
+          TRIM(COALESCE(u.nombre, '') || ' (' || COALESCE(u.email, '') || ')') AS usuario_nombre,
+          COALESCE(p.nombre, '') AS padre_nombre
+        FROM alumnos a
+        LEFT JOIN usuarios u ON u.id = a.usuario_id
+        LEFT JOIN usuarios p ON p.id = a.padre_id
+        WHERE a.padre_id = ?
+        ORDER BY a.primer_nombre, a.apellido_paterno
+        LIMIT 100
+      `, [usuarioId]);
+    } else if (rol === 'docente') {
+      const profesorId = await getProfesorIdPorUsuario(usuarioId);
+      if (profesorId) {
+        alumnos = await getAll(`
+          SELECT DISTINCT
+            a.*,
+            TRIM(COALESCE(u.nombre, '') || ' (' || COALESCE(u.email, '') || ')') AS usuario_nombre,
+            COALESCE(p.nombre, '') AS padre_nombre
+          FROM alumnos a
+          INNER JOIN matriculas m ON m.alumno_id = a.id
+          INNER JOIN cursos c ON c.id = m.curso_id
+          LEFT JOIN usuarios u ON u.id = a.usuario_id
+          LEFT JOIN usuarios p ON p.id = a.padre_id
+          WHERE c.profesor_id = ?
+          ORDER BY a.primer_nombre, a.apellido_paterno
+          LIMIT 100
+        `, [profesorId]);
+      }
+    }
     res.json(respuestaExito(alumnos, 'Alumnos obtenidos'));
   } catch (error) {
     res.status(500).json(respuestaError('Error al obtener alumnos'));
@@ -273,7 +330,28 @@ app.get('/api/alumnos', authMiddleware, asyncHandler(async (req, res) => {
 
 app.get('/api/alumnos/:id', authMiddleware, asyncHandler(async (req, res) => {
   try {
-    const alumno = await getOne('SELECT * FROM alumnos WHERE id = ?', [req.params.id]);
+    const usuarioId = req.usuario.id;
+    const rol = req.usuario.tipo_usuario;
+    let alumno = null;
+
+    if (ROLES_CON_ACCESO_TOTAL.has(rol)) {
+      alumno = await getOne('SELECT * FROM alumnos WHERE id = ?', [req.params.id]);
+    } else if (rol === 'alumno') {
+      alumno = await getOne('SELECT * FROM alumnos WHERE id = ? AND usuario_id = ?', [req.params.id, usuarioId]);
+    } else if (rol === 'padre') {
+      alumno = await getOne('SELECT * FROM alumnos WHERE id = ? AND padre_id = ?', [req.params.id, usuarioId]);
+    } else if (rol === 'docente') {
+      const profesorId = await getProfesorIdPorUsuario(usuarioId);
+      alumno = profesorId ? await getOne(`
+        SELECT a.*
+        FROM alumnos a
+        INNER JOIN matriculas m ON m.alumno_id = a.id
+        INNER JOIN cursos c ON c.id = m.curso_id
+        WHERE a.id = ? AND c.profesor_id = ?
+        LIMIT 1
+      `, [req.params.id, profesorId]) : null;
+    }
+
     if (!alumno) return res.status(404).json(respuestaError('Alumno no encontrado'));
     res.json(respuestaExito(alumno));
   } catch (error) {
@@ -284,17 +362,69 @@ app.get('/api/alumnos/:id', authMiddleware, asyncHandler(async (req, res) => {
 // CURSOS desde BD
 app.get('/api/cursos', authMiddleware, asyncHandler(async (req, res) => {
   try {
-    const cursos = await getAll(`
-      SELECT
-        c.*,
-        TRIM(COALESCE(p.primer_nombre, '') || ' ' || COALESCE(p.apellido_paterno, '')) AS profesor_nombre,
-        p.numero_empleado AS profesor_numero_empleado,
-        p.especialidad AS profesor_especialidad
-      FROM cursos c
-      LEFT JOIN profesores p ON p.id = c.profesor_id
-      ORDER BY c.nombre
-      LIMIT 100
-    `);
+    const usuarioId = req.usuario.id;
+    const rol = req.usuario.tipo_usuario;
+    let cursos = [];
+
+    if (ROLES_CON_ACCESO_TOTAL.has(rol)) {
+      cursos = await getAll(`
+        SELECT
+          c.*,
+          TRIM(COALESCE(p.primer_nombre, '') || ' ' || COALESCE(p.apellido_paterno, '')) AS profesor_nombre,
+          p.numero_empleado AS profesor_numero_empleado,
+          p.especialidad AS profesor_especialidad
+        FROM cursos c
+        LEFT JOIN profesores p ON p.id = c.profesor_id
+        ORDER BY c.nombre
+        LIMIT 100
+      `);
+    } else if (rol === 'docente') {
+      const profesorId = await getProfesorIdPorUsuario(usuarioId);
+      if (profesorId) {
+        cursos = await getAll(`
+          SELECT
+            c.*,
+            TRIM(COALESCE(p.primer_nombre, '') || ' ' || COALESCE(p.apellido_paterno, '')) AS profesor_nombre,
+            p.numero_empleado AS profesor_numero_empleado,
+            p.especialidad AS profesor_especialidad
+          FROM cursos c
+          LEFT JOIN profesores p ON p.id = c.profesor_id
+          WHERE c.profesor_id = ?
+          ORDER BY c.nombre
+          LIMIT 100
+        `, [profesorId]);
+      }
+    } else if (rol === 'alumno') {
+      cursos = await getAll(`
+        SELECT DISTINCT
+          c.*,
+          TRIM(COALESCE(p.primer_nombre, '') || ' ' || COALESCE(p.apellido_paterno, '')) AS profesor_nombre,
+          p.numero_empleado AS profesor_numero_empleado,
+          p.especialidad AS profesor_especialidad
+        FROM cursos c
+        INNER JOIN matriculas m ON m.curso_id = c.id
+        INNER JOIN alumnos a ON a.id = m.alumno_id
+        LEFT JOIN profesores p ON p.id = c.profesor_id
+        WHERE a.usuario_id = ?
+        ORDER BY c.nombre
+        LIMIT 100
+      `, [usuarioId]);
+    } else if (rol === 'padre') {
+      cursos = await getAll(`
+        SELECT DISTINCT
+          c.*,
+          TRIM(COALESCE(p.primer_nombre, '') || ' ' || COALESCE(p.apellido_paterno, '')) AS profesor_nombre,
+          p.numero_empleado AS profesor_numero_empleado,
+          p.especialidad AS profesor_especialidad
+        FROM cursos c
+        INNER JOIN matriculas m ON m.curso_id = c.id
+        INNER JOIN alumnos a ON a.id = m.alumno_id
+        LEFT JOIN profesores p ON p.id = c.profesor_id
+        WHERE a.padre_id = ?
+        ORDER BY c.nombre
+        LIMIT 100
+      `, [usuarioId]);
+    }
     res.json(respuestaExito(cursos, 'Cursos obtenidos'));
   } catch (error) {
     res.status(500).json(respuestaError('Error al obtener cursos'));
@@ -303,7 +433,35 @@ app.get('/api/cursos', authMiddleware, asyncHandler(async (req, res) => {
 
 app.get('/api/cursos/:id', authMiddleware, asyncHandler(async (req, res) => {
   try {
-    const curso = await getOne('SELECT * FROM cursos WHERE id = ?', [req.params.id]);
+    const usuarioId = req.usuario.id;
+    const rol = req.usuario.tipo_usuario;
+    let curso = null;
+
+    if (ROLES_CON_ACCESO_TOTAL.has(rol)) {
+      curso = await getOne('SELECT * FROM cursos WHERE id = ?', [req.params.id]);
+    } else if (rol === 'docente') {
+      const profesorId = await getProfesorIdPorUsuario(usuarioId);
+      curso = profesorId ? await getOne('SELECT * FROM cursos WHERE id = ? AND profesor_id = ?', [req.params.id, profesorId]) : null;
+    } else if (rol === 'alumno') {
+      curso = await getOne(`
+        SELECT c.*
+        FROM cursos c
+        INNER JOIN matriculas m ON m.curso_id = c.id
+        INNER JOIN alumnos a ON a.id = m.alumno_id
+        WHERE c.id = ? AND a.usuario_id = ?
+        LIMIT 1
+      `, [req.params.id, usuarioId]);
+    } else if (rol === 'padre') {
+      curso = await getOne(`
+        SELECT c.*
+        FROM cursos c
+        INNER JOIN matriculas m ON m.curso_id = c.id
+        INNER JOIN alumnos a ON a.id = m.alumno_id
+        WHERE c.id = ? AND a.padre_id = ?
+        LIMIT 1
+      `, [req.params.id, usuarioId]);
+    }
+
     if (!curso) return res.status(404).json(respuestaError('Curso no encontrado'));
     res.json(respuestaExito(curso));
   } catch (error) {
@@ -314,16 +472,64 @@ app.get('/api/cursos/:id', authMiddleware, asyncHandler(async (req, res) => {
 // PROFESORES desde BD
 app.get('/api/profesores', authMiddleware, asyncHandler(async (req, res) => {
   try {
-    const profesores = await getAll(`
-      SELECT
-        p.*,
-        u.nombre AS usuario_nombre,
-        u.email AS usuario_email
-      FROM profesores p
-      LEFT JOIN usuarios u ON u.id = p.usuario_id
-      ORDER BY p.primer_nombre, p.apellido_paterno
-      LIMIT 100
-    `);
+    const usuarioId = req.usuario.id;
+    const rol = req.usuario.tipo_usuario;
+    let profesores = [];
+
+    if (ROLES_CON_ACCESO_TOTAL.has(rol)) {
+      profesores = await getAll(`
+        SELECT
+          p.*,
+          u.nombre AS usuario_nombre,
+          u.email AS usuario_email
+        FROM profesores p
+        LEFT JOIN usuarios u ON u.id = p.usuario_id
+        ORDER BY p.primer_nombre, p.apellido_paterno
+        LIMIT 100
+      `);
+    } else if (rol === 'docente') {
+      profesores = await getAll(`
+        SELECT
+          p.*,
+          u.nombre AS usuario_nombre,
+          u.email AS usuario_email
+        FROM profesores p
+        LEFT JOIN usuarios u ON u.id = p.usuario_id
+        WHERE p.usuario_id = ?
+        ORDER BY p.primer_nombre, p.apellido_paterno
+        LIMIT 100
+      `, [usuarioId]);
+    } else if (rol === 'alumno') {
+      profesores = await getAll(`
+        SELECT DISTINCT
+          p.*,
+          u.nombre AS usuario_nombre,
+          u.email AS usuario_email
+        FROM profesores p
+        LEFT JOIN usuarios u ON u.id = p.usuario_id
+        INNER JOIN cursos c ON c.profesor_id = p.id
+        INNER JOIN matriculas m ON m.curso_id = c.id
+        INNER JOIN alumnos a ON a.id = m.alumno_id
+        WHERE a.usuario_id = ?
+        ORDER BY p.primer_nombre, p.apellido_paterno
+        LIMIT 100
+      `, [usuarioId]);
+    } else if (rol === 'padre') {
+      profesores = await getAll(`
+        SELECT DISTINCT
+          p.*,
+          u.nombre AS usuario_nombre,
+          u.email AS usuario_email
+        FROM profesores p
+        LEFT JOIN usuarios u ON u.id = p.usuario_id
+        INNER JOIN cursos c ON c.profesor_id = p.id
+        INNER JOIN matriculas m ON m.curso_id = c.id
+        INNER JOIN alumnos a ON a.id = m.alumno_id
+        WHERE a.padre_id = ?
+        ORDER BY p.primer_nombre, p.apellido_paterno
+        LIMIT 100
+      `, [usuarioId]);
+    }
     res.json(respuestaExito(profesores, 'Profesores obtenidos'));
   } catch (error) {
     res.status(500).json(respuestaError('Error al obtener profesores'));
@@ -332,7 +538,36 @@ app.get('/api/profesores', authMiddleware, asyncHandler(async (req, res) => {
 
 app.get('/api/profesores/:id', authMiddleware, asyncHandler(async (req, res) => {
   try {
-    const profesor = await getOne('SELECT * FROM profesores WHERE id = ?', [req.params.id]);
+    const usuarioId = req.usuario.id;
+    const rol = req.usuario.tipo_usuario;
+    let profesor = null;
+
+    if (ROLES_CON_ACCESO_TOTAL.has(rol)) {
+      profesor = await getOne('SELECT * FROM profesores WHERE id = ?', [req.params.id]);
+    } else if (rol === 'docente') {
+      profesor = await getOne('SELECT * FROM profesores WHERE id = ? AND usuario_id = ?', [req.params.id, usuarioId]);
+    } else if (rol === 'alumno') {
+      profesor = await getOne(`
+        SELECT p.*
+        FROM profesores p
+        INNER JOIN cursos c ON c.profesor_id = p.id
+        INNER JOIN matriculas m ON m.curso_id = c.id
+        INNER JOIN alumnos a ON a.id = m.alumno_id
+        WHERE p.id = ? AND a.usuario_id = ?
+        LIMIT 1
+      `, [req.params.id, usuarioId]);
+    } else if (rol === 'padre') {
+      profesor = await getOne(`
+        SELECT p.*
+        FROM profesores p
+        INNER JOIN cursos c ON c.profesor_id = p.id
+        INNER JOIN matriculas m ON m.curso_id = c.id
+        INNER JOIN alumnos a ON a.id = m.alumno_id
+        WHERE p.id = ? AND a.padre_id = ?
+        LIMIT 1
+      `, [req.params.id, usuarioId]);
+    }
+
     if (!profesor) return res.status(404).json(respuestaError('Profesor no encontrado'));
     res.json(respuestaExito(profesor));
   } catch (error) {
@@ -343,22 +578,89 @@ app.get('/api/profesores/:id', authMiddleware, asyncHandler(async (req, res) => 
 // MATRÍCULAS desde BD
 app.get('/api/matriculas', authMiddleware, asyncHandler(async (req, res) => {
   try {
-    const matriculas = await getAll(`
-      SELECT
-        m.*,
-        TRIM(COALESCE(a.primer_nombre, '') || ' ' || COALESCE(a.apellido_paterno, '')) AS alumno_nombre,
-        a.numero_matricula AS alumno_numero_matricula,
-        c.nombre AS curso_nombre,
-        c.codigo AS curso_codigo,
-        c.grado AS curso_grado,
-        TRIM(COALESCE(p.primer_nombre, '') || ' ' || COALESCE(p.apellido_paterno, '')) AS profesor_nombre
-      FROM matriculas m
-      LEFT JOIN alumnos a ON a.id = m.alumno_id
-      LEFT JOIN cursos c ON c.id = m.curso_id
-      LEFT JOIN profesores p ON p.id = c.profesor_id
-      ORDER BY m.fecha_matricula DESC
-      LIMIT 100
-    `);
+    const usuarioId = req.usuario.id;
+    const rol = req.usuario.tipo_usuario;
+    let matriculas = [];
+
+    if (ROLES_CON_ACCESO_TOTAL.has(rol)) {
+      matriculas = await getAll(`
+        SELECT
+          m.*,
+          TRIM(COALESCE(a.primer_nombre, '') || ' ' || COALESCE(a.apellido_paterno, '')) AS alumno_nombre,
+          a.numero_matricula AS alumno_numero_matricula,
+          c.nombre AS curso_nombre,
+          c.codigo AS curso_codigo,
+          c.grado AS curso_grado,
+          c.seccion AS curso_seccion,
+          TRIM(COALESCE(p.primer_nombre, '') || ' ' || COALESCE(p.apellido_paterno, '')) AS profesor_nombre
+        FROM matriculas m
+        LEFT JOIN alumnos a ON a.id = m.alumno_id
+        LEFT JOIN cursos c ON c.id = m.curso_id
+        LEFT JOIN profesores p ON p.id = c.profesor_id
+        ORDER BY m.fecha_matricula DESC
+        LIMIT 100
+      `);
+    } else if (rol === 'alumno') {
+      matriculas = await getAll(`
+        SELECT
+          m.*,
+          TRIM(COALESCE(a.primer_nombre, '') || ' ' || COALESCE(a.apellido_paterno, '')) AS alumno_nombre,
+          a.numero_matricula AS alumno_numero_matricula,
+          c.nombre AS curso_nombre,
+          c.codigo AS curso_codigo,
+          c.grado AS curso_grado,
+          c.seccion AS curso_seccion,
+          TRIM(COALESCE(p.primer_nombre, '') || ' ' || COALESCE(p.apellido_paterno, '')) AS profesor_nombre
+        FROM matriculas m
+        LEFT JOIN alumnos a ON a.id = m.alumno_id
+        LEFT JOIN cursos c ON c.id = m.curso_id
+        LEFT JOIN profesores p ON p.id = c.profesor_id
+        WHERE a.usuario_id = ?
+        ORDER BY m.fecha_matricula DESC
+        LIMIT 100
+      `, [usuarioId]);
+    } else if (rol === 'padre') {
+      matriculas = await getAll(`
+        SELECT
+          m.*,
+          TRIM(COALESCE(a.primer_nombre, '') || ' ' || COALESCE(a.apellido_paterno, '')) AS alumno_nombre,
+          a.numero_matricula AS alumno_numero_matricula,
+          c.nombre AS curso_nombre,
+          c.codigo AS curso_codigo,
+          c.grado AS curso_grado,
+          c.seccion AS curso_seccion,
+          TRIM(COALESCE(p.primer_nombre, '') || ' ' || COALESCE(p.apellido_paterno, '')) AS profesor_nombre
+        FROM matriculas m
+        LEFT JOIN alumnos a ON a.id = m.alumno_id
+        LEFT JOIN cursos c ON c.id = m.curso_id
+        LEFT JOIN profesores p ON p.id = c.profesor_id
+        WHERE a.padre_id = ?
+        ORDER BY m.fecha_matricula DESC
+        LIMIT 100
+      `, [usuarioId]);
+    } else if (rol === 'docente') {
+      const profesorId = await getProfesorIdPorUsuario(usuarioId);
+      if (profesorId) {
+        matriculas = await getAll(`
+          SELECT DISTINCT
+            m.*,
+            TRIM(COALESCE(a.primer_nombre, '') || ' ' || COALESCE(a.apellido_paterno, '')) AS alumno_nombre,
+            a.numero_matricula AS alumno_numero_matricula,
+            c.nombre AS curso_nombre,
+            c.codigo AS curso_codigo,
+            c.grado AS curso_grado,
+            c.seccion AS curso_seccion,
+            TRIM(COALESCE(p.primer_nombre, '') || ' ' || COALESCE(p.apellido_paterno, '')) AS profesor_nombre
+          FROM matriculas m
+          LEFT JOIN alumnos a ON a.id = m.alumno_id
+          LEFT JOIN cursos c ON c.id = m.curso_id
+          LEFT JOIN profesores p ON p.id = c.profesor_id
+          WHERE c.profesor_id = ?
+          ORDER BY m.fecha_matricula DESC
+          LIMIT 100
+        `, [profesorId]);
+      }
+    }
     res.json(respuestaExito(matriculas, 'Matrículas obtenidas'));
   } catch (error) {
     res.status(500).json(respuestaError('Error al obtener matrículas'));
@@ -368,16 +670,63 @@ app.get('/api/matriculas', authMiddleware, asyncHandler(async (req, res) => {
 // PAGOS desde BD
 app.get('/api/pagos', authMiddleware, asyncHandler(async (req, res) => {
   try {
-    const pagos = await getAll(`
-      SELECT
-        p.*,
-        TRIM(COALESCE(a.primer_nombre, '') || ' ' || COALESCE(a.apellido_paterno, '')) AS alumno_nombre,
-        a.numero_matricula AS alumno_numero_matricula
-      FROM pagos p
-      LEFT JOIN alumnos a ON a.id = p.alumno_id
-      ORDER BY p.fecha_creacion DESC
-      LIMIT 100
-    `);
+    const usuarioId = req.usuario.id;
+    const rol = req.usuario.tipo_usuario;
+    let pagos = [];
+
+    if (ROLES_CON_ACCESO_TOTAL.has(rol)) {
+      pagos = await getAll(`
+        SELECT
+          p.*,
+          TRIM(COALESCE(a.primer_nombre, '') || ' ' || COALESCE(a.apellido_paterno, '')) AS alumno_nombre,
+          a.numero_matricula AS alumno_numero_matricula
+        FROM pagos p
+        LEFT JOIN alumnos a ON a.id = p.alumno_id
+        ORDER BY p.fecha_creacion DESC
+        LIMIT 100
+      `);
+    } else if (rol === 'alumno') {
+      pagos = await getAll(`
+        SELECT
+          p.*,
+          TRIM(COALESCE(a.primer_nombre, '') || ' ' || COALESCE(a.apellido_paterno, '')) AS alumno_nombre,
+          a.numero_matricula AS alumno_numero_matricula
+        FROM pagos p
+        LEFT JOIN alumnos a ON a.id = p.alumno_id
+        WHERE a.usuario_id = ?
+        ORDER BY p.fecha_creacion DESC
+        LIMIT 100
+      `, [usuarioId]);
+    } else if (rol === 'padre') {
+      pagos = await getAll(`
+        SELECT
+          p.*,
+          TRIM(COALESCE(a.primer_nombre, '') || ' ' || COALESCE(a.apellido_paterno, '')) AS alumno_nombre,
+          a.numero_matricula AS alumno_numero_matricula
+        FROM pagos p
+        LEFT JOIN alumnos a ON a.id = p.alumno_id
+        WHERE a.padre_id = ?
+        ORDER BY p.fecha_creacion DESC
+        LIMIT 100
+      `, [usuarioId]);
+    } else if (rol === 'docente') {
+      const profesorId = await getProfesorIdPorUsuario(usuarioId);
+      if (profesorId) {
+        pagos = await getAll(`
+          SELECT DISTINCT
+            p.*,
+            TRIM(COALESCE(a.primer_nombre, '') || ' ' || COALESCE(a.apellido_paterno, '')) AS alumno_nombre,
+            a.numero_matricula AS alumno_numero_matricula
+          FROM pagos p
+          LEFT JOIN alumnos a ON a.id = p.alumno_id
+          INNER JOIN matriculas m ON m.alumno_id = a.id
+          INNER JOIN cursos c ON c.id = m.curso_id
+          WHERE c.profesor_id = ?
+          ORDER BY p.fecha_creacion DESC
+          LIMIT 100
+        `, [profesorId]);
+      }
+    }
     res.json(respuestaExito(pagos, 'Pagos obtenidos'));
   } catch (error) {
     res.status(500).json(respuestaError('Error al obtener pagos'));
@@ -387,19 +736,74 @@ app.get('/api/pagos', authMiddleware, asyncHandler(async (req, res) => {
 // ASISTENCIA desde BD
 app.get('/api/asistencia', authMiddleware, asyncHandler(async (req, res) => {
   try {
-    const asistencia = await getAll(`
-      SELECT
-        a.*,
-        TRIM(COALESCE(al.primer_nombre, '') || ' ' || COALESCE(al.apellido_paterno, '')) AS alumno_nombre,
-        al.numero_matricula AS alumno_numero_matricula,
-        c.nombre AS curso_nombre,
-        c.codigo AS curso_codigo
-      FROM asistencias a
-      LEFT JOIN alumnos al ON al.id = a.alumno_id
-      LEFT JOIN cursos c ON c.id = a.curso_id
-      ORDER BY a.fecha DESC
-      LIMIT 100
-    `);
+    const usuarioId = req.usuario.id;
+    const rol = req.usuario.tipo_usuario;
+    let asistencia = [];
+
+    if (ROLES_CON_ACCESO_TOTAL.has(rol)) {
+      asistencia = await getAll(`
+        SELECT
+          a.*,
+          TRIM(COALESCE(al.primer_nombre, '') || ' ' || COALESCE(al.apellido_paterno, '')) AS alumno_nombre,
+          al.numero_matricula AS alumno_numero_matricula,
+          c.nombre AS curso_nombre,
+          c.codigo AS curso_codigo
+        FROM asistencias a
+        LEFT JOIN alumnos al ON al.id = a.alumno_id
+        LEFT JOIN cursos c ON c.id = a.curso_id
+        ORDER BY a.fecha DESC
+        LIMIT 100
+      `);
+    } else if (rol === 'alumno') {
+      asistencia = await getAll(`
+        SELECT
+          a.*,
+          TRIM(COALESCE(al.primer_nombre, '') || ' ' || COALESCE(al.apellido_paterno, '')) AS alumno_nombre,
+          al.numero_matricula AS alumno_numero_matricula,
+          c.nombre AS curso_nombre,
+          c.codigo AS curso_codigo
+        FROM asistencias a
+        LEFT JOIN alumnos al ON al.id = a.alumno_id
+        LEFT JOIN cursos c ON c.id = a.curso_id
+        WHERE al.usuario_id = ?
+        ORDER BY a.fecha DESC
+        LIMIT 100
+      `, [usuarioId]);
+    } else if (rol === 'padre') {
+      asistencia = await getAll(`
+        SELECT
+          a.*,
+          TRIM(COALESCE(al.primer_nombre, '') || ' ' || COALESCE(al.apellido_paterno, '')) AS alumno_nombre,
+          al.numero_matricula AS alumno_numero_matricula,
+          c.nombre AS curso_nombre,
+          c.codigo AS curso_codigo
+        FROM asistencias a
+        LEFT JOIN alumnos al ON al.id = a.alumno_id
+        LEFT JOIN cursos c ON c.id = a.curso_id
+        WHERE al.padre_id = ?
+        ORDER BY a.fecha DESC
+        LIMIT 100
+      `, [usuarioId]);
+    } else if (rol === 'docente') {
+      const profesorId = await getProfesorIdPorUsuario(usuarioId);
+      if (profesorId) {
+        asistencia = await getAll(`
+          SELECT DISTINCT
+            a.*,
+            TRIM(COALESCE(al.primer_nombre, '') || ' ' || COALESCE(al.apellido_paterno, '')) AS alumno_nombre,
+            al.numero_matricula AS alumno_numero_matricula,
+            c.nombre AS curso_nombre,
+            c.codigo AS curso_codigo
+          FROM asistencias a
+          LEFT JOIN alumnos al ON al.id = a.alumno_id
+          LEFT JOIN cursos c ON c.id = a.curso_id
+          INNER JOIN matriculas m ON m.alumno_id = al.id
+          WHERE c.profesor_id = ?
+          ORDER BY a.fecha DESC
+          LIMIT 100
+        `, [profesorId]);
+      }
+    }
     res.json(respuestaExito(asistencia, 'Registros de asistencia obtenidos'));
   } catch (error) {
     console.error('Error al obtener asistencia:', error);
@@ -410,18 +814,70 @@ app.get('/api/asistencia', authMiddleware, asyncHandler(async (req, res) => {
 // CALIFICACIONES desde BD
 app.get('/api/calificaciones', authMiddleware, asyncHandler(async (req, res) => {
   try {
-    const calificaciones = await getAll(`
-      SELECT
-        c.*,
-        TRIM(COALESCE(al.primer_nombre, '') || ' ' || COALESCE(al.apellido_paterno, '')) AS alumno_nombre,
-        al.numero_matricula AS alumno_numero_matricula,
-        cur.nombre AS curso_nombre,
-        cur.codigo AS curso_codigo
-      FROM calificaciones c
-      LEFT JOIN alumnos al ON al.id = c.alumno_id
-      LEFT JOIN cursos cur ON cur.id = c.curso_id
-      LIMIT 100
-    `);
+    const usuarioId = req.usuario.id;
+    const rol = req.usuario.tipo_usuario;
+    let calificaciones = [];
+
+    if (ROLES_CON_ACCESO_TOTAL.has(rol)) {
+      calificaciones = await getAll(`
+        SELECT
+          c.*,
+          TRIM(COALESCE(al.primer_nombre, '') || ' ' || COALESCE(al.apellido_paterno, '')) AS alumno_nombre,
+          al.numero_matricula AS alumno_numero_matricula,
+          cur.nombre AS curso_nombre,
+          cur.codigo AS curso_codigo
+        FROM calificaciones c
+        LEFT JOIN alumnos al ON al.id = c.alumno_id
+        LEFT JOIN cursos cur ON cur.id = c.curso_id
+        LIMIT 100
+      `);
+    } else if (rol === 'alumno') {
+      calificaciones = await getAll(`
+        SELECT
+          c.*,
+          TRIM(COALESCE(al.primer_nombre, '') || ' ' || COALESCE(al.apellido_paterno, '')) AS alumno_nombre,
+          al.numero_matricula AS alumno_numero_matricula,
+          cur.nombre AS curso_nombre,
+          cur.codigo AS curso_codigo
+        FROM calificaciones c
+        LEFT JOIN alumnos al ON al.id = c.alumno_id
+        LEFT JOIN cursos cur ON cur.id = c.curso_id
+        WHERE al.usuario_id = ?
+        LIMIT 100
+      `, [usuarioId]);
+    } else if (rol === 'padre') {
+      calificaciones = await getAll(`
+        SELECT
+          c.*,
+          TRIM(COALESCE(al.primer_nombre, '') || ' ' || COALESCE(al.apellido_paterno, '')) AS alumno_nombre,
+          al.numero_matricula AS alumno_numero_matricula,
+          cur.nombre AS curso_nombre,
+          cur.codigo AS curso_codigo
+        FROM calificaciones c
+        LEFT JOIN alumnos al ON al.id = c.alumno_id
+        LEFT JOIN cursos cur ON cur.id = c.curso_id
+        WHERE al.padre_id = ?
+        LIMIT 100
+      `, [usuarioId]);
+    } else if (rol === 'docente') {
+      const profesorId = await getProfesorIdPorUsuario(usuarioId);
+      if (profesorId) {
+        calificaciones = await getAll(`
+          SELECT DISTINCT
+            c.*,
+            TRIM(COALESCE(al.primer_nombre, '') || ' ' || COALESCE(al.apellido_paterno, '')) AS alumno_nombre,
+            al.numero_matricula AS alumno_numero_matricula,
+            cur.nombre AS curso_nombre,
+            cur.codigo AS curso_codigo
+          FROM calificaciones c
+          LEFT JOIN alumnos al ON al.id = c.alumno_id
+          LEFT JOIN cursos cur ON cur.id = c.curso_id
+          INNER JOIN matriculas m ON m.alumno_id = al.id
+          WHERE cur.profesor_id = ?
+          LIMIT 100
+        `, [profesorId]);
+      }
+    }
     res.json(respuestaExito(calificaciones, 'Calificaciones obtenidas'));
   } catch (error) {
     res.status(500).json(respuestaError('Error al obtener calificaciones'));
@@ -431,17 +887,32 @@ app.get('/api/calificaciones', authMiddleware, asyncHandler(async (req, res) => 
 // NOTIFICACIONES desde BD
 app.get('/api/notificaciones', authMiddleware, asyncHandler(async (req, res) => {
   try {
-    const notificaciones = await getAll(`
-      SELECT
-        n.*,
-        u.nombre AS destinatario_nombre,
-        u.email AS destinatario_email,
-        u.tipo_usuario AS destinatario_tipo
-      FROM notificaciones n
-      LEFT JOIN usuarios u ON u.id = n.destinatario_id
-      ORDER BY n.fecha_creacion DESC
-      LIMIT 100
-    `);
+    const usuarioId = req.usuario.id;
+    const rol = req.usuario.tipo_usuario;
+    const notificaciones = ROLES_CON_ACCESO_TOTAL.has(rol)
+      ? await getAll(`
+          SELECT
+            n.*,
+            u.nombre AS destinatario_nombre,
+            u.email AS destinatario_email,
+            u.tipo_usuario AS destinatario_tipo
+          FROM notificaciones n
+          LEFT JOIN usuarios u ON u.id = n.destinatario_id
+          ORDER BY n.fecha_creacion DESC
+          LIMIT 100
+        `)
+      : await getAll(`
+          SELECT
+            n.*,
+            u.nombre AS destinatario_nombre,
+            u.email AS destinatario_email,
+            u.tipo_usuario AS destinatario_tipo
+          FROM notificaciones n
+          LEFT JOIN usuarios u ON u.id = n.destinatario_id
+          WHERE n.destinatario_id = ?
+          ORDER BY n.fecha_creacion DESC
+          LIMIT 100
+        `, [usuarioId]);
     res.json(respuestaExito(notificaciones, 'Notificaciones obtenidas'));
   } catch (error) {
     res.status(500).json(respuestaError('Error al obtener notificaciones'));
@@ -679,9 +1150,9 @@ app.post('/api/matriculas', authMiddleware, requireRole(['administrativo', 'dire
 
   try {
     await runQuery(
-      `INSERT INTO matriculas (id, alumno_id, curso_id, fecha_matricula, estado, observaciones, fecha_creacion)
-       VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
-      [id, alumno_id, curso_id, fecha_matricula || new Date().toISOString().split('T')[0], estado || 'activa', observaciones || null]
+      `INSERT INTO matriculas (id, alumno_id, curso_id, periodo_academico, fecha_matricula, estado, observaciones, fecha_creacion)
+       VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+      [id, alumno_id, curso_id, periodo_academico || PERIODO_ACADEMICO_DEFECTO, fecha_matricula || new Date().toISOString().split('T')[0], estado || 'activa', observaciones || null]
     );
     res.status(201).json(respuestaExito({ id }, 'Matrícula creada exitosamente'));
   } catch (error) {
@@ -846,6 +1317,31 @@ app.get('/api/health', asyncHandler(async (req, res) => {
 // Obtener información del usuario autenticado
 app.get('/api/me', authMiddleware, asyncHandler(async (req, res) => {
   res.json(respuestaExito(req.usuario, 'Información del usuario'));
+}));
+
+app.get('/api/usuarios', authMiddleware, asyncHandler(async (req, res) => {
+  try {
+    const rol = req.usuario.tipo_usuario;
+    const usuarioId = req.usuario.id;
+
+    const usuarios = ROLES_CON_ACCESO_TOTAL.has(rol)
+      ? await getAll(`
+          SELECT id, nombre, email, tipo_usuario, estado
+          FROM usuarios
+          ORDER BY nombre
+          LIMIT 200
+        `)
+      : await getAll(`
+          SELECT id, nombre, email, tipo_usuario, estado
+          FROM usuarios
+          WHERE id = ?
+          LIMIT 1
+        `, [usuarioId]);
+
+    res.json(respuestaExito(usuarios, 'Usuarios obtenidos'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al obtener usuarios'));
+  }
 }));
 
 // Servir archivo HTML de inicio

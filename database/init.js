@@ -55,12 +55,17 @@ async function seedDatabase() {
 
   try {
     await resetSeedData();
+    await ensureMatriculasPeriodoAcademicoColumn();
 
     // Crear usuarios
     const directorId = uuidv4();
     const adminId = uuidv4();
     const profesor1Id = uuidv4();
     const profesor2Id = uuidv4();
+    const profesor3Id = uuidv4();
+    const profesor4Id = uuidv4();
+    const profesor5Id = uuidv4();
+    const profesor6Id = uuidv4();
     const alumno1Id = uuidv4();
     const alumno2Id = uuidv4();
     const padreId = uuidv4();
@@ -72,50 +77,78 @@ async function seedDatabase() {
     const usuarios = [
       {
         id: directorId,
-        nombre: 'Dr. Carlos Martinez',
-        email: 'director@colegio.com',
+        nombre: 'Dr. Luis Fernando Herrera',
+        email: 'luis.herrera@colegiofuturo.edu',
         password: hashedPassword,
         tipo_usuario: 'director'
       },
       {
         id: adminId,
-        nombre: 'Ana Gomez',
-        email: 'admin@colegio.com',
+        nombre: 'Lic. Andrea Montalvo',
+        email: 'andrea.montalvo@colegiofuturo.edu',
         password: hashedPassword,
         tipo_usuario: 'administrativo'
       },
       {
         id: profesor1Id,
-        nombre: 'Juan Perez',
-        email: 'juan@colegio.com',
+        nombre: 'Prof. Juan Carlos Paredes',
+        email: 'juan.paredes@colegiofuturo.edu',
         password: hashedPassword,
         tipo_usuario: 'docente'
       },
       {
         id: profesor2Id,
-        nombre: 'Maria Rodriguez',
-        email: 'maria@colegio.com',
+        nombre: 'Prof. María Elena Ríos',
+        email: 'maria.rios@colegiofuturo.edu',
+        password: hashedPassword,
+        tipo_usuario: 'docente'
+      },
+      {
+        id: profesor3Id,
+        nombre: 'Prof. Carlos Alberto Mejía',
+        email: 'carlos.mejia@colegiofuturo.edu',
+        password: hashedPassword,
+        tipo_usuario: 'docente'
+      },
+      {
+        id: profesor4Id,
+        nombre: 'Prof. Rosa Elena Salazar',
+        email: 'rosa.salazar@colegiofuturo.edu',
+        password: hashedPassword,
+        tipo_usuario: 'docente'
+      },
+      {
+        id: profesor5Id,
+        nombre: 'Prof. Fernando Díaz',
+        email: 'fernando.diaz@colegiofuturo.edu',
+        password: hashedPassword,
+        tipo_usuario: 'docente'
+      },
+      {
+        id: profesor6Id,
+        nombre: 'Prof. Patricia Gómez',
+        email: 'patricia.gomez@colegiofuturo.edu',
         password: hashedPassword,
         tipo_usuario: 'docente'
       },
       {
         id: alumno1Id,
-        nombre: 'Luis Sanchez',
-        email: 'luis@estudiante.com',
+        nombre: 'Valeria Sánchez',
+        email: 'valeria.sanchez@colegiofuturo.edu',
         password: hashedPassword,
         tipo_usuario: 'alumno'
       },
       {
         id: alumno2Id,
-        nombre: 'Sofia Torres',
-        email: 'sofia@estudiante.com',
+        nombre: 'Diego Torres',
+        email: 'diego.torres@colegiofuturo.edu',
         password: hashedPassword,
         tipo_usuario: 'alumno'
       },
       {
         id: padreId,
-        nombre: 'Roberto Sanchez',
-        email: 'padre@colegio.com',
+        nombre: 'Patricia Sánchez',
+        email: 'patricia.sanchez@colegiofuturo.edu',
         password: hashedPassword,
         tipo_usuario: 'padre'
       }
@@ -127,46 +160,92 @@ async function seedDatabase() {
     console.log('✓ Usuarios creados');
 
     // Insertar profesores
-    const profesor1 = {
-      id: uuidv4(),
-      usuario_id: profesor1Id,
-      numero_empleado: 'EMP-001',
-      nombre: 'Juan Perez',
-      apellido_paterno: 'Perez',
-      primer_nombre: 'Juan',
-      email: 'juan@colegio.com',
-      telefono: '987654321',
-      especialidad: 'Matemáticas'
-    };
+    const profesores = [
+      {
+        id: uuidv4(),
+        usuario_id: profesor1Id,
+        numero_empleado: 'EMP-2041',
+        nombre: 'Juan Carlos Paredes',
+        apellido_paterno: 'Paredes',
+        primer_nombre: 'Juan Carlos',
+        email: 'juan.paredes@colegiofuturo.edu',
+        telefono: '987654321',
+        especialidad: 'Tutoría y Matemática'
+      },
+      {
+        id: uuidv4(),
+        usuario_id: profesor2Id,
+        numero_empleado: 'EMP-2042',
+        nombre: 'María Elena Ríos',
+        apellido_paterno: 'Ríos',
+        primer_nombre: 'María Elena',
+        email: 'maria.rios@colegiofuturo.edu',
+        telefono: '987654322',
+        especialidad: 'Comunicación'
+      },
+      {
+        id: uuidv4(),
+        usuario_id: profesor3Id,
+        numero_empleado: 'EMP-2043',
+        nombre: 'Carlos Alberto Mejía',
+        apellido_paterno: 'Mejía',
+        primer_nombre: 'Carlos Alberto',
+        email: 'carlos.mejia@colegiofuturo.edu',
+        telefono: '987654323',
+        especialidad: 'Ciencias'
+      },
+      {
+        id: uuidv4(),
+        usuario_id: profesor4Id,
+        numero_empleado: 'EMP-2044',
+        nombre: 'Rosa Elena Salazar',
+        apellido_paterno: 'Salazar',
+        primer_nombre: 'Rosa Elena',
+        email: 'rosa.salazar@colegiofuturo.edu',
+        telefono: '987654324',
+        especialidad: 'Historia'
+      },
+      {
+        id: uuidv4(),
+        usuario_id: profesor5Id,
+        numero_empleado: 'EMP-2045',
+        nombre: 'Fernando Díaz',
+        apellido_paterno: 'Díaz',
+        primer_nombre: 'Fernando',
+        email: 'fernando.diaz@colegiofuturo.edu',
+        telefono: '987654325',
+        especialidad: 'Arte'
+      },
+      {
+        id: uuidv4(),
+        usuario_id: profesor6Id,
+        numero_empleado: 'EMP-2046',
+        nombre: 'Patricia Gómez',
+        apellido_paterno: 'Gómez',
+        primer_nombre: 'Patricia',
+        email: 'patricia.gomez@colegiofuturo.edu',
+        telefono: '987654326',
+        especialidad: 'Educación Física'
+      }
+    ];
 
-    const profesor2 = {
-      id: uuidv4(),
-      usuario_id: profesor2Id,
-      numero_empleado: 'EMP-002',
-      nombre: 'Maria Rodriguez',
-      apellido_paterno: 'Rodriguez',
-      primer_nombre: 'Maria',
-      email: 'maria@colegio.com',
-      telefono: '987654322',
-      especialidad: 'Lenguaje'
-    };
-
-    await insertProfesor(profesor1);
-    await insertProfesor(profesor2);
-    console.log('✓ Profesores creados');
+    for (const profesor of profesores) {
+      await insertProfesor(profesor);
+    }
+    console.log('✓ Profesores creados (6 profesores)');
 
     // Insertar alumnos
     const alumnos = [
       {
         id: uuidv4(),
         usuario_id: alumno1Id,
-        numero_matricula: 'MAT001',
-        apellido_paterno: 'Sanchez',
+        numero_matricula: 'MAT-2026-001',
+        apellido_paterno: 'Sánchez',
         apellido_materno: '',
-        primer_nombre: 'Luis',
+        primer_nombre: 'Valeria',
         telefono: '999888777',
-        email_contacto: 'luis@estudiante.com',
-        numero_documento: '12345678',
+        email_contacto: 'valeria.sanchez@colegiofuturo.edu',
+        numero_documento: '41234567',
         padre_id: padreId,
         datos_completos: true,
         deuda_pendiente: false,
@@ -175,13 +254,13 @@ async function seedDatabase() {
       {
         id: uuidv4(),
         usuario_id: alumno2Id,
-        numero_matricula: 'MAT002',
+        numero_matricula: 'MAT-2026-002',
         apellido_paterno: 'Torres',
         apellido_materno: '',
-        primer_nombre: 'Sofia',
+        primer_nombre: 'Diego',
         telefono: '999888776',
-        email_contacto: 'sofia@estudiante.com',
-        numero_documento: '87654321',
+        email_contacto: 'diego.torres@colegiofuturo.edu',
+        numero_documento: '50987654',
         datos_completos: true,
         deuda_pendiente: false,
         periodo_academico: '2026-1'
@@ -196,77 +275,86 @@ async function seedDatabase() {
     console.log('✓ Alumnos creados');
 
     // Insertar cursos
-    const curso1 = {
-      id: uuidv4(),
-      codigo: 'MAT-001',
-      nombre: 'Matemáticas 4to A',
-      grado: '4to',
-      seccion: 'A',
-      profesor_id: profesor1.id,
-      salon: 'A-401',
-      capacidad: 30,
-      estado: 'activo'
-    };
+    const cursos = [
+      {
+        id: uuidv4(),
+        codigo: 'SEC-1A',
+        nombre: 'Secundaria 1ro Grado A',
+        grado: '1ro',
+        seccion: 'A',
+        profesor_id: profesores[0].id,
+        salon: 'A-101',
+        capacidad: 32,
+        estado: 'activo'
+      },
+      {
+        id: uuidv4(),
+        codigo: 'SEC-2A',
+        nombre: 'Secundaria 2do Grado A',
+        grado: '2do',
+        seccion: 'A',
+        profesor_id: profesores[1].id,
+        salon: 'A-102',
+        capacidad: 32,
+        estado: 'activo'
+      },
+      {
+        id: uuidv4(),
+        codigo: 'SEC-3A',
+        nombre: 'Secundaria 3ro Grado A',
+        grado: '3ro',
+        seccion: 'A',
+        profesor_id: profesores[2].id,
+        salon: 'B-101',
+        capacidad: 34,
+        estado: 'activo'
+      },
+      {
+        id: uuidv4(),
+        codigo: 'SEC-4A',
+        nombre: 'Secundaria 4to Grado A',
+        grado: '4to',
+        seccion: 'A',
+        profesor_id: profesores[3].id,
+        salon: 'B-102',
+        capacidad: 34,
+        estado: 'activo'
+      },
+      {
+        id: uuidv4(),
+        codigo: 'SEC-5A',
+        nombre: 'Secundaria 5to Grado A',
+        grado: '5to',
+        seccion: 'A',
+        profesor_id: profesores[4].id,
+        salon: 'C-201',
+        capacidad: 30,
+        estado: 'activo'
+      },
+      {
+        id: uuidv4(),
+        codigo: 'SEC-5B',
+        nombre: 'Secundaria 5to Grado B',
+        grado: '5to',
+        seccion: 'B',
+        profesor_id: profesores[5].id,
+        salon: 'C-202',
+        capacidad: 30,
+        estado: 'activo'
+      }
+    ];
 
-    const curso2 = {
-      id: uuidv4(),
-      codigo: 'LEN-001',
-      nombre: 'Lenguaje 4to A',
-      grado: '4to',
-      seccion: 'A',
-      profesor_id: profesor2.id,
-      salon: 'A-402',
-      capacidad: 30,
-      estado: 'activo'
-    };
-
-    const curso3 = {
-      id: uuidv4(),
-      codigo: 'MAT-002',
-      nombre: 'Matemáticas 5to A',
-      grado: '5to',
-      seccion: 'A',
-      profesor_id: profesor1.id,
-      salon: 'B-101',
-      capacidad: 35,
-      estado: 'activo'
-    };
-
-    const curso4 = {
-      id: uuidv4(),
-      codigo: 'FIS-001',
-      nombre: 'Física 5to A',
-      grado: '5to',
-      seccion: 'A',
-      profesor_id: profesor2.id,
-      salon: 'B-102',
-      capacidad: 35,
-      estado: 'activo'
-    };
-
-    const curso5 = {
-      id: uuidv4(),
-      codigo: 'QUI-001',
-      nombre: 'Química 5to B',
-      grado: '5to',
-      seccion: 'B',
-      profesor_id: profesor1.id,
-      salon: 'B-103',
-      capacidad: 32,
-      estado: 'activo'
-    };
-
-    const cursos = [curso1, curso2, curso3, curso4, curso5];
     for (const curso of cursos) {
       await insertCurso(curso);
     }
-    console.log('✓ Cursos creados (5 cursos)');
+    console.log('✓ Cursos creados (6 cursos)');
 
     // Insertar matrículas
     const matricula1 = {
       id: uuidv4(),
       alumno_id: alumnoIds[0],
-      curso_id: curso1.id,
+      curso_id: cursos[0].id,
+      periodo_academico: '2026-1',
       fecha_matricula: '2026-03-10',
       estado: 'activa',
       observaciones: 'Matrícula inicial'
@@ -275,35 +363,18 @@ async function seedDatabase() {
     const matricula2 = {
       id: uuidv4(),
       alumno_id: alumnoIds[1],
-      curso_id: curso2.id,
+      curso_id: cursos[1].id,
+      periodo_academico: '2026-1',
       fecha_matricula: '2026-03-10',
       estado: 'activa',
       observaciones: 'Matrícula inicial'
     };
 
-    const matricula3 = {
-      id: uuidv4(),
-      alumno_id: alumnoIds[0],
-      curso_id: curso3.id,
-      fecha_matricula: '2026-03-11',
-      estado: 'activa',
-      observaciones: 'Matrícula inicial'
-    };
-
-    const matricula4 = {
-      id: uuidv4(),
-      alumno_id: alumnoIds[1],
-      curso_id: curso5.id,
-      fecha_matricula: '2026-03-11',
-      estado: 'activa',
-      observaciones: 'Matrícula inicial'
-    };
-
-    const matriculas = [matricula1, matricula2, matricula3, matricula4];
+    const matriculas = [matricula1, matricula2];
     for (const matricula of matriculas) {
       await insertMatricula(matricula);
     }
-    console.log('✓ Matrículas creadas (4 matrículas)');
+    console.log('✓ Matrículas creadas (2 matrículas base)');
 
     // Insertar pagos
     const pagos = [
@@ -311,7 +382,7 @@ async function seedDatabase() {
         id: uuidv4(),
         alumno_id: alumnoIds[0],
         monto: 350.00,
-        concepto: 'Pensión Marzo 2024',
+        concepto: 'Pensión Marzo 2026',
         periodo_academico: '2026-1',
         estado_pago: 'pagado',
         estado: 'pagado',
@@ -322,7 +393,7 @@ async function seedDatabase() {
         id: uuidv4(),
         alumno_id: alumnoIds[1],
         monto: 350.00,
-        concepto: 'Pensión Marzo 2024',
+        concepto: 'Pensión Marzo 2026',
         periodo_academico: '2026-1',
         estado_pago: 'pendiente',
         estado: 'pendiente',
@@ -363,7 +434,7 @@ async function seedDatabase() {
       {
         id: uuidv4(),
         alumno_id: alumnoIds[0],
-        curso_id: curso1.id,
+        curso_id: cursos[0].id,
         fecha: '2026-05-20',
         estado: 'PRESENTE',
         registrada: true,
@@ -372,7 +443,7 @@ async function seedDatabase() {
       {
         id: uuidv4(),
         alumno_id: alumnoIds[1],
-        curso_id: curso2.id,
+        curso_id: cursos[1].id,
         fecha: '2026-05-20',
         estado: 'FALTA',
         registrada: true,
@@ -390,7 +461,7 @@ async function seedDatabase() {
       {
         id: uuidv4(),
         alumno_id: alumnoIds[0],
-        curso_id: curso1.id,
+        curso_id: cursos[0].id,
         nota: 18.5,
         periodo: '1',
         observaciones: 'Buen desempeño',
@@ -398,7 +469,7 @@ async function seedDatabase() {
       {
         id: uuidv4(),
         alumno_id: alumnoIds[1],
-        curso_id: curso2.id,
+        curso_id: cursos[1].id,
         nota: 14.0,
         periodo: '1',
         observaciones: 'Necesita reforzar ejercicios prácticos',
@@ -424,7 +495,7 @@ async function seedDatabase() {
         id: uuidv4(),
         destinatario_id: padreId,
         tipo: 'recordatorio',
-        mensaje: 'Se registró una falta para Luis Sánchez en Matemáticas.',
+        mensaje: 'Se registró una falta para Valeria Sánchez en Secundaria 4to Grado A.',
         leida: false,
         fecha_lectura: null
       }
@@ -435,131 +506,223 @@ async function seedDatabase() {
     }
     console.log('✓ Notificaciones creadas (2 registros)');
 
-    // --- Seed adicional: más alumnos relacionados con servicios ---
-    const extraAlumnosCount = 6;
+    // --- Seed adicional: más alumnos relacionados con secciones académicas ---
+    const familias = [
+      {
+        alumno: {
+          nombre: 'Camila',
+          apellido: 'Herrera',
+          email: 'camila.herrera@colegiofuturo.edu',
+          telefono: '999700101',
+          documento: '40112233',
+          matricula: 'MAT-2026-003',
+          deuda: false
+        },
+        padre: {
+          nombre: 'Laura Herrera',
+          email: 'laura.herrera@colegiofuturo.edu'
+        }
+      },
+      {
+        alumno: {
+          nombre: 'Andrés',
+          apellido: 'López',
+          email: 'andres.lopez@colegiofuturo.edu',
+          telefono: '999700102',
+          documento: '40112234',
+          matricula: 'MAT-2026-004',
+          deuda: true
+        },
+        padre: {
+          nombre: 'Rocío López',
+          email: 'rocio.lopez@colegiofuturo.edu'
+        }
+      },
+      {
+        alumno: {
+          nombre: 'Sofía',
+          apellido: 'Navarro',
+          email: 'sofia.navarro@colegiofuturo.edu',
+          telefono: '999700103',
+          documento: '40112235',
+          matricula: 'MAT-2026-005',
+          deuda: false
+        },
+        padre: {
+          nombre: 'Miguel Navarro',
+          email: 'miguel.navarro@colegiofuturo.edu'
+        }
+      },
+      {
+        alumno: {
+          nombre: 'Mateo',
+          apellido: 'Salas',
+          email: 'mateo.salas@colegiofuturo.edu',
+          telefono: '999700104',
+          documento: '40112236',
+          matricula: 'MAT-2026-006',
+          deuda: true
+        },
+        padre: {
+          nombre: 'Elena Salas',
+          email: 'elena.salas@colegiofuturo.edu'
+        }
+      },
+      {
+        alumno: {
+          nombre: 'Lucía',
+          apellido: 'Vargas',
+          email: 'lucia.vargas@colegiofuturo.edu',
+          telefono: '999700105',
+          documento: '40112237',
+          matricula: 'MAT-2026-007',
+          deuda: false
+        },
+        padre: {
+          nombre: 'Javier Vargas',
+          email: 'javier.vargas@colegiofuturo.edu'
+        }
+      },
+      {
+        alumno: {
+          nombre: 'Thiago',
+          apellido: 'Mendoza',
+          email: 'thiago.mendoza@colegiofuturo.edu',
+          telefono: '999700106',
+          documento: '40112238',
+          matricula: 'MAT-2026-008',
+          deuda: true
+        },
+        padre: {
+          nombre: 'Carolina Mendoza',
+          email: 'carolina.mendoza@colegiofuturo.edu'
+        }
+      }
+    ];
+
     const extraAlumnoIds = [];
-    for (let i = 1; i <= extraAlumnosCount; i++) {
-      const uId = uuidv4();
-      const user = {
-        id: uId,
-        nombre: `Estudiante ${i}`,
-        email: `estudiante${i}@colegio.com`,
+    for (const [index, familia] of familias.entries()) {
+      const alumnoUsuarioId = uuidv4();
+      const padreUsuarioId = uuidv4();
+
+      await insertUser({
+        id: alumnoUsuarioId,
+        nombre: familia.alumno.nombre,
+        email: familia.alumno.email,
         password: hashedPassword,
         tipo_usuario: 'alumno'
-      };
-      await insertUser(user);
+      });
 
-      const padreUId = uuidv4();
-      const padreUser = {
-        id: padreUId,
-        nombre: `Padre ${i}`,
-        email: `padre${i}@colegio.com`,
+      await insertUser({
+        id: padreUsuarioId,
+        nombre: familia.padre.nombre,
+        email: familia.padre.email,
         password: hashedPassword,
         tipo_usuario: 'padre'
-      };
-      await insertUser(padreUser);
+      });
 
       const alumnoId = uuidv4();
       const alumno = {
         id: alumnoId,
-        usuario_id: uId,
-        numero_matricula: `MAT1${100 + i}`,
-        apellido_paterno: `Apellido${i}`,
-        primer_nombre: `Alumno${i}`,
-        telefono: `999000${i}`,
-        email_contacto: `estudiante${i}@colegio.com`,
-        numero_documento: `${1000000 + i}`,
-        padre_id: padreUId,
+        usuario_id: alumnoUsuarioId,
+        numero_matricula: familia.alumno.matricula,
+        apellido_paterno: familia.alumno.apellido,
+        apellido_materno: '',
+        primer_nombre: familia.alumno.nombre,
+        telefono: familia.alumno.telefono,
+        email_contacto: familia.alumno.email,
+        numero_documento: familia.alumno.documento,
+        padre_id: padreUsuarioId,
         datos_completos: true,
-        deuda_pendiente: i % 2 === 0 ? true : false,
+        deuda_pendiente: familia.alumno.deuda,
         periodo_academico: '2026-1'
       };
       await insertAlumno(alumno);
       extraAlumnoIds.push(alumnoId);
 
-      // Matricular en un curso aleatorio
-      const cursoAleatorio = cursos[Math.floor(Math.random() * cursos.length)];
-      const mat = {
+      const cursoAleatorio = cursos[(index + 2) % cursos.length];
+      await insertMatricula({
         id: uuidv4(),
         alumno_id: alumnoId,
         curso_id: cursoAleatorio.id,
-        fecha_matricula: '2026-03-15',
         periodo_academico: '2026-1',
+        fecha_matricula: '2026-03-15',
         estado: 'activa'
-      };
-      await insertMatricula(mat);
+      });
 
-      // Crear un pago asociado
-      const pago = {
+      await insertPago({
         id: uuidv4(),
         alumno_id: alumnoId,
-        monto: 300 + (i * 10),
-        concepto: 'Pensión Mensual',
+        monto: 320 + (index * 15),
+        concepto: `Pensión Mensual ${cursoAleatorio.nombre}`,
         periodo_academico: '2026-1',
-        estado_pago: i % 3 === 0 ? 'pagado' : 'pendiente',
-        estado: i % 3 === 0 ? 'pagado' : 'pendiente',
-        fecha_pago: i % 3 === 0 ? '2026-04-01 09:00:00' : null,
-        metodo_pago: i % 3 === 0 ? 'transferencia' : null
-      };
-      await insertPago(pago);
+        estado_pago: familia.alumno.deuda ? 'pendiente' : 'pagado',
+        estado: familia.alumno.deuda ? 'pendiente' : 'pagado',
+        fecha_pago: familia.alumno.deuda ? null : '2026-04-01 09:00:00',
+        metodo_pago: familia.alumno.deuda ? null : 'transferencia'
+      });
 
-      // Asistencia aleatoria
-      const asis = {
+      await insertAsistencia({
         id: uuidv4(),
         alumno_id: alumnoId,
         curso_id: cursoAleatorio.id,
         fecha: '2026-05-21',
-        estado: i % 4 === 0 ? 'FALTA' : 'PRESENTE',
+        estado: index % 4 === 0 ? 'FALTA' : 'PRESENTE',
         registrada: true,
-        motivo_falta: i % 4 === 0 ? 'Enfermedad' : null
-      };
-      await insertAsistencia(asis);
+        motivo_falta: index % 4 === 0 ? 'Cita médica' : null
+      });
 
-      // Calificación ejemplo
-      const cal = {
+      await insertCalificacion({
         id: uuidv4(),
         alumno_id: alumnoId,
         curso_id: cursoAleatorio.id,
-        nota: 10 + i,
+        nota: 12 + (index % 8),
         periodo: '1',
         tipo_evaluacion: 'parcial',
-        puntuacion: 10 + i,
+        puntuacion: 12 + (index % 8),
         peso: 1.0,
-        observaciones: i % 2 === 0 ? 'Necesita mejorar' : 'Buen trabajo',
+        observaciones: index % 2 === 0 ? 'Avance constante' : 'Debe reforzar lectura',
         periodo_academico: '2026-1'
-      };
-      await insertCalificacion(cal);
+      });
 
-      // Notificación al padre
-      const noti = {
+      await insertNotificacion({
         id: uuidv4(),
-        destinatario_id: padreUId,
+        destinatario_id: padreUsuarioId,
         tipo: 'informacion',
-        mensaje: `Se ha registrado la matrícula de ${alumno.primer_nombre} en ${cursoAleatorio.nombre}`,
+        mensaje: `Se actualizó el seguimiento académico de ${familia.alumno.nombre} ${familia.alumno.apellido} en ${cursoAleatorio.nombre}`,
         leida: false,
         fecha_lectura: null
-      };
-      await insertNotificacion(noti);
+      });
     }
-    console.log(`✓ Seed adicional: ${extraAlumnosCount} alumnos y relaciones creadas`);
+    console.log(`✓ Seed adicional: ${familias.length} alumnos y relaciones creadas`);
+
+    const totalUsuarios = usuarios.length + familias.length * 2;
+    const totalProfesores = profesores.length;
+    const totalAlumnos = alumnos.length + familias.length;
+    const totalCursos = cursos.length;
+    const totalMatriculas = matriculas.length + familias.length;
+    const totalPagos = pagos.length + familias.length;
+    const totalAsistencias = asistencias.length + familias.length;
+    const totalCalificaciones = calificaciones.length + familias.length;
+    const totalNotificaciones = notificaciones.length + familias.length;
 
     console.log('\n✅ Base de datos inicializada correctamente\n');
     console.log('📊 Resumen de datos insertados:');
-    console.log('   - 7 usuarios');
-    console.log('   - 2 profesores');
-    console.log('   - 2 alumnos');
-    console.log('   - 5 cursos');
-    console.log('   - 4 matrículas');
-    console.log('   - 4 pagos');
-    console.log('   - 2 asistencias');
-    console.log('   - 2 calificaciones');
-    console.log('   - 2 notificaciones\n');
+    console.log(`   - ${totalUsuarios} usuarios`);
+    console.log(`   - ${totalProfesores} profesores`);
+    console.log(`   - ${totalAlumnos} alumnos`);
+    console.log(`   - ${totalCursos} cursos`);
+    console.log(`   - ${totalMatriculas} matrículas`);
+    console.log(`   - ${totalPagos} pagos`);
+    console.log(`   - ${totalAsistencias} asistencias`);
+    console.log(`   - ${totalCalificaciones} calificaciones`);
+    console.log(`   - ${totalNotificaciones} notificaciones\n`);
     console.log('📝 Credenciales de prueba:');
-    console.log('   Director: director@colegio.com / password123');
-    console.log('   Admin: admin@colegio.com / password123');
-    console.log('   Docente: juan@colegio.com / password123');
-    console.log('   Alumno: luis@estudiante.com / password123');
-    console.log('   Docente: juan@colegio.com / password123\n');
+    console.log('   Director: luis.herrera@colegiofuturo.edu / password123');
+    console.log('   Admin: andrea.montalvo@colegiofuturo.edu / password123');
+    console.log('   Docente: juan.paredes@colegiofuturo.edu / password123');
+    console.log('   Alumno: valeria.sanchez@colegiofuturo.edu / password123');
+    console.log('   Padre: patricia.sanchez@colegiofuturo.edu / password123\n');
 
     process.exit(0);
   } catch (error) {
@@ -589,6 +752,25 @@ function resetSeedData() {
         else resolve();
       }
     );
+  });
+}
+
+function ensureMatriculasPeriodoAcademicoColumn() {
+  return new Promise((resolve, reject) => {
+    db.all('PRAGMA table_info(matriculas)', (err, rows) => {
+      if (err) return reject(err);
+
+      const exists = rows.some((row) => row.name === 'periodo_academico');
+      if (exists) return resolve();
+
+      db.run(
+        "ALTER TABLE matriculas ADD COLUMN periodo_academico TEXT NOT NULL DEFAULT '2026-1'",
+        (alterErr) => {
+          if (alterErr) reject(alterErr);
+          else resolve();
+        }
+      );
+    });
   });
 }
 
@@ -663,9 +845,9 @@ function insertCurso(curso) {
 function insertMatricula(matricula) {
   return new Promise((resolve, reject) => {
     db.run(
-      `INSERT INTO matriculas (id, alumno_id, curso_id, fecha_matricula, estado, observaciones)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [matricula.id, matricula.alumno_id, matricula.curso_id, matricula.fecha_matricula,
+      `INSERT INTO matriculas (id, alumno_id, curso_id, periodo_academico, fecha_matricula, estado, observaciones)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [matricula.id, matricula.alumno_id, matricula.curso_id, matricula.periodo_academico || '2026-1', matricula.fecha_matricula,
        matricula.estado || 'activa', matricula.observaciones || null],
       (err) => {
         if (err) reject(err);
