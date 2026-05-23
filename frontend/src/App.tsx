@@ -11,6 +11,7 @@ import Pagos from './pages/Pagos';
 import Asistencia from './pages/Asistencia';
 import Calificaciones from './pages/Calificaciones';
 import Notificaciones from './pages/Notificaciones';
+import Perfil from './pages/Perfil';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 
@@ -44,6 +45,7 @@ const AppContent: React.FC = () => {
             <Route path="/asistencia" element={<Asistencia />} />
             <Route path="/calificaciones" element={<Calificaciones />} />
             <Route path="/notificaciones" element={<Notificaciones />} />
+            <Route path="/perfil" element={<Perfil />} />
             <Route path="/" element={<Navigate to="/dashboard" />} />
           </Routes>
         </div>

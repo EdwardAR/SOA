@@ -8,76 +8,69 @@ Sistema de gestión académica basado en una arquitectura orientada a servicios 
 - npm 7 o superior
 - Docker y docker-compose, solo si quieres usar contenedores
 
-## Instalación local
 
-1. Instala dependencias en la raíz:
+## Instalación y arranque (Windows - PowerShell)
 
-```bash
+Sigue estos pasos en el orden indicado desde la carpeta raíz del proyecto (`C:\Users\USUARIO\Downloads\SOA\SOA`). Copia y pega cada bloque en PowerShell.
+
+1) Instalar dependencias (raíz):
+
+```powershell
 npm install
 ```
 
-1. Instala dependencias del frontend:
+2) Instalar dependencias del frontend:
 
-```bash
+```powershell
 cd frontend
 npm install
 cd ..
 ```
 
-1. Inicializa la base de datos y los datos de prueba:
+3) Crear archivo `.env` en la raíz (mínimo):
 
-```bash
+```powershell
+notepad .\.env
+# agregar al archivo:
+JWT_SECRET=tu_secreto_aqui
+GATEWAY_PORT=3000
+# guardar y cerrar notepad
+```
+
+4) Inicializar la base de datos (semillas). IMPORTANTE: ejecutar desde la raíz del proyecto, no desde `frontend`:
+
+```powershell
 npm run db:init
 ```
 
-1. Crea un archivo `.env` en la raíz con al menos:
-
-```env
-JWT_SECRET=tu_secreto_aqui
-GATEWAY_PORT=3000
-```
-
-## Cómo levantar el sistema
-
-### Windows
+5) Levantar todos los servicios (API Gateway y microservicios) en modo desarrollo:
 
 ```powershell
-.\start-all.bat
-```
-
-### Desarrollo completo
-
-```bash
 npm run dev
 ```
 
-### Arranque manual
+6) En otro terminal abrir el `frontend`. Si el puerto `3001` está en uso (por servicios backend), arranca en otro puerto, por ejemplo `3009`:
 
-Backend:
-
-```bash
-npm start
-```
-
-Frontend en Windows:
-
-```bash
+```powershell
 cd frontend
-npm start
+$env:PORT=3009; npm start
 ```
 
-Frontend en Linux o macOS:
+Ahora la app estará disponible en `http://localhost:3009` (o `http://localhost:3001` si usaste el puerto por defecto y estaba libre).
 
-```bash
-cd frontend
-PORT=3001 npm start
-```
+Importante: si React cambia de puerto porque `3001` ya está ocupado, no pasa nada. El API Gateway ya permite orígenes locales (`localhost` y `127.0.0.1`) en cualquier puerto, así evitas el error de red al iniciar sesión.
 
-### Docker
 
-```bash
+## Alternativa: Docker (recomendado para despliegue uniforme)
+
+Si prefieres usar Docker, crea un archivo `.env` con `JWT_SECRET` y luego:
+
+```powershell
+$env:JWT_SECRET='tu_secreto_aqui'
 docker-compose up --build
 ```
+
+Nota: Docker Compose montará `./database` para persistir la base de datos SQLite.
 
 ## Usuarios de prueba
 
@@ -112,6 +105,7 @@ Las credenciales de ejemplo se cargan con `npm run db:init`.
 ## Troubleshooting
 
 - Si el login no responde desde el frontend, revisa que el gateway esté permitiendo `http://localhost:3001` en CORS.
+- Si el frontend arrancó en otro puerto, no debería fallar: el gateway acepta `localhost`/`127.0.0.1` en cualquier puerto.
 - Si quieres reiniciar la base de datos, vuelve a ejecutar `npm run db:init`.
 - Si el frontend no abre, revisa que esté corriendo en el puerto `3001`.
 

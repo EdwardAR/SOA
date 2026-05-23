@@ -164,20 +164,25 @@ const initializeSchema = () => {
       else console.log('✓ Tabla pagos creada');
     });
 
-    // Tabla de asistencia
+    // Tabla de asistencias (plural) - normalizada con el resto del código
     db.run(`
-      CREATE TABLE IF NOT EXISTS asistencia (
+      CREATE TABLE IF NOT EXISTS asistencias (
         id TEXT PRIMARY KEY,
         alumno_id TEXT NOT NULL,
+        curso_id TEXT,
         fecha DATE NOT NULL,
-        estado TEXT DEFAULT 'presente' CHECK (estado IN ('presente', 'ausente', 'tardanza', 'justificado')),
+        estado TEXT DEFAULT 'presente' CHECK (estado IN ('presente', 'ausente', 'tardanza', 'justificado', 'falta')),
+        registrada BOOLEAN DEFAULT 0,
+        motivo_falta TEXT,
         observacion TEXT,
         fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (alumno_id) REFERENCES alumnos(id)
+        fecha_actualizacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (alumno_id) REFERENCES alumnos(id),
+        FOREIGN KEY (curso_id) REFERENCES cursos(id)
       )
     `, (err) => {
-      if (err) console.error('Error crear tabla asistencia:', err);
-      else console.log('✓ Tabla asistencia creada');
+      if (err) console.error('Error crear tabla asistencias:', err);
+      else console.log('✓ Tabla asistencias creada');
     });
 
     // Tabla de calificaciones
@@ -368,9 +373,9 @@ const insertSeedData = () => {
           const fecha = new Date();
           fecha.setDate(fecha.getDate() - (9 - j));
           db.run(
-            `INSERT INTO asistencia (id, alumno_id, fecha, estado)
-             VALUES (?, ?, ?, ?)`,
-            [asistenciaId, alumnoIds[i], fecha.toISOString().split('T')[0], estado],
+            `INSERT INTO asistencias (id, alumno_id, fecha, estado, fecha_creacion)
+             VALUES (?, ?, ?, ?, ?)`,
+            [asistenciaId, alumnoIds[i], fecha.toISOString().split('T')[0], estado, new Date().toISOString()],
             (err) => {
               if (err) console.error('Error insertar asistencia:', err);
             }

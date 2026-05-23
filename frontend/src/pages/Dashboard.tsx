@@ -43,11 +43,14 @@ const Dashboard: React.FC = () => {
   }, []);
 
   return (
-    <div className="container-fluid p-2 p-md-4">
-      <h1 className="mb-4">
-        <i className="bi bi-speedometer2 me-2"></i>
-        Dashboard
-      </h1>
+    <div className="page-shell container-fluid p-2 p-md-4">
+      <div className="page-hero mb-4">
+        <h1 className="page-hero-title">
+          <i className="bi bi-speedometer2 me-2"></i>
+          Dashboard
+        </h1>
+        <p className="page-hero-subtitle">Vista general del estado del sistema y sus principales módulos</p>
+      </div>
 
       {loading ? (
         <div className="loading text-center py-5">
@@ -58,50 +61,50 @@ const Dashboard: React.FC = () => {
       ) : (
         <>
           {/* Stats Cards */}
-          <div className="row g-2 g-md-4 mb-4">
-            <div className="col-6 col-md-6 col-lg-3">
-              <div className="card dashboard-card bg-primary text-white h-100">
+          <div className="row g-3 g-xl-4 mb-4 metric-grid">
+            <div className="col-12 col-sm-6 col-xl-3">
+              <div className="card metric-card metric-primary text-white">
                 <div className="card-body stat-card text-center">
-                  <i className="bi bi-people icon mb-2" style={{ fontSize: '2rem', display: 'block' }}></i>
-                  <h3 className="card-title mb-1">{stats.totalAlumnos}</h3>
-                  <p className="card-text mb-0">Alumnos</p>
+                  <i className="bi bi-people metric-icon"></i>
+                  <div className="metric-value">{stats.totalAlumnos}</div>
+                  <p className="card-text mb-0 metric-label">Alumnos</p>
                 </div>
               </div>
             </div>
 
-            <div className="col-6 col-md-6 col-lg-3">
-              <div className="card dashboard-card bg-success text-white h-100">
+            <div className="col-12 col-sm-6 col-xl-3">
+              <div className="card metric-card metric-success text-white">
                 <div className="card-body stat-card text-center">
-                  <i className="bi bi-book icon mb-2" style={{ fontSize: '2rem', display: 'block' }}></i>
-                  <h3 className="card-title mb-1">{stats.totalCursos}</h3>
-                  <p className="card-text mb-0">Cursos</p>
+                  <i className="bi bi-book metric-icon"></i>
+                  <div className="metric-value">{stats.totalCursos}</div>
+                  <p className="card-text mb-0 metric-label">Cursos</p>
                 </div>
               </div>
             </div>
 
-            <div className="col-6 col-md-6 col-lg-3 mt-2 mt-md-0">
-              <div className="card dashboard-card bg-info text-white h-100">
+            <div className="col-12 col-sm-6 col-xl-3">
+              <div className="card metric-card metric-info text-white">
                 <div className="card-body stat-card text-center">
-                  <i className="bi bi-person-check icon mb-2" style={{ fontSize: '2rem', display: 'block' }}></i>
-                  <h3 className="card-title mb-1">{stats.totalProfesores}</h3>
-                  <p className="card-text mb-0">Profesores</p>
+                  <i className="bi bi-person-check metric-icon"></i>
+                  <div className="metric-value">{stats.totalProfesores}</div>
+                  <p className="card-text mb-0 metric-label">Profesores</p>
                 </div>
               </div>
             </div>
 
-            <div className="col-6 col-md-6 col-lg-3 mt-2 mt-md-0">
-              <div className="card dashboard-card bg-warning text-white h-100">
+            <div className="col-12 col-sm-6 col-xl-3">
+              <div className="card metric-card metric-warning text-white">
                 <div className="card-body stat-card text-center">
-                  <i className="bi bi-credit-card icon mb-2" style={{ fontSize: '2rem', display: 'block' }}></i>
-                  <h3 className="card-title mb-1">{stats.totalPagos}</h3>
-                  <p className="card-text mb-0">Pagos</p>
+                  <i className="bi bi-credit-card metric-icon"></i>
+                  <div className="metric-value">{stats.totalPagos}</div>
+                  <p className="card-text mb-0 metric-label">Pagos</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Info Cards */}
-          <div className="row g-2 g-md-4">
+          <div className="row g-3 g-xl-4">
             <div className="col-12 col-lg-6">
               <div className="card dashboard-card h-100">
                 <div className="card-header bg-primary text-white">
@@ -110,7 +113,7 @@ const Dashboard: React.FC = () => {
                     Resumen General
                   </h5>
                 </div>
-                <div className="card-body">
+                <div className="card-body p-4">
                   <p className="mb-2">
                     <strong>Total de Registros:</strong>{' '}
                     {stats.totalAlumnos +
@@ -137,7 +140,7 @@ const Dashboard: React.FC = () => {
                     Información del Sistema
                   </h5>
                 </div>
-                <div className="card-body">
+                <div className="card-body p-4">
                   <p className="mb-2">
                     <strong>Versión:</strong> 1.0.1
                   </p>

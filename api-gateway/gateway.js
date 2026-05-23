@@ -16,11 +16,39 @@ const GATEWAY_PORT = process.env.GATEWAY_PORT || 3000;
 const PERIODO_ACADEMICO_DEFECTO = process.env.PERIODO_ACADEMICO || `${new Date().getFullYear()}-1`;
 
 // Configuración de CORS
+// Permitimos localhost/127.0.0.1 en cualquier puerto para evitar bloqueos
+// cuando el frontend cambia de puerto por conflictos locales.
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(origin => origin.trim()).filter(Boolean);
+
 const corsOptions = {
-  origin: (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001').split(','),
+  origin: (origin, callback) => {
+    // Permitir solicitudes sin Origin (ej. llamadas desde curl o servidores)
+    if (!origin) return callback(null, true);
+
+    // Orígenes explícitos configurados en ALLOWED_ORIGINS
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+
+    try {
+      const parsed = new URL(origin);
+      const host = parsed.hostname;
+
+      // Aceptar localhost / 127.0.0.1 en cualquier puerto
+      if (host === 'localhost' || host === '127.0.0.1') return callback(null, true);
+
+      // Aceptar subdominios ngrok (públicos) para facilitar pruebas remotas
+      if (host.endsWith('.ngrok.io') || host.endsWith('.trycloudflare.com')) return callback(null, true);
+    } catch (err) {
+      // Si la URL no pudo parsearse, denegar
+      return callback(new Error(`Origen no permitido por CORS: ${origin}`), false);
+    }
+
+    return callback(new Error(`Origen no permitido por CORS: ${origin}`), false);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'Origin'],
+  exposedHeaders: ['Authorization'],
+  optionsSuccessStatus: 204
 };
 
 // Middlewares globales
