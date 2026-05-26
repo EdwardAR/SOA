@@ -75,6 +75,12 @@ const getProfesorIdPorUsuario = async (usuarioId) => {
   return profesor?.id || null;
 };
 
+const getNombreCursoDesdeProfesor = async (profesorId, nombreFallback = '') => {
+  const profesor = await getOne('SELECT especialidad FROM profesores WHERE id = ?', [profesorId]);
+  const nombreCurso = profesor?.especialidad?.trim();
+  return nombreCurso || nombreFallback.trim();
+};
+
 // ============================================
 // RUTAS DE AUTENTICACIÓN (Sin protección)
 // ============================================
@@ -1018,10 +1024,11 @@ app.post('/api/cursos', authMiddleware, requireRole(['director', 'administrativo
     return res.status(400).json(respuestaError('Faltan campos requeridos: nombre, codigo, grado, profesor_id'));
   }
   try {
+    const nombreCurso = await getNombreCursoDesdeProfesor(profesor_id, nombre);
     await runQuery(
       `INSERT INTO cursos (id, nombre, codigo, grado, seccion, profesor_id, salon, capacidad, horario_inicio, horario_fin, estado, fecha_creacion, fecha_actualizacion)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-      [id, nombre, codigo, grado, seccion || 'A', profesor_id, salon || null, capacidad || 40, horario_inicio || null, horario_fin || null, estado || 'activo']
+      [id, nombreCurso, codigo, grado, seccion || 'A', profesor_id, salon || null, capacidad || 40, horario_inicio || null, horario_fin || null, estado || 'activo']
     );
     res.status(201).json(respuestaExito({ id }, 'Curso creado exitosamente'));
   } catch (error) {
@@ -1031,11 +1038,12 @@ app.post('/api/cursos', authMiddleware, requireRole(['director', 'administrativo
 
 // PUT CURSOS
 app.put('/api/cursos/:id', authMiddleware, requireRole(['director', 'administrativo']), asyncHandler(async (req, res) => {
-  const { nombre, codigo, grado, capacidad } = req.body;
+  const { nombre, codigo, grado, capacidad, profesor_id, seccion, salon, horario_inicio, horario_fin, estado } = req.body;
   try {
+    const nombreCurso = profesor_id ? await getNombreCursoDesdeProfesor(profesor_id, nombre) : nombre;
     await runQuery(
-      `UPDATE cursos SET nombre = ?, codigo = ?, grado = ?, capacidad = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id = ?`,
-      [nombre, codigo, grado, capacidad, req.params.id]
+      `UPDATE cursos SET nombre = ?, codigo = ?, grado = ?, seccion = ?, profesor_id = ?, salon = ?, capacidad = ?, horario_inicio = ?, horario_fin = ?, estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id = ?`,
+      [nombreCurso, codigo, grado, seccion || 'A', profesor_id, salon || null, capacidad, horario_inicio || null, horario_fin || null, estado || 'activo', req.params.id]
     );
     res.json(respuestaExito({}, 'Curso actualizado exitosamente'));
   } catch (error) {

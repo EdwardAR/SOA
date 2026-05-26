@@ -59,31 +59,28 @@ app.get('/notificaciones/:id', asyncHandler(async (req, res) => {
 
 // POST crear notificación
 app.post('/notificaciones', asyncHandler(async (req, res) => {
-  const { usuario_id, tipo, asunto, mensaje, destinatario, evento_generador } = req.body;
+  const { usuario_id, destinatario_id, tipo, asunto, mensaje, destinatario, evento_generador, leida, fecha_lectura } = req.body;
+  const resolvedUserId = usuario_id || destinatario_id;
 
-  if (!usuario_id || !tipo || !asunto || !mensaje) {
+  if (!resolvedUserId || !mensaje) {
     return res.status(400).json(respuestaError('Datos incompletos requeridos', 'MISSING_DATA'));
-  }
-
-  if (!['email', 'sms', 'app'].includes(tipo)) {
-    return res.status(400).json(respuestaError('Tipo de notificación inválido', 'INVALID_TYPE'));
   }
 
   const notificacionId = generarId();
 
   await runQuery(
-    `INSERT INTO notificaciones (id, usuario_id, tipo, asunto, mensaje, estado, destinatario, evento_generador)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [notificacionId, usuario_id, tipo, asunto, mensaje, 'pendiente', destinatario || null, evento_generador || null]
+    `INSERT INTO notificaciones (id, destinatario_id, tipo, mensaje, leida, fecha_lectura, fecha_creacion)
+     VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+    [notificacionId, resolvedUserId, tipo || 'informacion', mensaje, leida ? 1 : 0, fecha_lectura || null]
   );
 
   res.status(201).json(respuestaExito(
     {
       id: notificacionId,
-      usuario_id,
-      tipo,
-      asunto,
-      estado: 'pendiente'
+      destinatario_id: resolvedUserId,
+      tipo: tipo || 'informacion',
+      mensaje,
+      leida: !!leida
     },
     'Notificación creada exitosamente',
     'NOTIFICACION_CREATED'
@@ -104,11 +101,12 @@ app.put('/notificaciones/:id', asyncHandler(async (req, res) => {
     return res.status(404).json(respuestaError('Notificación no encontrada', 'NOT_FOUND'));
   }
 
+  const camposPermitidos = ['destinatario_id', 'tipo', 'mensaje', 'leida', 'fecha_lectura'];
   const campos = [];
   const valores = [];
 
   for (const [clave, valor] of Object.entries(req.body)) {
-    if (valor !== undefined && clave !== 'id') {
+    if (valor !== undefined && clave !== 'id' && camposPermitidos.includes(clave)) {
       campos.push(`${clave} = ?`);
       valores.push(valor);
     }
@@ -116,11 +114,6 @@ app.put('/notificaciones/:id', asyncHandler(async (req, res) => {
 
   if (campos.length === 0) {
     return res.status(400).json(respuestaError('No hay campos para actualizar'));
-  }
-
-  // Si se actualiza el estado a leido, registrar fecha
-  if (req.body.estado === 'leido') {
-    campos.push('fecha_actualizacion = CURRENT_TIMESTAMP');
   }
 
   valores.push(id);

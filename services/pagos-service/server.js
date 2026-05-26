@@ -77,14 +77,30 @@ app.post('/pagos', asyncHandler(async (req, res) => {
   }
 
   const pagoId = generarId();
+  const payload = {
+    alumno_id: req.body.alumno_id,
+    monto: req.body.monto,
+    concepto: req.body.concepto,
+    periodo_academico: req.body.periodo_academico || null,
+    estado: req.body.estado || 'pendiente',
+    metodo_pago: req.body.metodo_pago || null,
+    fecha_vencimiento: req.body.fecha_vencimiento || null,
+    fecha_pago: req.body.fecha_pago || null,
+    referencia_pago: req.body.referencia_pago || null,
+    numero_comprobante: req.body.numero_comprobante || null,
+    observaciones: req.body.observaciones || null,
+    deuda_pendiente: req.body.deuda_pendiente !== undefined ? req.body.deuda_pendiente : 1
+  };
 
   await runQuery(
     `INSERT INTO pagos (id, alumno_id, monto, concepto, periodo_academico,
-     estado, metodo_pago, fecha_vencimiento)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [pagoId, req.body.alumno_id, req.body.monto, req.body.concepto,
-     req.body.periodo_academico || null, req.body.estado || 'pendiente',
-     req.body.metodo_pago || null, req.body.fecha_vencimiento || null]
+     estado, metodo_pago, fecha_vencimiento, fecha_pago, referencia_pago,
+     numero_comprobante, observaciones, deuda_pendiente)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [pagoId, payload.alumno_id, payload.monto, payload.concepto,
+     payload.periodo_academico, payload.estado, payload.metodo_pago,
+     payload.fecha_vencimiento, payload.fecha_pago, payload.referencia_pago,
+     payload.numero_comprobante, payload.observaciones, payload.deuda_pendiente]
   );
 
   res.status(201).json(respuestaExito(
@@ -107,11 +123,12 @@ app.put('/pagos/:id', asyncHandler(async (req, res) => {
     return res.status(404).json(respuestaError('Pago no encontrado', 'NOT_FOUND'));
   }
 
+  const camposPermitidos = ['alumno_id', 'monto', 'concepto', 'periodo_academico', 'estado', 'metodo_pago', 'fecha_vencimiento', 'fecha_pago', 'referencia_pago', 'numero_comprobante', 'observaciones', 'deuda_pendiente'];
   const campos = [];
   const valores = [];
 
   for (const [clave, valor] of Object.entries(req.body)) {
-    if (valor !== undefined && clave !== 'id') {
+    if (valor !== undefined && clave !== 'id' && camposPermitidos.includes(clave)) {
       campos.push(`${clave} = ?`);
       valores.push(valor);
     }

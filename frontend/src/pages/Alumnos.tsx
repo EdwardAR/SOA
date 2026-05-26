@@ -32,6 +32,7 @@ const Alumnos: React.FC = () => {
     numero_matricula: '',
     numero_documento: '',
   });
+  const [emailLocal, setEmailLocal] = useState('');
   const { sortConfig, requestSort, sortedRows: alumnosOrdenados } = useSortableData(alumnos, 'numero_matricula');
   const { user } = useAuth();
   const role = user?.tipo_usuario;
@@ -90,6 +91,8 @@ const Alumnos: React.FC = () => {
         numero_documento: alumno.numero_documento || '',
         estado: alumno.estado || 'activo',
       });
+      const local = (alumno.email_contacto || '').split('@')[0] || '';
+      setEmailLocal(local);
       setEditingId(alumno.id);
     } else {
       setFormData({
@@ -102,6 +105,7 @@ const Alumnos: React.FC = () => {
         estado: 'activo',
       });
       setEditingId(null);
+      setEmailLocal('');
     }
     setShowModal(true);
   };
@@ -117,6 +121,7 @@ const Alumnos: React.FC = () => {
       numero_documento: '',
     });
     setEditingId(null);
+    setEmailLocal('');
   };
 
   const handleSave = async () => {
@@ -127,11 +132,14 @@ const Alumnos: React.FC = () => {
         return;
       }
 
+      const payload: any = { ...formData };
+      if (emailLocal) payload.email_contacto = `${emailLocal}@colegiofuturo.edu`;
+
       if (editingId) {
-        await alumnosService.update(editingId, formData);
+        await alumnosService.update(editingId, payload);
         setSuccess('Alumno actualizado correctamente');
       } else {
-        await alumnosService.create(formData);
+        await alumnosService.create(payload);
         setSuccess('Alumno creado correctamente');
       }
       handleCloseModal();
@@ -352,17 +360,22 @@ const Alumnos: React.FC = () => {
             />
           </div>
           <div className="mb-3">
-            <label htmlFor="email_contacto" className="form-label">
+            <label htmlFor="email_local" className="form-label">
               Email de Contacto
             </label>
-            <input
-              type="email"
-              className="form-control"
-              id="email_contacto"
-              name="email_contacto"
-              value={formData.email_contacto}
-              onChange={handleInputChange}
-            />
+            <div className="input-group">
+              <input
+                type="text"
+                className="form-control"
+                id="email_local"
+                name="email_local"
+                value={emailLocal}
+                onChange={(e) => setEmailLocal(e.target.value)}
+                placeholder="nombre.usuario"
+              />
+              <span className="input-group-text">@colegiofuturo.edu</span>
+            </div>
+            <div className="form-text">Solo escribe la parte antes de @colegiofuturo.edu</div>
           </div>
           <div className="mb-3">
             <label htmlFor="telefono" className="form-label">

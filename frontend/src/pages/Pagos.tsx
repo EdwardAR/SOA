@@ -23,11 +23,51 @@ const CONCEPTOS_PAGO = [
   'Matrícula',
   'Cuota mensual - Mayo',
   'Cuota mensual - Junio',
+  'Cuota mensual - Julio',
+  'Cuota mensual - Agosto',
+  'Cuota mensual - Setiembre',
+  'Cuota mensual - Octubre',
+  'Cuota mensual - Noviembre',
+  'Cuota mensual - Diciembre',
   'Uniforme',
   'Carnet estudiantil',
   'Material educativo',
   'Examen extraordinario'
 ];
+
+// Montos fijos por concepto — ajusta según política del colegio
+const CONCEPTOS_MONTO: Record<string, number> = {
+  'Matrícula': 230.00,
+  'Cuota mensual - Mayo': 420.00,
+  'Cuota mensual - Junio': 420.00,
+  'Cuota mensual - Julio': 420.00,
+  'Cuota mensual - Agosto': 420.00,
+  'Cuota mensual - Setiembre': 420.00,
+  'Cuota mensual - Octubre': 420.00,
+  'Cuota mensual - Noviembre': 420.00,
+  'Cuota mensual - Diciembre': 420.00,
+  'Uniforme': 200.00,
+  'Carnet estudiantil': 150.00,
+  'Material educativo': 120.00,
+  'Examen extraordinario': 50.00
+};
+
+const esConceptoFijo = (concepto: string) => Object.prototype.hasOwnProperty.call(CONCEPTOS_MONTO, concepto);
+
+const formatDateForInput = (value?: string | null) => {
+  if (!value) return new Date().toISOString().split('T')[0];
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return new Date().toISOString().split('T')[0];
+  return parsed.toISOString().split('T')[0];
+};
+
+const normalizeEstadoPago = (value?: string | null) => {
+  const estado = (value || 'pendiente').toString().toLowerCase();
+  if (['pendiente', 'pagado', 'vencido', 'cancelado', 'rechazado'].includes(estado)) return estado;
+  return 'pendiente';
+};
+
+const normalizeMetodoPago = (value?: string | null) => (value || 'transferencia').toString().toLowerCase();
 
 const Pagos: React.FC = () => {
   const [pagos, setPagos] = useState<Pago[]>([]);
@@ -85,16 +125,26 @@ const Pagos: React.FC = () => {
     if (pago) {
       if (!allowEdit) return alert('No autorizado para editar pagos');
       setEditingId(pago.id || null);
-      setFormData(pago);
+      setFormData({
+        id: pago.id,
+        alumno_id: pago.alumno_id,
+        monto: Number(pago.monto) || 0,
+        concepto: pago.concepto || '',
+        estado: normalizeEstadoPago(pago.estado || pago.estado_pago),
+        fecha_pago: formatDateForInput(pago.fecha_pago),
+        metodo_pago: normalizeMetodoPago(pago.metodo_pago),
+        estado_pago: pago.estado_pago,
+        observaciones: pago.observaciones || null
+      });
     } else {
       if (!allowCreate) return alert('No autorizado para crear pagos');
       setEditingId(null);
       setFormData({
-        alumno_id: 0,
+        alumno_id: '',
         monto: 0,
         concepto: '',
         estado: 'pendiente',
-        fecha_pago: new Date().toISOString().split('T')[0],
+        fecha_pago: formatDateForInput(null),
         metodo_pago: 'transferencia'
       });
     }
@@ -113,11 +163,22 @@ const Pagos: React.FC = () => {
     }
 
     try {
+      const payload = {
+        alumno_id: formData.alumno_id,
+        monto: formData.monto,
+        concepto: formData.concepto,
+        estado: normalizeEstadoPago(formData.estado),
+        fecha_pago: formatDateForInput(formData.fecha_pago),
+        metodo_pago: normalizeMetodoPago(formData.metodo_pago),
+        estado_pago: formData.estado_pago,
+        observaciones: formData.observaciones
+      };
+
       if (editingId) {
-        await pagosService.update(editingId, formData);
+        await pagosService.update(editingId, payload);
         setSuccess('Pago actualizado correctamente');
       } else {
-        await pagosService.create(formData);
+        await pagosService.create(payload);
         setSuccess('Pago registrado correctamente');
       }
       handleCloseModal();
@@ -381,7 +442,11 @@ const Pagos: React.FC = () => {
           <select
             className="form-select"
             value={formData.concepto}
-            onChange={(e) => setFormData({ ...formData, concepto: e.target.value })}
+            onChange={(e) => {
+              const concepto = e.target.value;
+              const monto = CONCEPTOS_MONTO[concepto];
+              setFormData({ ...formData, concepto, monto: monto !== undefined ? monto : formData.monto });
+            }}
           >
             <option value="">Seleccionar concepto</option>
             {CONCEPTOS_PAGO.map((concepto) => (
@@ -408,18 +473,24 @@ const Pagos: React.FC = () => {
             onChange={(e) => setFormData({ ...formData, monto: parseFloat(e.target.value) })}
             placeholder="0.00"
             step="0.01"
+            readOnly={esConceptoFijo(formData.concepto) && formData.concepto !== 'Otro'}
           />
+          {esConceptoFijo(formData.concepto) && formData.concepto !== 'Otro' && (
+            <div className="form-text">El monto se carga automáticamente según el concepto seleccionado.</div>
+          )}
         </div>
         <div className="mb-3">
           <label className="form-label">Estado</label>
           <select
-            className="form-control"
-            value={formData.estado}
+            className="form-select"
+            value={normalizeEstadoPago(formData.estado)}
             onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
           >
             <option value="pendiente">Pendiente</option>
             <option value="pagado">Pagado</option>
             <option value="vencido">Vencido</option>
+            <option value="cancelado">Cancelado</option>
+            <option value="rechazado">Rechazado</option>
           </select>
         </div>
         <div className="mb-3">
@@ -427,15 +498,15 @@ const Pagos: React.FC = () => {
           <input
             type="date"
             className="form-control"
-            value={formData.fecha_pago}
+            value={formatDateForInput(formData.fecha_pago)}
             onChange={(e) => setFormData({ ...formData, fecha_pago: e.target.value })}
           />
         </div>
         <div className="mb-3">
           <label className="form-label">Método de Pago</label>
           <select
-            className="form-control"
-            value={formData.metodo_pago}
+            className="form-select"
+            value={normalizeMetodoPago(formData.metodo_pago)}
             onChange={(e) => setFormData({ ...formData, metodo_pago: e.target.value })}
           >
             <option value="transferencia">Transferencia</option>

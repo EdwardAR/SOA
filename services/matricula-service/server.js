@@ -109,10 +109,14 @@ app.post('/matriculas', asyncHandler(async (req, res) => {
   }
 
   // Verificar que el curso existe y está disponible
-  const curso = await getOne(
+  let curso = await getOne(
     'SELECT * FROM cursos WHERE id = ? AND periodo_academico = ?',
     [curso_id, periodo_academico]
   );
+
+  if (!curso) {
+    curso = await getOne('SELECT * FROM cursos WHERE id = ?', [curso_id]);
+  }
 
   if (!curso) {
     return res.status(404).json(respuestaError('Curso no encontrado o no disponible', 'COURSE_NOT_FOUND'));
@@ -170,11 +174,12 @@ app.put('/matriculas/:id', asyncHandler(async (req, res) => {
   }
 
   // Construir query de actualización dinámicamente
+  const camposPermitidos = ['alumno_id', 'curso_id', 'aula_asignada', 'periodo_academico', 'fecha_matricula', 'estado', 'observaciones'];
   const campos = [];
   const valores = [];
 
   for (const [clave, valor] of Object.entries(actualizaciones)) {
-    if (valor !== undefined && clave !== 'id') {
+    if (valor !== undefined && clave !== 'id' && camposPermitidos.includes(clave)) {
       campos.push(`${clave} = ?`);
       valores.push(valor);
     }

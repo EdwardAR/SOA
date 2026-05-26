@@ -74,10 +74,17 @@ const Cursos: React.FC = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: name === 'capacidad' ? parseInt(value) : value,
-    }));
+    setFormData((prev) => {
+      const next = { ...prev, [name]: name === 'capacidad' ? parseInt(value) : value } as any;
+      // When a professor is selected, link the course name to the professor's especialidad
+      if (name === 'profesor_id') {
+        const prof = profesores.find((p) => p.id === value);
+        if (prof) {
+          next.nombre = prof.especialidad || prev.nombre;
+        }
+      }
+      return next;
+    });
   };
 
   const handleOpenModal = (curso?: any) => {
@@ -86,7 +93,7 @@ const Cursos: React.FC = () => {
       setEditingId(curso.id);
     } else {
       setFormData({
-        nombre: '',
+        nombre: profesores[0]?.especialidad || '',
         codigo: '',
         grado: '',
         capacidad: 40,
@@ -289,8 +296,10 @@ const Cursos: React.FC = () => {
               name="nombre"
               value={formData.nombre}
               onChange={handleInputChange}
+              readOnly
               required
             />
+            <div className="form-text">Se completa automáticamente según la especialidad del profesor.</div>
           </div>
           <div className="mb-3">
             <label htmlFor="codigo" className="form-label">

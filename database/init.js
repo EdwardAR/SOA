@@ -285,7 +285,7 @@ async function seedDatabase() {
       {
         id: uuidv4(),
         codigo: 'SEC-1A',
-        nombre: 'Secundaria 1ro Grado A',
+        nombre: profesores[0].especialidad,
         grado: '1ro',
         seccion: 'A',
         profesor_id: profesores[0].id,
@@ -296,7 +296,7 @@ async function seedDatabase() {
       {
         id: uuidv4(),
         codigo: 'SEC-2A',
-        nombre: 'Secundaria 2do Grado A',
+        nombre: profesores[1].especialidad,
         grado: '2do',
         seccion: 'A',
         profesor_id: profesores[1].id,
@@ -307,7 +307,7 @@ async function seedDatabase() {
       {
         id: uuidv4(),
         codigo: 'SEC-3A',
-        nombre: 'Secundaria 3ro Grado A',
+        nombre: profesores[2].especialidad,
         grado: '3ro',
         seccion: 'A',
         profesor_id: profesores[2].id,
@@ -318,7 +318,7 @@ async function seedDatabase() {
       {
         id: uuidv4(),
         codigo: 'SEC-4A',
-        nombre: 'Secundaria 4to Grado A',
+        nombre: profesores[3].especialidad,
         grado: '4to',
         seccion: 'A',
         profesor_id: profesores[3].id,
@@ -329,7 +329,7 @@ async function seedDatabase() {
       {
         id: uuidv4(),
         codigo: 'SEC-5A',
-        nombre: 'Secundaria 5to Grado A',
+        nombre: profesores[4].especialidad,
         grado: '5to',
         seccion: 'A',
         profesor_id: profesores[4].id,
@@ -340,7 +340,7 @@ async function seedDatabase() {
       {
         id: uuidv4(),
         codigo: 'SEC-5B',
-        nombre: 'Secundaria 5to Grado B',
+        nombre: profesores[5].especialidad,
         grado: '5to',
         seccion: 'B',
         profesor_id: profesores[5].id,
@@ -382,58 +382,63 @@ async function seedDatabase() {
     }
     console.log('✓ Matrículas creadas (2 matrículas base)');
 
+    const MONTO_MATRICULA = 230.00;
+    const MONTO_CUOTA_MENSUAL = 420.00;
+    const cuotasMensuales = [
+      { concepto: 'Cuota mensual - Mayo', fecha_pago: '2026-05-05 10:00:00' },
+      { concepto: 'Cuota mensual - Junio', fecha_pago: '2026-06-05 10:00:00' },
+      { concepto: 'Cuota mensual - Julio', fecha_pago: '2026-07-05 10:00:00' },
+      { concepto: 'Cuota mensual - Agosto', fecha_pago: '2026-08-05 10:00:00' },
+      { concepto: 'Cuota mensual - Setiembre', fecha_pago: '2026-09-05 10:00:00' },
+      { concepto: 'Cuota mensual - Octubre', fecha_pago: '2026-10-05 10:00:00' },
+      { concepto: 'Cuota mensual - Noviembre', fecha_pago: '2026-11-05 10:00:00' },
+      { concepto: 'Cuota mensual - Diciembre', fecha_pago: '2026-12-05 10:00:00' }
+    ];
+
+    const crearCuotasMensuales = (alumnoId, mesesPagados) => cuotasMensuales.map((cuota, index) => ({
+      id: uuidv4(),
+      alumno_id: alumnoId,
+      monto: MONTO_CUOTA_MENSUAL,
+      concepto: cuota.concepto,
+      estado_pago: index < mesesPagados ? 'pagado' : 'pendiente',
+      estado: index < mesesPagados ? 'pagado' : 'pendiente',
+      fecha_pago: index < mesesPagados ? cuota.fecha_pago : null,
+      metodo_pago: index < mesesPagados ? 'transferencia' : null,
+      observaciones: index < mesesPagados ? 'Cuota mensual cancelada' : 'Cuota mensual pendiente'
+    }));
+
     // Insertar pagos
     const pagos = [
       {
         id: uuidv4(),
         alumno_id: alumnoIds[0],
-        monto: 350.00,
-        concepto: 'Pensión Marzo 2026',
-        periodo_academico: '2026-1',
+        monto: MONTO_MATRICULA,
+        concepto: 'Matrícula 2026',
         estado_pago: 'pagado',
         estado: 'pagado',
         fecha_pago: '2026-03-05 10:00:00',
-        metodo_pago: 'transferencia'
+        metodo_pago: 'transferencia',
+        observaciones: 'Pago de matrícula'
       },
+      ...crearCuotasMensuales(alumnoIds[0], 2),
       {
         id: uuidv4(),
         alumno_id: alumnoIds[1],
-        monto: 350.00,
-        concepto: 'Pensión Marzo 2026',
-        periodo_academico: '2026-1',
-        estado_pago: 'pendiente',
-        estado: 'pendiente',
-        fecha_pago: null,
-        metodo_pago: null
-      },
-      {
-        id: uuidv4(),
-        alumno_id: alumnoIds[1],
-        monto: 200.00,
-        concepto: 'Uniforme Escolar',
-        periodo_academico: '2026-1',
-        estado_pago: 'pendiente',
-        estado: 'pendiente',
-        fecha_pago: null,
-        metodo_pago: null
-      },
-      {
-        id: uuidv4(),
-        alumno_id: alumnoIds[0],
-        monto: 150.00,
-        concepto: 'Carnet Estudiantil',
-        periodo_academico: '2026-1',
+        monto: MONTO_MATRICULA,
+        concepto: 'Matrícula 2026',
         estado_pago: 'pagado',
         estado: 'pagado',
-        fecha_pago: '2026-03-05 10:15:00',
-        metodo_pago: 'efectivo'
-      }
+        fecha_pago: '2026-03-05 10:10:00',
+        metodo_pago: 'efectivo',
+        observaciones: 'Pago de matrícula'
+      },
+      ...crearCuotasMensuales(alumnoIds[1], 1)
     ];
 
     for (const pago of pagos) {
       await insertPago(pago);
     }
-    console.log('✓ Pagos creados (4 pagos)');
+    console.log(`✓ Pagos creados (${pagos.length} pagos base)`);
 
     // Insertar asistencias
     const asistencias = [
@@ -647,6 +652,7 @@ async function seedDatabase() {
       extraAlumnoIds.push(alumnoId);
 
       const cursoAleatorio = cursos[(index + 2) % cursos.length];
+      const mesesPagados = familia.alumno.deuda ? 1 : 2;
       await insertMatricula({
         id: uuidv4(),
         alumno_id: alumnoId,
@@ -659,14 +665,18 @@ async function seedDatabase() {
       await insertPago({
         id: uuidv4(),
         alumno_id: alumnoId,
-        monto: 320 + (index * 15),
-        concepto: `Pensión Mensual ${cursoAleatorio.nombre}`,
-        periodo_academico: '2026-1',
-        estado_pago: familia.alumno.deuda ? 'pendiente' : 'pagado',
-        estado: familia.alumno.deuda ? 'pendiente' : 'pagado',
-        fecha_pago: familia.alumno.deuda ? null : '2026-04-01 09:00:00',
-        metodo_pago: familia.alumno.deuda ? null : 'transferencia'
+        monto: MONTO_MATRICULA,
+        concepto: 'Matrícula 2026',
+        estado_pago: 'pagado',
+        estado: 'pagado',
+        fecha_pago: '2026-03-15 09:00:00',
+        metodo_pago: 'transferencia',
+        observaciones: 'Pago de matrícula'
       });
+
+      for (const cuota of crearCuotasMensuales(alumnoId, mesesPagados)) {
+        await insertPago(cuota);
+      }
 
       await insertAsistencia({
         id: uuidv4(),
@@ -707,7 +717,7 @@ async function seedDatabase() {
     const totalAlumnos = alumnos.length + familias.length;
     const totalCursos = cursos.length;
     const totalMatriculas = matriculas.length + familias.length;
-    const totalPagos = pagos.length + familias.length;
+    const totalPagos = pagos.length + (familias.length * (1 + cuotasMensuales.length));
     const totalAsistencias = asistencias.length + familias.length;
     const totalCalificaciones = calificaciones.length + familias.length;
     const totalNotificaciones = notificaciones.length + familias.length;

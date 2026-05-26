@@ -76,7 +76,13 @@ const Notificaciones: React.FC = () => {
     if (notificacion) {
       if (!allowEdit) return alert('No autorizado para editar notificaciones');
       setEditingId(notificacion.id || null);
-      setFormData(notificacion as Notificacion);
+      setFormData({
+        id: notificacion.id,
+        destinatario_id: notificacion.destinatario_id,
+        tipo: notificacion.tipo,
+        mensaje: notificacion.mensaje,
+        leida: !!notificacion.leida
+      });
     } else {
       if (!allowCreate) return alert('No autorizado para crear notificaciones');
       setEditingId(null);
@@ -102,11 +108,18 @@ const Notificaciones: React.FC = () => {
     }
 
     try {
+      const payload = {
+        destinatario_id: formData.destinatario_id,
+        tipo: formData.tipo,
+        mensaje: formData.mensaje,
+        leida: !!formData.leida
+      };
+
       if (editingId) {
-        await notificacionesService.update(editingId, formData);
+        await notificacionesService.update(editingId, payload);
         setSuccess('Notificación actualizada correctamente');
       } else {
-        await notificacionesService.create(formData);
+        await notificacionesService.create(payload);
         setSuccess('Notificación enviada correctamente');
       }
       handleCloseModal();

@@ -81,7 +81,8 @@ const Matriculas: React.FC = () => {
         curso_id: matricula.curso_id,
         periodo_academico: matricula.periodo_academico || `${new Date().getFullYear()}-1`,
         fecha_matricula: matricula.fecha_matricula,
-        estado: matricula.estado || 'activa'
+        estado: matricula.estado || 'activa',
+        observaciones: matricula.observaciones || ''
       });
     } else {
       if (!allowCreate) return alert('No autorizado para crear matrícula');
@@ -91,7 +92,8 @@ const Matriculas: React.FC = () => {
         curso_id: '',
         periodo_academico: `${new Date().getFullYear()}-1`,
         fecha_matricula: new Date().toISOString().split('T')[0],
-        estado: 'activa'
+        estado: 'activa',
+        observaciones: ''
       });
     }
     setShowModal(true);
@@ -110,11 +112,20 @@ const Matriculas: React.FC = () => {
 
     try {
       setError('');
+      const payload = {
+        alumno_id: formData.alumno_id,
+        curso_id: formData.curso_id,
+        periodo_academico: formData.periodo_academico,
+        fecha_matricula: formData.fecha_matricula,
+        estado: formData.estado,
+        observaciones: formData.observaciones
+      };
+
       if (editingId) {
-        await matriculasService.update(editingId, formData);
+        await matriculasService.update(editingId, payload);
         setSuccess('Matrícula actualizada correctamente');
       } else {
-        await matriculasService.create(formData);
+        await matriculasService.create(payload);
         setSuccess('Matrícula registrada correctamente');
       }
       handleCloseModal();
