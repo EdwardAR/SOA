@@ -41,6 +41,8 @@ Si quieres editarlo después, como mínimo asegúrate de tener `JWT_SECRET`, `GA
 npm run db:init
 ```
 
+Este comando ya no borra una base existente. Si quieres regenerarla desde cero, borra `database/colegio.db` o ejecuta `RESET_DB=true npm run db:init`.
+
 5) Levanta el backend completo. Este comando inicia el API Gateway y todos los microservicios definidos en `package.json`:
 
 ```powershell
@@ -150,6 +152,7 @@ Las secciones académicas del seed están limitadas a secundaria de 1ro a 5to y 
 - Si el login no responde desde el frontend, revisa que el gateway esté corriendo en `http://localhost:3000` y que `ALLOWED_ORIGINS` incluya el puerto del frontend.
 - Si el frontend arrancó en otro puerto, no debería fallar: el gateway acepta `localhost`/`127.0.0.1` en cualquier puerto.
 - Si quieres reiniciar la base de datos, vuelve a ejecutar `npm run db:init` desde la raíz.
+- Si quieres reiniciar la base de datos desde cero sin tocar el resto del proyecto, usa `RESET_DB=true npm run db:init`.
 - `npm run db:init` puede mostrar advertencias de índices antiguos; en este proyecto eso no siempre significa error, mientras el proceso termine bien.
 
 ## Estructura general

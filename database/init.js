@@ -7,6 +7,12 @@ const { v4: uuidv4 } = require('uuid');
 
 const DB_PATH = process.env.DB_PATH || './database/colegio.db';
 const dbDir = path.dirname(DB_PATH);
+const shouldResetDb = process.env.RESET_DB === 'true';
+
+if (fs.existsSync(DB_PATH) && !shouldResetDb) {
+  console.log('✓ Base de datos existente preservada:', DB_PATH);
+  process.exit(0);
+}
 
 // Asegurar que el directorio existe
 if (!fs.existsSync(dbDir)) {
