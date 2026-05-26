@@ -192,6 +192,24 @@ app.put('/pagos/:id/procesar', asyncHandler(async (req, res) => {
   ));
 }));
 
+// DELETE pago
+app.delete('/pagos/:id', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  if (!validadores.esUUIDValido(id)) {
+    return res.status(400).json(respuestaError('ID inválido', 'INVALID_ID'));
+  }
+
+  const pago = await getOne('SELECT id FROM pagos WHERE id = ?', [id]);
+  if (!pago) {
+    return res.status(404).json(respuestaError('Pago no encontrado', 'NOT_FOUND'));
+  }
+
+  await runQuery('DELETE FROM pagos WHERE id = ?', [id]);
+
+  res.json(respuestaExito(null, 'Pago eliminado', 'PAGO_DELETED'));
+}));
+
 // GET pagos por alumno (RN-004)
 app.get('/pagos-alumno/:alumno_id', asyncHandler(async (req, res) => {
   const { alumno_id } = req.params;

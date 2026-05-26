@@ -171,6 +171,24 @@ app.put('/asistencia/:id', asyncHandler(async (req, res) => {
   res.json(respuestaExito(asistenciaActualizada, 'Asistencia actualizada', 'ASISTENCIA_UPDATED'));
 }));
 
+// DELETE asistencia
+app.delete('/asistencia/:id', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  if (!validadores.esUUIDValido(id)) {
+    return res.status(400).json(respuestaError('ID inválido', 'INVALID_ID'));
+  }
+
+  const asistencia = await getOne('SELECT id FROM asistencias WHERE id = ?', [id]);
+  if (!asistencia) {
+    return res.status(404).json(respuestaError('Asistencia no encontrada', 'NOT_FOUND'));
+  }
+
+  await runQuery('DELETE FROM asistencias WHERE id = ?', [id]);
+
+  res.json(respuestaExito(null, 'Asistencia eliminada', 'ASISTENCIA_DELETED'));
+}));
+
 // GET asistencias por alumno con estadísticas
 app.get('/asistencia-alumno/:alumno_id', asyncHandler(async (req, res) => {
   const { alumno_id } = req.params;

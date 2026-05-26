@@ -332,12 +332,11 @@ const Cursos: React.FC = () => {
               onChange={handleInputChange}
             >
               <option value="">Seleccionar grado</option>
-              <option value="4to">4to Primaria</option>
-              <option value="5to">5to Primaria</option>
-              <option value="6to">6to Primaria</option>
               <option value="1ro-sec">1ro Secundaria</option>
               <option value="2do-sec">2do Secundaria</option>
               <option value="3ro-sec">3ro Secundaria</option>
+              <option value="4to-sec">4to Secundaria</option>
+              <option value="5to-sec">5to Secundaria</option>
             </select>
           </div>
           <div className="mb-3">

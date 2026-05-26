@@ -132,7 +132,7 @@ const Asistencia: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!window.confirm('¿Estás seguro de eliminar este registro?')) return;
 
     try {

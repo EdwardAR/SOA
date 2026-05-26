@@ -35,21 +35,21 @@ const CONCEPTOS_PAGO = [
   'Examen extraordinario'
 ];
 
-// Montos fijos por concepto — ajusta según política del colegio
+// Montos fijos por concepto en Soles — ajusta según política del colegio
 const CONCEPTOS_MONTO: Record<string, number> = {
-  'Matrícula': 230.00,
-  'Cuota mensual - Mayo': 420.00,
-  'Cuota mensual - Junio': 420.00,
-  'Cuota mensual - Julio': 420.00,
-  'Cuota mensual - Agosto': 420.00,
-  'Cuota mensual - Setiembre': 420.00,
-  'Cuota mensual - Octubre': 420.00,
-  'Cuota mensual - Noviembre': 420.00,
-  'Cuota mensual - Diciembre': 420.00,
-  'Uniforme': 200.00,
-  'Carnet estudiantil': 150.00,
-  'Material educativo': 120.00,
-  'Examen extraordinario': 50.00
+  'Matrícula': 850.00,
+  'Cuota mensual - Mayo': 1550.00,
+  'Cuota mensual - Junio': 1550.00,
+  'Cuota mensual - Julio': 1550.00,
+  'Cuota mensual - Agosto': 1550.00,
+  'Cuota mensual - Setiembre': 1550.00,
+  'Cuota mensual - Octubre': 1550.00,
+  'Cuota mensual - Noviembre': 1550.00,
+  'Cuota mensual - Diciembre': 1550.00,
+  'Uniforme': 740.00,
+  'Carnet estudiantil': 555.00,
+  'Material educativo': 444.00,
+  'Examen extraordinario': 185.00
 };
 
 const esConceptoFijo = (concepto: string) => Object.prototype.hasOwnProperty.call(CONCEPTOS_MONTO, concepto);
@@ -191,7 +191,7 @@ const Pagos: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!window.confirm('¿Estás seguro de eliminar este pago?')) return;
 
     try {
@@ -255,7 +255,7 @@ const Pagos: React.FC = () => {
           <div className="card dashboard-card border-success">
             <div className="card-body text-center">
               <h6 className="card-title text-muted">Pagado</h6>
-              <h3 className="text-success">${totals.totalPagado.toFixed(2)}</h3>
+              <h3 className="text-success">S/. {totals.totalPagado.toFixed(2)}</h3>
             </div>
           </div>
         </div>
@@ -263,7 +263,7 @@ const Pagos: React.FC = () => {
           <div className="card dashboard-card border-danger">
             <div className="card-body text-center">
               <h6 className="card-title text-muted">Pendiente</h6>
-              <h3 className="text-danger">${totals.totalPendiente.toFixed(2)}</h3>
+              <h3 className="text-danger">S/. {totals.totalPendiente.toFixed(2)}</h3>
             </div>
           </div>
         </div>
@@ -271,7 +271,7 @@ const Pagos: React.FC = () => {
           <div className="card dashboard-card border-primary">
             <div className="card-body text-center">
               <h6 className="card-title text-muted">Total</h6>
-              <h3 className="text-primary">${totals.total.toFixed(2)}</h3>
+              <h3 className="text-primary">S/. {totals.total.toFixed(2)}</h3>
             </div>
           </div>
         </div>
@@ -322,7 +322,7 @@ const Pagos: React.FC = () => {
               <div className="col-md-4">
                 <div className="p-3 bg-light rounded border">
                   <div className="text-muted small">Monto total</div>
-                  <div className="fs-4 fw-bold">${totals.total.toFixed(2)}</div>
+                  <div className="fs-4 fw-bold">S/. {totals.total.toFixed(2)}</div>
                 </div>
               </div>
             </div>
@@ -373,7 +373,7 @@ const Pagos: React.FC = () => {
                           <div className="fw-semibold">{pago.concepto}</div>
                           <small className="text-muted">{pago.observaciones || pago.estado_pago || 'Registro de pago'}</small>
                         </td>
-                        <td>${pago.monto.toFixed(2)}</td>
+                        <td>S/. {pago.monto.toFixed(2)}</td>
                         <td>
                           <span className={`badge bg-${getPagoBadge(pago.estado)}`}>
                             {pago.estado}

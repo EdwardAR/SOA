@@ -49,10 +49,10 @@ export const matriculasService = createCrudService('/matriculas');
 export const pagosService = createCrudService('/pagos');
 
 // Asistencia
-export const asistenciaService = createCrudService('/asistencia', false);
+export const asistenciaService = createCrudService('/asistencia', true);
 
 // Calificaciones
-export const calificacionesService = createCrudService('/calificaciones', false);
+export const calificacionesService = createCrudService('/calificaciones', true);
 
 // Notificaciones
 export const notificacionesService = {
