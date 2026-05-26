@@ -31,22 +31,22 @@ export const authService = {
 };
 
 // Alumnos
-export const alumnosService = createCrudService('/alumnos');
+export const alumnosService = createCrudService('/alumnos', true);
 
 // Usuarios
 export const usuariosService = createCrudService('/usuarios');
 
 // Cursos
-export const cursosService = createCrudService('/cursos');
+export const cursosService = createCrudService('/cursos', true);
 
 // Profesores
-export const profesoresService = createCrudService('/profesores');
+export const profesoresService = createCrudService('/profesores', true);
 
 // Matrículas
-export const matriculasService = createCrudService('/matriculas');
+export const matriculasService = createCrudService('/matriculas', true);
 
 // Pagos
-export const pagosService = createCrudService('/pagos');
+export const pagosService = createCrudService('/pagos', true);
 
 // Asistencia
 export const asistenciaService = createCrudService('/asistencia', true);

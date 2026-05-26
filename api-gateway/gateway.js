@@ -1009,10 +1009,26 @@ app.put('/api/alumnos/:id', authMiddleware, requireRole(['administrativo', 'dire
 // DELETE ALUMNOS (marcar como inactivo)
 app.delete('/api/alumnos/:id', authMiddleware, requireRole(['administrativo', 'director']), asyncHandler(async (req, res) => {
   try {
-    await runQuery('UPDATE alumnos SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id = ?', ['inactivo', req.params.id]);
-    res.json(respuestaExito({}, 'Alumno desactivado'));
+    const { id } = req.params;
+    const alumno = await getOne('SELECT id, usuario_id FROM alumnos WHERE id = ?', [id]);
+    if (!alumno) {
+      return res.status(404).json(respuestaError('Alumno no encontrado'));
+    }
+
+    // Eliminar en cascada
+    const matriculas = await getAll('SELECT id FROM matriculas WHERE alumno_id = ?', [id]);
+    for (const matricula of matriculas) {
+      await runQuery('DELETE FROM asistencias WHERE alumno_id = ? AND curso_id IN (SELECT curso_id FROM matriculas WHERE id = ?)', [id, matricula.id]);
+      await runQuery('DELETE FROM calificaciones WHERE alumno_id = ? AND curso_id IN (SELECT curso_id FROM matriculas WHERE id = ?)', [id, matricula.id]);
+    }
+    await runQuery('DELETE FROM matriculas WHERE alumno_id = ?', [id]);
+    await runQuery('DELETE FROM pagos WHERE alumno_id = ?', [id]);
+    await runQuery('DELETE FROM notificaciones WHERE usuario_id = ?', [alumno.usuario_id]);
+    await runQuery('DELETE FROM alumnos WHERE id = ?', [id]);
+
+    res.json(respuestaExito({}, 'Alumno eliminado completamente (con datos relacionados)'));
   } catch (error) {
-    res.status(500).json(respuestaError('Error al eliminar alumno'));
+    res.status(500).json(respuestaError('Error al eliminar alumno: ' + error.message));
   }
 }));
 
@@ -1306,6 +1322,73 @@ app.delete('/api/notificaciones/:id', authMiddleware, requireRole(['administrati
     res.json(respuestaExito({}, 'Notificación eliminada exitosamente'));
   } catch (error) {
     res.status(500).json(respuestaError('Error al eliminar notificación: ' + error.message));
+  }
+}));
+
+// DELETE PROFESORES
+app.delete('/api/profesores/:id', authMiddleware, requireRole(['administrativo', 'director']), asyncHandler(async (req, res) => {
+  try {
+    const { id } = req.params;
+    const profesor = await getOne('SELECT id, usuario_id FROM profesores WHERE id = ?', [id]);
+    if (!profesor) {
+      return res.status(404).json(respuestaError('Profesor no encontrado'));
+    }
+
+    // Eliminar en cascada
+    const cursos = await getAll('SELECT id FROM cursos WHERE profesor_id = ?', [id]);
+    for (const curso of cursos) {
+      await runQuery('DELETE FROM asistencias WHERE curso_id = ?', [curso.id]);
+      await runQuery('DELETE FROM calificaciones WHERE curso_id = ?', [curso.id]);
+      await runQuery('DELETE FROM matriculas WHERE curso_id = ?', [curso.id]);
+    }
+    await runQuery('DELETE FROM cursos WHERE profesor_id = ?', [id]);
+    await runQuery('DELETE FROM notificaciones WHERE usuario_id = ?', [profesor.usuario_id]);
+    await runQuery('DELETE FROM profesores WHERE id = ?', [id]);
+
+    res.json(respuestaExito({}, 'Profesor eliminado completamente (con datos relacionados)'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al eliminar profesor: ' + error.message));
+  }
+}));
+
+// DELETE CURSOS
+app.delete('/api/cursos/:id', authMiddleware, requireRole(['administrativo', 'director']), asyncHandler(async (req, res) => {
+  try {
+    const { id } = req.params;
+    const curso = await getOne('SELECT id FROM cursos WHERE id = ?', [id]);
+    if (!curso) {
+      return res.status(404).json(respuestaError('Curso no encontrado'));
+    }
+
+    // Eliminar en cascada
+    await runQuery('DELETE FROM asistencias WHERE curso_id = ?', [id]);
+    await runQuery('DELETE FROM calificaciones WHERE curso_id = ?', [id]);
+    await runQuery('DELETE FROM matriculas WHERE curso_id = ?', [id]);
+    await runQuery('DELETE FROM cursos WHERE id = ?', [id]);
+
+    res.json(respuestaExito({}, 'Curso eliminado completamente (con datos relacionados)'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al eliminar curso: ' + error.message));
+  }
+}));
+
+// DELETE MATRÍCULAS
+app.delete('/api/matriculas/:id', authMiddleware, requireRole(['administrativo', 'director']), asyncHandler(async (req, res) => {
+  try {
+    const { id } = req.params;
+    const matricula = await getOne('SELECT id, alumno_id, curso_id FROM matriculas WHERE id = ?', [id]);
+    if (!matricula) {
+      return res.status(404).json(respuestaError('Matrícula no encontrada'));
+    }
+
+    // Eliminar en cascada
+    await runQuery('DELETE FROM asistencias WHERE alumno_id = ? AND curso_id = ?', [matricula.alumno_id, matricula.curso_id]);
+    await runQuery('DELETE FROM calificaciones WHERE alumno_id = ? AND curso_id = ?', [matricula.alumno_id, matricula.curso_id]);
+    await runQuery('DELETE FROM matriculas WHERE id = ?', [id]);
+
+    res.json(respuestaExito({}, 'Matrícula eliminada (incluyendo asistencias y calificaciones relacionadas)'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al eliminar matrícula: ' + error.message));
   }
 }));
 

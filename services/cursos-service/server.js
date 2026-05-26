@@ -145,7 +145,7 @@ app.put('/cursos/:id', asyncHandler(async (req, res) => {
   res.json(respuestaExito(cursoActualizado, 'Curso actualizado', 'CURSO_UPDATED'));
 }));
 
-// DELETE curso (soft delete)
+// DELETE curso
 app.delete('/cursos/:id', asyncHandler(async (req, res) => {
   const { id } = req.params;
 
@@ -158,9 +158,20 @@ app.delete('/cursos/:id', asyncHandler(async (req, res) => {
     return res.status(404).json(respuestaError('Curso no encontrado', 'NOT_FOUND'));
   }
 
-  await runQuery('UPDATE cursos SET estado = ? WHERE id = ?', ['cancelado', id]);
+  // Eliminar datos relacionados
+  // 1. Eliminar asistencias
+  await runQuery('DELETE FROM asistencias WHERE curso_id = ?', [id]);
 
-  res.json(respuestaExito(null, 'Curso eliminado', 'CURSO_DELETED'));
+  // 2. Eliminar calificaciones
+  await runQuery('DELETE FROM calificaciones WHERE curso_id = ?', [id]);
+
+  // 3. Eliminar matrículas
+  await runQuery('DELETE FROM matriculas WHERE curso_id = ?', [id]);
+
+  // 4. Eliminar curso
+  await runQuery('DELETE FROM cursos WHERE id = ?', [id]);
+
+  res.json(respuestaExito(null, 'Curso eliminado completamente', 'CURSO_DELETED'));
 }));
 
 // GET estudiantes en un curso

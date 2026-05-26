@@ -235,6 +235,34 @@ app.get('/matriculas-alumno/:alumno_id', asyncHandler(async (req, res) => {
   }, 'Matrículas del alumno obtenidas'));
 }));
 
+// DELETE matrícula con cascada
+app.delete('/matriculas/:id', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  if (!validadores.esUUIDValido(id)) {
+    return res.status(400).json(respuestaError('ID inválido', 'INVALID_ID'));
+  }
+
+  const matricula = await getOne('SELECT id, alumno_id, curso_id FROM matriculas WHERE id = ?', [id]);
+  if (!matricula) {
+    return res.status(404).json(respuestaError('Matrícula no encontrada', 'NOT_FOUND'));
+  }
+
+  // Eliminar datos relacionados (CASCADA)
+  // 1. Eliminar asistencias de este alumno en este curso
+  await runQuery('DELETE FROM asistencias WHERE alumno_id = ? AND curso_id = ?', 
+    [matricula.alumno_id, matricula.curso_id]);
+
+  // 2. Eliminar calificaciones de este alumno en este curso
+  await runQuery('DELETE FROM calificaciones WHERE alumno_id = ? AND curso_id = ?', 
+    [matricula.alumno_id, matricula.curso_id]);
+
+  // 3. Eliminar la matrícula
+  await runQuery('DELETE FROM matriculas WHERE id = ?', [id]);
+
+  res.json(respuestaExito(null, 'Matrícula eliminada (incluyendo asistencias y calificaciones relacionadas)', 'MATRICULA_DELETED'));
+}));
+
 // ============================================
 // HEALTH CHECK
 // ============================================

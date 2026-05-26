@@ -162,16 +162,34 @@ app.delete('/alumnos/:id', asyncHandler(async (req, res) => {
     return res.status(400).json(respuestaError('ID inválido'));
   }
 
-  const alumno = await getOne('SELECT id FROM alumnos WHERE id = ?', [id]);
+  const alumno = await getOne('SELECT id, usuario_id FROM alumnos WHERE id = ?', [id]);
 
   if (!alumno) {
     return res.status(404).json(respuestaError('Alumno no encontrado', 'NOT_FOUND'));
   }
 
-  // Cambiar estado a inactivo en lugar de eliminar
-  await runQuery('UPDATE alumnos SET estado = ? WHERE id = ?', ['inactivo', id]);
+  // Eliminar datos relacionados
+  // 1. Eliminar matrículas y sus datos relacionados
+  const matriculas = await getAll('SELECT id FROM matriculas WHERE alumno_id = ?', [id]);
+  for (const matricula of matriculas) {
+    await runQuery('DELETE FROM asistencias WHERE alumno_id = ? AND curso_id IN (SELECT curso_id FROM matriculas WHERE id = ?)', [id, matricula.id]);
+    await runQuery('DELETE FROM calificaciones WHERE alumno_id = ? AND curso_id IN (SELECT curso_id FROM matriculas WHERE id = ?)', [id, matricula.id]);
+  }
+  await runQuery('DELETE FROM matriculas WHERE alumno_id = ?', [id]);
 
-  res.json(respuestaExito(null, 'Alumno eliminado', 'ALUMNO_DELETED'));
+  // 2. Eliminar pagos
+  await runQuery('DELETE FROM pagos WHERE alumno_id = ?', [id]);
+
+  // 3. Eliminar notificaciones
+  await runQuery('DELETE FROM notificaciones WHERE usuario_id = ?', [alumno.usuario_id]);
+
+  // 4. Eliminar alumno
+  await runQuery('DELETE FROM alumnos WHERE id = ?', [id]);
+
+  // 5. Opcionalmente, eliminar usuario (comentado por si queremos mantener historial de usuarios)
+  // await runQuery('DELETE FROM usuarios WHERE id = ?', [alumno.usuario_id]);
+
+  res.json(respuestaExito(null, 'Alumno eliminado completamente', 'ALUMNO_DELETED'));
 }));
 
 // GET alumnos por padre (RN-005: Acceso restringido a padres)

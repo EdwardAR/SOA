@@ -166,15 +166,36 @@ app.delete('/profesores/:id', asyncHandler(async (req, res) => {
     return res.status(400).json(respuestaError('ID inválido', 'INVALID_ID'));
   }
 
-  const profesor = await getOne('SELECT id FROM profesores WHERE id = ?', [id]);
+  const profesor = await getOne('SELECT id, usuario_id FROM profesores WHERE id = ?', [id]);
 
   if (!profesor) {
     return res.status(404).json(respuestaError('Profesor no encontrado', 'NOT_FOUND'));
   }
 
-  await runQuery('UPDATE profesores SET estado = ? WHERE id = ?', ['inactivo', id]);
+  // Eliminar datos relacionados
+  // 1. Obtener cursos del profesor
+  const cursos = await getAll('SELECT id FROM cursos WHERE profesor_id = ?', [id]);
+  
+  // 2. Para cada curso, eliminar asistencias y calificaciones
+  for (const curso of cursos) {
+    await runQuery('DELETE FROM asistencias WHERE curso_id = ?', [curso.id]);
+    await runQuery('DELETE FROM calificaciones WHERE curso_id = ?', [curso.id]);
+    await runQuery('DELETE FROM matriculas WHERE curso_id = ?', [curso.id]);
+  }
 
-  res.json(respuestaExito(null, 'Profesor eliminado', 'PROFESOR_DELETED'));
+  // 3. Eliminar cursos del profesor
+  await runQuery('DELETE FROM cursos WHERE profesor_id = ?', [id]);
+
+  // 4. Eliminar notificaciones del profesor
+  await runQuery('DELETE FROM notificaciones WHERE usuario_id = ?', [profesor.usuario_id]);
+
+  // 5. Eliminar profesor
+  await runQuery('DELETE FROM profesores WHERE id = ?', [id]);
+
+  // 6. Opcionalmente, eliminar usuario (comentado por si queremos mantener historial)
+  // await runQuery('DELETE FROM usuarios WHERE id = ?', [profesor.usuario_id]);
+
+  res.json(respuestaExito(null, 'Profesor eliminado completamente', 'PROFESOR_DELETED'));
 }));
 
 // GET profesores activos
