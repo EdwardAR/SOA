@@ -10,7 +10,7 @@ yarn-error.log*
 dist/
 build/
 *.db
-database/*.db
+#database/*.db
 .vscode/
 .idea/
 *.swp
