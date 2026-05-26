@@ -55,7 +55,4 @@ export const asistenciaService = createCrudService('/asistencia', true);
 export const calificacionesService = createCrudService('/calificaciones', true);
 
 // Notificaciones
-export const notificacionesService = {
-  getAll: () => apiClient.get('/notificaciones'),
-  markAsRead: (id: string) => apiClient.put(`/notificaciones/${id}/read`, {}),
-};
+export const notificacionesService = createCrudService('/notificaciones', true);

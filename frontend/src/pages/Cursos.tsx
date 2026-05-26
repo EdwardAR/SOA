@@ -143,7 +143,7 @@ const Cursos: React.FC = () => {
       try {
         await cursosService.delete(id);
         setSuccess('Curso eliminado correctamente');
-        fetchCursos();
+        setCursos(cursos.filter(c => c.id !== id));
         setTimeout(() => setSuccess(''), 3000);
       } catch (err: any) {
         setError(err.response?.data?.mensaje || 'Error al eliminar curso');

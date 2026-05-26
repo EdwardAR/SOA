@@ -392,9 +392,9 @@ const Notificaciones: React.FC = () => {
           {String(formData.destinatario_id) === '__other' && (
             <input
               className="form-control mt-2"
-              placeholder="Ingrese nombre o ID manualmente"
-              value={formData.mensaje || ''}
-              onChange={(e) => setFormData({ ...formData, mensaje: e.target.value })}
+              placeholder="Ingrese ID de usuario manualmente"
+              value={''}
+              onChange={(e) => setFormData({ ...formData, destinatario_id: e.target.value })}
             />
           )}
         </div>

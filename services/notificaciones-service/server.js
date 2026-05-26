@@ -61,26 +61,30 @@ app.get('/notificaciones/:id', asyncHandler(async (req, res) => {
 app.post('/notificaciones', asyncHandler(async (req, res) => {
   const { usuario_id, destinatario_id, tipo, asunto, mensaje, destinatario, evento_generador, leida, fecha_lectura } = req.body;
   const resolvedUserId = usuario_id || destinatario_id;
+  const resolvedTipo = tipo && tipo !== 'informacion' && tipo !== 'alerta' && tipo !== 'recordatorio' && tipo !== 'urgente' ? 'app' : 'app';
+  const resolvedAsunto = asunto || `Notificación de ${tipo || 'información'}`;
 
   if (!resolvedUserId || !mensaje) {
-    return res.status(400).json(respuestaError('Datos incompletos requeridos', 'MISSING_DATA'));
+    return res.status(400).json(respuestaError('Datos incompletos requeridos: destinatario_id (o usuario_id) y mensaje son obligatorios', 'MISSING_DATA'));
   }
 
   const notificacionId = generarId();
 
   await runQuery(
-    `INSERT INTO notificaciones (id, destinatario_id, tipo, mensaje, leida, fecha_lectura, fecha_creacion)
+    `INSERT INTO notificaciones (id, usuario_id, tipo, asunto, mensaje, estado, fecha_creacion)
      VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
-    [notificacionId, resolvedUserId, tipo || 'informacion', mensaje, leida ? 1 : 0, fecha_lectura || null]
+    [notificacionId, resolvedUserId, resolvedTipo, resolvedAsunto, mensaje, 'pendiente']
   );
 
   res.status(201).json(respuestaExito(
     {
       id: notificacionId,
       destinatario_id: resolvedUserId,
+      usuario_id: resolvedUserId,
       tipo: tipo || 'informacion',
+      asunto: resolvedAsunto,
       mensaje,
-      leida: !!leida
+      estado: 'pendiente'
     },
     'Notificación creada exitosamente',
     'NOTIFICACION_CREATED'
@@ -101,12 +105,28 @@ app.put('/notificaciones/:id', asyncHandler(async (req, res) => {
     return res.status(404).json(respuestaError('Notificación no encontrada', 'NOT_FOUND'));
   }
 
-  const camposPermitidos = ['destinatario_id', 'tipo', 'mensaje', 'leida', 'fecha_lectura'];
+  const camposPermitidos = ['usuario_id', 'destinatario_id', 'tipo', 'asunto', 'mensaje', 'estado', 'leida', 'fecha_lectura'];
   const campos = [];
   const valores = [];
 
+  // Manejar usuario_id desde destinatario_id si viene en la solicitud
+  if (req.body.destinatario_id !== undefined && req.body.usuario_id === undefined) {
+    campos.push('usuario_id = ?');
+    valores.push(req.body.destinatario_id);
+  }
+
+  // Convertir tipo custom a tipo de BD (email, sms, app)
+  if (req.body.tipo !== undefined && ['informacion', 'alerta', 'recordatorio', 'urgente'].includes(req.body.tipo)) {
+    campos.push('tipo = ?');
+    valores.push('app');
+  } else if (req.body.tipo !== undefined) {
+    campos.push('tipo = ?');
+    valores.push(req.body.tipo);
+  }
+
+  // Procesar campos permitidos
   for (const [clave, valor] of Object.entries(req.body)) {
-    if (valor !== undefined && clave !== 'id' && camposPermitidos.includes(clave)) {
+    if (valor !== undefined && clave !== 'id' && camposPermitidos.includes(clave) && clave !== 'destinatario_id' && clave !== 'tipo') {
       campos.push(`${clave} = ?`);
       valores.push(valor);
     }
@@ -198,6 +218,24 @@ app.post('/notificaciones/inasistencia', asyncHandler(async (req, res) => {
     'Notificación de inasistencia enviada',
     'INASISTENCIA_NOTIFICACION_SENT'
   ));
+}));
+
+// DELETE notificación
+app.delete('/notificaciones/:id', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  if (!validadores.esUUIDValido(id)) {
+    return res.status(400).json(respuestaError('ID inválido', 'INVALID_ID'));
+  }
+
+  const notificacion = await getOne('SELECT id FROM notificaciones WHERE id = ?', [id]);
+  if (!notificacion) {
+    return res.status(404).json(respuestaError('Notificación no encontrada', 'NOT_FOUND'));
+  }
+
+  await runQuery('DELETE FROM notificaciones WHERE id = ?', [id]);
+
+  res.json(respuestaExito(null, 'Notificación eliminada', 'NOTIFICACION_DELETED'));
 }));
 
 // ============================================
