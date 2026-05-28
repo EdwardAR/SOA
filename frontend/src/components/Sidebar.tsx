@@ -80,10 +80,26 @@ const Sidebar: React.FC = () => {
           boxShadow: isExpanded ? '2px 0 5px rgba(0,0,0,0.1)' : 'none',
         }}
       >
-        <div className="p-3 border-bottom" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
-          <p className="text-white-50 mb-0" style={{ fontSize: '0.85rem' }}>
-            Tipo: <strong>{user?.tipo_usuario}</strong>
-          </p>
+        <div className="p-3 border-bottom" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+          <div className="d-flex align-items-center gap-2">
+            <div style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '10px',
+              background: 'rgba(255, 255, 255, 0.12)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              border: '1px solid rgba(255, 255, 255, 0.15)'
+            }}>
+              <i className="bi bi-shield-lock-fill" style={{ fontSize: '1.05rem' }}></i>
+            </div>
+            <div>
+              <p className="text-white-50 mb-0" style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700 }}>Rol de acceso</p>
+              <span className="text-white fw-bold" style={{ fontSize: '0.85rem', letterSpacing: '0.2px' }}>{user?.tipo_usuario}</span>
+            </div>
+          </div>
         </div>
         <div className="flex-grow-1 overflow-auto">
           <nav className="nav flex-column p-3">

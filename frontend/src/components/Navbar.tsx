@@ -44,69 +44,87 @@ const Navbar: React.FC = () => {
           </span>
           <div className="dropdown" ref={dropdownRef} style={{ position: 'relative' }}>
             <button
-              className="btn btn-outline-light dropdown-toggle"
+              className="btn btn-outline-light"
               type="button"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               style={{
-                padding: '0.6rem 1.2rem',
+                padding: '0.4rem 1rem',
                 fontWeight: 600,
-                letterSpacing: '0.5px',
-                fontSize: '1.1rem',
+                fontSize: '0.9rem',
                 minWidth: '60px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem',
+                borderRadius: '999px',
+                border: '1px solid rgba(255, 255, 255, 0.4)',
+                background: 'rgba(255, 255, 255, 0.12)',
+                backdropFilter: 'blur(8px)',
+                transition: 'all 0.25s ease',
               }}
               title="Menú de usuario"
             >
-              <i className="bi bi-chevron-down"></i>
+              <i className="bi bi-person-circle" style={{ fontSize: '1rem' }}></i>
+              <span className="d-none d-md-inline" style={{ fontSize: '0.85rem' }}>{user?.nombre?.split(' ')[0]}</span>
+              <i className="bi bi-chevron-down" style={{ fontSize: '0.75rem' }}></i>
             </button>
             {isDropdownOpen && (
               <ul 
                 className="dropdown-menu dropdown-menu-end show" 
                 style={{ 
                   display: 'block',
-                  minWidth: '200px',
+                  minWidth: '220px',
                   position: 'absolute',
                   top: '100%',
                   right: 0,
-                  marginTop: '0.5rem',
-                  border: '1px solid #dee2e6',
-                  borderRadius: '0.25rem',
-                  boxShadow: '0 0.5rem 1rem rgba(0,0,0,0.15)',
+                  marginTop: '0.75rem',
+                  border: '1px solid rgba(255, 255, 255, 0.7)',
+                  borderRadius: '16px',
+                  boxShadow: '0 10px 30px rgba(15, 23, 42, 0.12)',
+                  background: 'rgba(255, 255, 255, 0.95)',
+                  backdropFilter: 'blur(16px)',
+                  overflow: 'hidden',
+                  padding: '8px 0',
+                  animation: 'slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
                 }}
               >
                 <li>
-                  <h6 className="dropdown-header">
-                    <i className="bi bi-person-circle me-2"></i>
-                    {user?.nombre}
-                  </h6>
+                  <div className="px-3 py-2">
+                    <p className="mb-0 text-muted small" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Usuario activo</p>
+                    <h6 className="mb-0 fw-bold text-dark" style={{ fontSize: '0.95rem' }}>
+                      {user?.nombre}
+                    </h6>
+                    <span className="badge bg-primary mt-1" style={{ fontSize: '0.65rem', padding: '3px 8px' }}>
+                      {user?.tipo_usuario}
+                    </span>
+                  </div>
                 </li>
                 <li>
-                  <hr className="dropdown-divider m-2" />
+                  <hr className="dropdown-divider my-2" style={{ opacity: 0.1 }} />
                 </li>
                 <li>
                   <a 
-                    className="dropdown-item" 
+                    className="dropdown-item d-flex align-items-center gap-2" 
                     href="/perfil" 
                     style={{ 
-                      padding: '0.5rem 1rem',
+                      padding: '0.6rem 1.2rem',
                       cursor: 'pointer',
-                      display: 'block',
-                      color: '#212529',
+                      color: '#334155',
+                      fontSize: '0.9rem',
+                      fontWeight: 500,
                       textDecoration: 'none',
+                      transition: 'all 0.2s ease',
                     }}
                     onClick={(e) => {
                       setIsDropdownOpen(false);
                     }}
                   >
-                    <i className="bi bi-person-circle me-2"></i>
+                    <i className="bi bi-person-circle text-muted"></i>
                     Mi Perfil
                   </a>
                 </li>
                 <li>
                   <button
-                    className="dropdown-item"
+                    className="dropdown-item d-flex align-items-center gap-2 text-danger"
                     onClick={handleLogout}
                     style={{
                       background: 'none',
@@ -114,18 +132,19 @@ const Navbar: React.FC = () => {
                       cursor: 'pointer',
                       width: '100%',
                       textAlign: 'left',
-                      padding: '0.5rem 1rem',
-                      color: '#212529',
-                      fontSize: '0.95rem',
+                      padding: '0.6rem 1.2rem',
+                      fontSize: '0.9rem',
+                      fontWeight: 500,
+                      transition: 'all 0.2s ease',
                     }}
                     onMouseEnter={(e) => {
-                      (e.target as HTMLElement).style.backgroundColor = '#f8f9fa';
+                      (e.target as HTMLElement).style.backgroundColor = 'rgba(239, 68, 68, 0.08)';
                     }}
                     onMouseLeave={(e) => {
                       (e.target as HTMLElement).style.backgroundColor = 'transparent';
                     }}
                   >
-                    <i className="bi bi-box-arrow-right me-2"></i>
+                    <i className="bi bi-box-arrow-right"></i>
                     Cerrar Sesión
                   </button>
                 </li>

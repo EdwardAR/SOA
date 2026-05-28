@@ -65,9 +65,12 @@ const Perfil: React.FC = () => {
   }
 
   return (
-    <div className="page-shell">
+    <div className="page-shell container-fluid p-2 p-md-4">
       <div className="page-hero mb-4">
-        <h1 className="page-hero-title">Mi Perfil</h1>
+        <h1 className="page-hero-title">
+          <i className="bi bi-person-circle me-2"></i>
+          Mi Perfil
+        </h1>
         <p className="page-hero-subtitle">Información de acceso y datos básicos de tu cuenta</p>
       </div>
 
@@ -113,7 +116,7 @@ const Perfil: React.FC = () => {
           </div>
 
           {user.tipo_usuario === 'padre' && (
-            <div className="mt-4 p-4 rounded-4 border bg-light-subtle">
+            <div className="mt-4 p-4 rounded-4 border border-light-subtle" style={{ background: 'rgba(255, 255, 255, 0.45)', backdropFilter: 'blur(8px)' }}>
               <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
                 <div>
                   <div className="small text-muted fw-semibold text-uppercase">Hija o hijo vinculado</div>
@@ -200,9 +203,9 @@ const Perfil: React.FC = () => {
                 <div className="row g-3">
                   <div className="col-12 col-lg-6">
                     <div className="card dashboard-card h-100">
-                      <div className="card-header bg-primary text-white">
-                        <h5 className="mb-0">
-                          <i className="bi bi-calendar2-week me-2"></i>
+                      <div className="card-header" style={{ background: 'rgba(102, 126, 234, 0.05)', borderBottom: '1px solid rgba(102, 126, 234, 0.1)', padding: '16px 20px' }}>
+                        <h5 className="mb-0 fw-bold text-dark">
+                          <i className="bi bi-calendar2-week me-2 text-primary"></i>
                           Asistencia reciente
                         </h5>
                       </div>
@@ -230,9 +233,9 @@ const Perfil: React.FC = () => {
 
                   <div className="col-12 col-lg-6">
                     <div className="card dashboard-card h-100">
-                      <div className="card-header bg-info text-white">
-                        <h5 className="mb-0">
-                          <i className="bi bi-journal-text me-2"></i>
+                      <div className="card-header" style={{ background: 'rgba(102, 126, 234, 0.05)', borderBottom: '1px solid rgba(102, 126, 234, 0.1)', padding: '16px 20px' }}>
+                        <h5 className="mb-0 fw-bold text-dark">
+                          <i className="bi bi-journal-text me-2 text-primary"></i>
                           Rendimiento y pagos
                         </h5>
                       </div>

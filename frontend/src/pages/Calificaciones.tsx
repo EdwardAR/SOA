@@ -158,11 +158,14 @@ const Calificaciones: React.FC = () => {
   };
 
   return (
-    <div className="container-fluid p-4">
-      <h1 className="mb-4">
-        <i className="bi bi-graph-up me-2"></i>
-        Gestión de Calificaciones
-      </h1>
+    <div className="page-shell container-fluid p-2 p-md-4">
+      <div className="page-hero mb-4">
+        <h1 className="page-hero-title">
+          <i className="bi bi-file-earmark-text me-2"></i>
+          Gestión de Calificaciones
+        </h1>
+        <p className="page-hero-subtitle">Ingresa, edita y consulta las calificaciones de los estudiantes por períodos</p>
+      </div>
 
       {error && (
         <div className="alert alert-danger alert-dismissible fade show" role="alert">
@@ -179,36 +182,36 @@ const Calificaciones: React.FC = () => {
       )}
 
       {/* Statistics Cards */}
-      <div className="row mb-4">
-        <div className="col-md-3">
-          <div className="card dashboard-card border-info">
-            <div className="card-body text-center">
-              <h6 className="card-title text-muted">Promedio</h6>
-              <h3 className="text-info">{stats.promedio}</h3>
+      <div className="row g-3 mb-4">
+        <div className="col-6 col-md-3">
+          <div className="card dashboard-card h-100" style={{ borderLeft: '4px solid #0ea5e9' }}>
+            <div className="card-body text-center py-4">
+              <h6 className="text-muted small mb-1 fw-bold" style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>Promedio</h6>
+              <h2 className="text-info fw-bold mb-0">{stats.promedio}</h2>
             </div>
           </div>
         </div>
-        <div className="col-md-3">
-          <div className="card dashboard-card border-success">
-            <div className="card-body text-center">
-              <h6 className="card-title text-muted">Nota Máxima</h6>
-              <h3 className="text-success">{stats.maxima}</h3>
+        <div className="col-6 col-md-3">
+          <div className="card dashboard-card h-100" style={{ borderLeft: '4px solid #10b981' }}>
+            <div className="card-body text-center py-4">
+              <h6 className="text-muted small mb-1 fw-bold" style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>Nota Máxima</h6>
+              <h2 className="text-success fw-bold mb-0">{stats.maxima}</h2>
             </div>
           </div>
         </div>
-        <div className="col-md-3">
-          <div className="card dashboard-card border-danger">
-            <div className="card-body text-center">
-              <h6 className="card-title text-muted">Nota Mínima</h6>
-              <h3 className="text-danger">{stats.minima}</h3>
+        <div className="col-6 col-md-3">
+          <div className="card dashboard-card h-100" style={{ borderLeft: '4px solid #ef4444' }}>
+            <div className="card-body text-center py-4">
+              <h6 className="text-muted small mb-1 fw-bold" style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>Nota Mínima</h6>
+              <h2 className="text-danger fw-bold mb-0">{stats.minima}</h2>
             </div>
           </div>
         </div>
-        <div className="col-md-3">
-          <div className="card dashboard-card border-warning">
-            <div className="card-body text-center">
-              <h6 className="card-title text-muted">Total Registros</h6>
-              <h3 className="text-warning">{stats.total}</h3>
+        <div className="col-6 col-md-3">
+          <div className="card dashboard-card h-100" style={{ borderLeft: '4px solid #f59e0b' }}>
+            <div className="card-body text-center py-4">
+              <h6 className="text-muted small mb-1 fw-bold" style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Registros</h6>
+              <h2 className="text-warning fw-bold mb-0">{stats.total}</h2>
             </div>
           </div>
         </div>
@@ -220,15 +223,15 @@ const Calificaciones: React.FC = () => {
         </div>
       ) : (
         <div className="card dashboard-card">
-          <div className="card-header bg-primary text-white">
+          <div className="card-header" style={{ background: 'rgba(102, 126, 234, 0.05)', borderBottom: '1px solid rgba(102, 126, 234, 0.1)', padding: '16px 20px' }}>
             <div className="d-flex justify-content-between align-items-center">
-              <h5 className="mb-0">Listado de Calificaciones</h5>
+              <h5 className="mb-0 fw-bold text-dark">Listado de Calificaciones</h5>
               {allowCreate && (
                 <button 
-                  className="btn btn-sm btn-light"
+                  className="btn btn-sm btn-primary"
                   onClick={() => handleOpenModal()}
                 >
-                  <i className="bi bi-plus-circle me-2"></i>
+                  <i className="bi bi-plus-circle"></i>
                   Registrar Calificación
                 </button>
               )}

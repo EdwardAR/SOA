@@ -107,9 +107,9 @@ const Dashboard: React.FC = () => {
           <div className="row g-3 g-xl-4">
             <div className="col-12 col-lg-6">
               <div className="card dashboard-card h-100">
-                <div className="card-header bg-primary text-white">
-                  <h5 className="mb-0">
-                    <i className="bi bi-graph-up me-2"></i>
+                <div className="card-header" style={{ background: 'rgba(102, 126, 234, 0.05)', borderBottom: '1px solid rgba(102, 126, 234, 0.1)', padding: '16px 20px' }}>
+                  <h5 className="mb-0 fw-bold text-dark">
+                    <i className="bi bi-graph-up me-2 text-primary"></i>
                     Resumen General
                   </h5>
                 </div>
@@ -134,9 +134,9 @@ const Dashboard: React.FC = () => {
 
             <div className="col-12 col-lg-6">
               <div className="card dashboard-card h-100">
-                <div className="card-header bg-info text-white">
-                  <h5 className="mb-0">
-                    <i className="bi bi-info-circle me-2"></i>
+                <div className="card-header" style={{ background: 'rgba(102, 126, 234, 0.05)', borderBottom: '1px solid rgba(102, 126, 234, 0.1)', padding: '16px 20px' }}>
+                  <h5 className="mb-0 fw-bold text-dark">
+                    <i className="bi bi-info-circle me-2 text-primary"></i>
                     Información del Sistema
                   </h5>
                 </div>

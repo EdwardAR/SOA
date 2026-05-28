@@ -146,11 +146,14 @@ const Profesores: React.FC = () => {
   };
 
   return (
-    <div className="container-fluid p-4">
-      <h1 className="mb-4">
-        <i className="bi bi-person-badge me-2"></i>
-        Gestión de Profesores
-      </h1>
+    <div className="page-shell container-fluid p-2 p-md-4">
+      <div className="page-hero mb-4">
+        <h1 className="page-hero-title">
+          <i className="bi bi-person-badge me-2"></i>
+          Gestión de Profesores
+        </h1>
+        <p className="page-hero-subtitle">Administra y registra la información detallada del personal docente</p>
+      </div>
 
       {error && (
         <div className="alert alert-danger alert-dismissible fade show" role="alert">
@@ -172,10 +175,10 @@ const Profesores: React.FC = () => {
         </div>
       ) : (
         <div className="card dashboard-card">
-          <div className="card-header bg-primary text-white">
+          <div className="card-header" style={{ background: 'rgba(102, 126, 234, 0.05)', borderBottom: '1px solid rgba(102, 126, 234, 0.1)', padding: '16px 20px' }}>
             <div className="d-flex justify-content-between align-items-center">
-              <h5 className="mb-0">Listado de Profesores ({profesores.length})</h5>
-              <button className="btn btn-sm btn-light" onClick={() => handleOpenModal()}>
+              <h5 className="mb-0 fw-bold text-dark">Listado de Profesores ({profesores.length})</h5>
+              <button className="btn btn-sm btn-primary" onClick={() => handleOpenModal()}>
                 <i className="bi bi-plus-circle me-2"></i>
                 Nuevo Profesor
               </button>

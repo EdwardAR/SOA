@@ -168,11 +168,14 @@ const Pagos: React.FC = () => {
   };
 
   return (
-    <div className="container-fluid p-4">
-      <h1 className="mb-4">
-        <i className="bi bi-credit-card me-2"></i>
-        Gestión de Pagos
-      </h1>
+    <div className="page-shell container-fluid p-2 p-md-4">
+      <div className="page-hero mb-4">
+        <h1 className="page-hero-title">
+          <i className="bi bi-credit-card me-2"></i>
+          Gestión de Pagos
+        </h1>
+        <p className="page-hero-subtitle">Controla y administra las transacciones financieras y estados de pago estudiantiles</p>
+      </div>
 
       {error && (
         <div className="alert alert-danger alert-dismissible fade show" role="alert">
@@ -189,36 +192,36 @@ const Pagos: React.FC = () => {
       )}
 
       {/* Summary Cards */}
-      <div className="row mb-4">
-        <div className="col-md-3">
-          <div className="card dashboard-card border-success">
-            <div className="card-body text-center">
-              <h6 className="card-title text-muted">Pagado</h6>
-              <h3 className="text-success">${totals.totalPagado.toFixed(2)}</h3>
+      <div className="row g-3 mb-4">
+        <div className="col-6 col-md-3">
+          <div className="card dashboard-card h-100" style={{ borderLeft: '4px solid #10b981' }}>
+            <div className="card-body text-center py-4">
+              <h6 className="text-muted small mb-1 fw-bold" style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>Pagado</h6>
+              <h2 className="text-success fw-bold mb-0">${totals.totalPagado.toFixed(2)}</h2>
             </div>
           </div>
         </div>
-        <div className="col-md-3">
-          <div className="card dashboard-card border-danger">
-            <div className="card-body text-center">
-              <h6 className="card-title text-muted">Pendiente</h6>
-              <h3 className="text-danger">${totals.totalPendiente.toFixed(2)}</h3>
+        <div className="col-6 col-md-3">
+          <div className="card dashboard-card h-100" style={{ borderLeft: '4px solid #ef4444' }}>
+            <div className="card-body text-center py-4">
+              <h6 className="text-muted small mb-1 fw-bold" style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>Pendiente</h6>
+              <h2 className="text-danger fw-bold mb-0">${totals.totalPendiente.toFixed(2)}</h2>
             </div>
           </div>
         </div>
-        <div className="col-md-3">
-          <div className="card dashboard-card border-primary">
-            <div className="card-body text-center">
-              <h6 className="card-title text-muted">Total</h6>
-              <h3 className="text-primary">${totals.total.toFixed(2)}</h3>
+        <div className="col-6 col-md-3">
+          <div className="card dashboard-card h-100" style={{ borderLeft: '4px solid #667eea' }}>
+            <div className="card-body text-center py-4">
+              <h6 className="text-muted small mb-1 fw-bold" style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total</h6>
+              <h2 className="text-primary fw-bold mb-0">${totals.total.toFixed(2)}</h2>
             </div>
           </div>
         </div>
-        <div className="col-md-3">
-          <div className="card dashboard-card border-info">
-            <div className="card-body text-center">
-              <h6 className="card-title text-muted">Transacciones</h6>
-              <h3 className="text-info">{totals.transacciones}</h3>
+        <div className="col-6 col-md-3">
+          <div className="card dashboard-card h-100" style={{ borderLeft: '4px solid #0ea5e9' }}>
+            <div className="card-body text-center py-4">
+              <h6 className="text-muted small mb-1 fw-bold" style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>Transacciones</h6>
+              <h2 className="text-info fw-bold mb-0">{totals.transacciones}</h2>
             </div>
           </div>
         </div>
@@ -230,15 +233,15 @@ const Pagos: React.FC = () => {
         </div>
       ) : (
         <div className="card dashboard-card">
-          <div className="card-header bg-warning text-white">
+          <div className="card-header" style={{ background: 'rgba(102, 126, 234, 0.05)', borderBottom: '1px solid rgba(102, 126, 234, 0.1)', padding: '16px 20px' }}>
             <div className="d-flex justify-content-between align-items-center">
-              <h5 className="mb-0">Listado de Pagos</h5>
+              <h5 className="mb-0 fw-bold text-dark">Listado de Pagos</h5>
               {allowCreate && (
                 <button 
-                  className="btn btn-sm btn-light"
+                  className="btn btn-sm btn-primary"
                   onClick={() => handleOpenModal()}
                 >
-                  <i className="bi bi-plus-circle me-2"></i>
+                  <i className="bi bi-plus-circle"></i>
                   Registrar Pago
                 </button>
               )}
