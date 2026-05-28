@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Navbar: React.FC = () => {
@@ -29,11 +29,11 @@ const Navbar: React.FC = () => {
   return (
     <nav className="navbar navbar-expand-lg navbar navbar-custom" style={{ position: 'sticky', top: 0, zIndex: 1040 }}>
       <div className="container-fluid">
-        <a className="navbar-brand" href="/">
+        <Link className="navbar-brand text-decoration-none" to="/dashboard">
           <i className="bi bi-mortarboard me-2"></i>
           <span className="d-none d-sm-inline">Colegio Futuro Digital</span>
           <span className="d-sm-none">CFD</span>
-        </a>
+        </Link>
         <div className="ms-auto d-flex align-items-center gap-2">
           <span className="text-white me-2 d-none d-md-inline" style={{ fontSize: '0.9rem' }}>
             <i className="bi bi-person me-1"></i>

@@ -166,13 +166,13 @@ const Asistencia: React.FC = () => {
   };
 
   const getAlumnoNombre = (id: number) => {
-    const alumno = alumnos.find(a => Number(a.id) === Number(id));
+    const alumno = alumnos.find(a => String(a.id) === String(id));
     return alumno ? `${alumno.primer_nombre} ${alumno.apellido_paterno}` : id;
   };
 
   const getCursoNombre = (id?: number) => {
     if (!id) return '-';
-    const curso = cursos.find(c => Number(c.id) === Number(id));
+    const curso = cursos.find(c => String(c.id) === String(id));
     return curso ? `${curso.nombre} (${curso.codigo || curso.id})` : id;
   };
 
@@ -185,11 +185,18 @@ const Asistencia: React.FC = () => {
   const stats = calculateStats();
 
   return (
-    <div className="container-fluid p-4">
-      <h1 className="mb-4">
-        <i className="bi bi-clipboard-check me-2"></i>
-        Control de Asistencia
-      </h1>
+    <div className="screen-page page-shell container-fluid p-2 p-md-4">
+      <div className="page-hero mb-4">
+        <div className="d-flex flex-wrap gap-2 mb-3">
+          <span className="badge rounded-pill bg-light text-primary px-3 py-2">Gestión académica</span>
+          <span className="badge rounded-pill bg-white text-dark px-3 py-2">Responsive</span>
+        </div>
+        <h1 className="page-hero-title">
+          <i className="bi bi-clipboard-check me-2"></i>
+          Control de Asistencia
+        </h1>
+        <p className="page-hero-subtitle">Visualiza y registra asistencia con una interfaz más legible, moderna y optimizada para pantallas pequeñas.</p>
+      </div>
 
       {error && (
         <div className="alert alert-danger alert-dismissible fade show" role="alert">
@@ -206,37 +213,33 @@ const Asistencia: React.FC = () => {
       )}
 
       {/* Statistics Cards */}
-      <div className="row mb-4">
-        <div className="col-md-3">
-          <div className="card dashboard-card border-success">
-            <div className="card-body text-center">
-              <h6 className="card-title text-muted">Presentes</h6>
-              <h3 className="text-success">{stats.presentes}</h3>
-            </div>
+      <div className="row summary-grid g-3 mb-4">
+        <div className="col-12 col-md-3">
+          <div className="summary-mini-card border-success">
+            <div className="summary-label">Presentes</div>
+            <div className="summary-value text-success">{stats.presentes}</div>
+            <div className="summary-note">Asistencias marcadas</div>
           </div>
         </div>
-        <div className="col-md-3">
-          <div className="card dashboard-card border-danger">
-            <div className="card-body text-center">
-              <h6 className="card-title text-muted">Ausentes</h6>
-              <h3 className="text-danger">{stats.ausentes}</h3>
-            </div>
+        <div className="col-12 col-md-3">
+          <div className="summary-mini-card border-danger">
+            <div className="summary-label">Ausentes</div>
+            <div className="summary-value text-danger">{stats.ausentes}</div>
+            <div className="summary-note">Faltas registradas</div>
           </div>
         </div>
-        <div className="col-md-3">
-          <div className="card dashboard-card border-warning">
-            <div className="card-body text-center">
-              <h6 className="card-title text-muted">Tardanzas</h6>
-              <h3 className="text-warning">{stats.tardanzas}</h3>
-            </div>
+        <div className="col-12 col-md-3">
+          <div className="summary-mini-card border-warning">
+            <div className="summary-label">Tardanzas</div>
+            <div className="summary-value text-warning">{stats.tardanzas}</div>
+            <div className="summary-note">Ingresos tardíos</div>
           </div>
         </div>
-        <div className="col-md-3">
-          <div className="card dashboard-card border-info">
-            <div className="card-body text-center">
-              <h6 className="card-title text-muted">Total</h6>
-              <h3 className="text-info">{stats.total}</h3>
-            </div>
+        <div className="col-12 col-md-3">
+          <div className="summary-mini-card border-info">
+            <div className="summary-label">Total</div>
+            <div className="summary-value text-info">{stats.total}</div>
+            <div className="summary-note">Registros en el periodo</div>
           </div>
         </div>
       </div>
@@ -246,7 +249,7 @@ const Asistencia: React.FC = () => {
           <div className="spinner-border" role="status" />
         </div>
       ) : (
-        <div className="card dashboard-card">
+        <div className="card dashboard-card table-shell">
           <div className="card-header bg-success text-white">
             <div className="d-flex justify-content-between align-items-center">
               <h5 className="mb-0">Listado de Asistencias</h5>
@@ -262,29 +265,33 @@ const Asistencia: React.FC = () => {
             </div>
           </div>
           <div className="card-body">
-            <div className="row g-3 mb-3">
-              <div className="col-md-3">
-                <div className="p-3 bg-light rounded border">
-                  <div className="text-muted small">Registros</div>
-                  <div className="fs-4 fw-bold">{asistencias.length}</div>
+            <div className="row summary-grid g-3 mb-3">
+              <div className="col-12 col-md-3">
+                <div className="summary-mini-card">
+                  <div className="summary-label">Registros</div>
+                  <div className="summary-value">{asistencias.length}</div>
+                  <div className="summary-note">Total de asistencias</div>
                 </div>
               </div>
-              <div className="col-md-3">
-                <div className="p-3 bg-light rounded border">
-                  <div className="text-muted small">Alumnos</div>
-                  <div className="fs-4 fw-bold">{alumnos.length}</div>
+              <div className="col-12 col-md-3">
+                <div className="summary-mini-card">
+                  <div className="summary-label">Alumnos</div>
+                  <div className="summary-value">{alumnos.length}</div>
+                  <div className="summary-note">Base disponible</div>
                 </div>
               </div>
-              <div className="col-md-3">
-                <div className="p-3 bg-light rounded border">
-                  <div className="text-muted small">Cursos</div>
-                  <div className="fs-4 fw-bold">{cursos.length}</div>
+              <div className="col-12 col-md-3">
+                <div className="summary-mini-card">
+                  <div className="summary-label">Cursos</div>
+                  <div className="summary-value">{cursos.length}</div>
+                  <div className="summary-note">Secciones activas</div>
                 </div>
               </div>
-              <div className="col-md-3">
-                <div className="p-3 bg-light rounded border">
-                  <div className="text-muted small">Presentes</div>
-                  <div className="fs-4 fw-bold">{stats.presentes}</div>
+              <div className="col-12 col-md-3">
+                <div className="summary-mini-card">
+                  <div className="summary-label">Presentes</div>
+                  <div className="summary-value">{stats.presentes}</div>
+                  <div className="summary-note">Estado favorable</div>
                 </div>
               </div>
             </div>

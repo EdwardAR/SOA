@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { profesoresService } from '../api/services';
 import Modal from '../components/Modal';
-import { generateStructuredCode } from '../utils/codeGenerators';
 import { useSortableData } from '../utils/tableSort';
 
 interface Profesor {
   id?: string;
   usuario_id?: string;
-  numero_empleado?: string;
+  numero_documento?: string;
   apellido_paterno?: string;
   primer_nombre?: string;
   email_contacto?: string;
@@ -24,16 +23,16 @@ const Profesores: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Profesor>({
+    numero_documento: '',
     apellido_paterno: '',
     primer_nombre: '',
     email_contacto: '',
     telefono: '',
     especialidad: '',
-    numero_empleado: '',
     estado: 'activo'
   });
   const [emailLocal, setEmailLocal] = useState('');
-  const { sortConfig, requestSort, sortedRows: profesoresOrdenados } = useSortableData(profesores, 'numero_empleado');
+  const { sortConfig, requestSort, sortedRows: profesoresOrdenados } = useSortableData(profesores, 'numero_documento');
 
   useEffect(() => {
     fetchProfesores();
@@ -54,18 +53,6 @@ const Profesores: React.FC = () => {
     }
   };
 
-  const handleAutoGenerateEmpleado = () => {
-    setFormData((prev) => ({
-      ...prev,
-      numero_empleado: generateStructuredCode({
-        prefix: 'EMP',
-        rows: profesores,
-        field: 'numero_empleado',
-        padding: 4,
-      }),
-    }));
-  };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -80,7 +67,7 @@ const Profesores: React.FC = () => {
       setFormData({
         id: profesor.id,
         usuario_id: profesor.usuario_id,
-        numero_empleado: profesor.numero_empleado || '',
+        numero_documento: profesor.numero_documento || '',
         apellido_paterno: profesor.apellido_paterno || '',
         primer_nombre: profesor.primer_nombre || '',
         email_contacto: profesor.email_contacto || '',
@@ -92,12 +79,12 @@ const Profesores: React.FC = () => {
     } else {
       setEditingId(null);
       setFormData({
+        numero_documento: '',
         apellido_paterno: '',
         primer_nombre: '',
         email_contacto: '',
         telefono: '',
         especialidad: '',
-        numero_empleado: '',
         estado: 'activo'
       });
       setEmailLocal('');
@@ -112,7 +99,7 @@ const Profesores: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!formData.apellido_paterno || !formData.primer_nombre || !formData.especialidad) {
+    if (!formData.apellido_paterno || !formData.primer_nombre || !formData.especialidad || !formData.numero_documento) {
       setError('Por favor completa los campos obligatorios');
       return;
     }
@@ -153,11 +140,18 @@ const Profesores: React.FC = () => {
   };
 
   return (
-    <div className="container-fluid p-4">
-      <h1 className="mb-4">
-        <i className="bi bi-person-badge me-2"></i>
-        Gestión de Profesores
-      </h1>
+    <div className="screen-page page-shell container-fluid p-2 p-md-4">
+      <div className="page-hero mb-4">
+        <div className="d-flex flex-wrap gap-2 mb-3">
+          <span className="badge rounded-pill bg-light text-primary px-3 py-2">Gestión académica</span>
+          <span className="badge rounded-pill bg-white text-dark px-3 py-2">Responsive</span>
+        </div>
+        <h1 className="page-hero-title">
+          <i className="bi bi-person-badge me-2"></i>
+          Gestión de Profesores
+        </h1>
+        <p className="page-hero-subtitle">Administra la planta docente con una experiencia más limpia, consistente y fácil de usar en móvil o escritorio.</p>
+      </div>
 
       {error && (
         <div className="alert alert-danger alert-dismissible fade show" role="alert">
@@ -178,7 +172,7 @@ const Profesores: React.FC = () => {
           <div className="spinner-border" role="status" />
         </div>
       ) : (
-        <div className="card dashboard-card">
+        <div className="card dashboard-card table-shell">
           <div className="card-header bg-primary text-white">
             <div className="d-flex justify-content-between align-items-center">
               <h5 className="mb-0">Listado de Profesores ({profesores.length})</h5>
@@ -193,8 +187,8 @@ const Profesores: React.FC = () => {
               <table className="table table-hover">
                 <thead className="table-light">
                   <tr>
-                    <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('numero_empleado')}>
-                      Empleado {sortConfig.key === 'numero_empleado' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                    <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('numero_documento')}>
+                      Documento {sortConfig.key === 'numero_documento' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
                     </th>
                     <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('primer_nombre')}>
                       Nombre {sortConfig.key === 'primer_nombre' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
@@ -224,10 +218,10 @@ const Profesores: React.FC = () => {
                   ) : (
                     profesoresOrdenados.map((profesor) => (
                       <tr key={profesor.id}>
-                        <td><small className="text-muted">{profesor.numero_empleado || '-'}</small></td>
+                        <td><small className="text-muted">{profesor.numero_documento || '-'}</small></td>
                         <td>{profesor.primer_nombre}</td>
                         <td>{profesor.apellido_paterno}</td>
-                        <td>{profesor.email_contacto || '-'}</td>
+                        <td>{profesor.email || profesor.email_contacto || '-'}</td>
                         <td>{profesor.especialidad || '-'}</td>
                         <td>{profesor.telefono || '-'}</td>
                         <td>
@@ -257,23 +251,19 @@ const Profesores: React.FC = () => {
       >
         <form>
           <div className="mb-3">
-            <label htmlFor="numero_empleado" className="form-label">
-              Número de Empleado
+            <label htmlFor="numero_documento" className="form-label">
+              Número de Documento *
             </label>
-            <div className="input-group">
-              <input
-                type="text"
-                className="form-control"
-                id="numero_empleado"
-                name="numero_empleado"
-                value={formData.numero_empleado}
-                onChange={handleInputChange}
-                placeholder="EMP-2026-0001"
-              />
-              <button type="button" className="btn btn-outline-secondary" onClick={handleAutoGenerateEmpleado}>
-                Generar
-              </button>
-            </div>
+            <input
+              type="text"
+              className="form-control"
+              id="numero_documento"
+              name="numero_documento"
+              value={formData.numero_documento}
+              onChange={handleInputChange}
+              placeholder="12345678"
+              required
+            />
           </div>
           <div className="row">
             <div className="col-md-6">

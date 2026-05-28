@@ -174,11 +174,18 @@ const Notificaciones: React.FC = () => {
   const stats = calculateStats();
 
   return (
-    <div className="container-fluid p-4">
-      <h1 className="mb-4">
-        <i className="bi bi-bell me-2"></i>
-        Centro de Notificaciones
-      </h1>
+    <div className="screen-page page-shell container-fluid p-2 p-md-4">
+      <div className="page-hero mb-4">
+        <div className="d-flex flex-wrap gap-2 mb-3">
+          <span className="badge rounded-pill bg-light text-primary px-3 py-2">Gestión académica</span>
+          <span className="badge rounded-pill bg-white text-dark px-3 py-2">Responsive</span>
+        </div>
+        <h1 className="page-hero-title">
+          <i className="bi bi-bell me-2"></i>
+          Centro de Notificaciones
+        </h1>
+        <p className="page-hero-subtitle">Comunica avisos y alertas con una presentación más ordenada y una lectura cómoda en cualquier pantalla.</p>
+      </div>
 
       {error && (
         <div className="alert alert-danger alert-dismissible fade show" role="alert">
@@ -195,37 +202,33 @@ const Notificaciones: React.FC = () => {
       )}
 
       {/* Statistics Cards */}
-      <div className="row mb-4">
-        <div className="col-md-3">
-          <div className="card dashboard-card border-success">
-            <div className="card-body text-center">
-              <h6 className="card-title text-muted">Leídas</h6>
-              <h3 className="text-success">{stats.leidas}</h3>
-            </div>
+      <div className="row summary-grid g-3 mb-4">
+        <div className="col-12 col-md-3">
+          <div className="summary-mini-card border-success">
+            <div className="summary-label">Leídas</div>
+            <div className="summary-value text-success">{stats.leidas}</div>
+            <div className="summary-note">Mensajes revisados</div>
           </div>
         </div>
-        <div className="col-md-3">
-          <div className="card dashboard-card border-warning">
-            <div className="card-body text-center">
-              <h6 className="card-title text-muted">No Leídas</h6>
-              <h3 className="text-warning">{stats.noleidas}</h3>
-            </div>
+        <div className="col-12 col-md-3">
+          <div className="summary-mini-card border-warning">
+            <div className="summary-label">No Leídas</div>
+            <div className="summary-value text-warning">{stats.noleidas}</div>
+            <div className="summary-note">Pendientes de atención</div>
           </div>
         </div>
-        <div className="col-md-3">
-          <div className="card dashboard-card border-info">
-            <div className="card-body text-center">
-              <h6 className="card-title text-muted">Información</h6>
-              <h3 className="text-info">{stats.informaciones}</h3>
-            </div>
+        <div className="col-12 col-md-3">
+          <div className="summary-mini-card border-info">
+            <div className="summary-label">Información</div>
+            <div className="summary-value text-info">{stats.informaciones}</div>
+            <div className="summary-note">Avisos informativos</div>
           </div>
         </div>
-        <div className="col-md-3">
-          <div className="card dashboard-card border-danger">
-            <div className="card-body text-center">
-              <h6 className="card-title text-muted">Alertas</h6>
-              <h3 className="text-danger">{stats.alertas}</h3>
-            </div>
+        <div className="col-12 col-md-3">
+          <div className="summary-mini-card border-danger">
+            <div className="summary-label">Alertas</div>
+            <div className="summary-value text-danger">{stats.alertas}</div>
+            <div className="summary-note">Casos prioritarios</div>
           </div>
         </div>
       </div>
@@ -235,7 +238,7 @@ const Notificaciones: React.FC = () => {
           <div className="spinner-border" role="status" />
         </div>
       ) : (
-        <div className="card dashboard-card">
+        <div className="card dashboard-card table-shell">
           <div className="card-header bg-info text-white">
             <div className="d-flex justify-content-between align-items-center">
               <h5 className="mb-0">Listado de Notificaciones</h5>
@@ -251,29 +254,33 @@ const Notificaciones: React.FC = () => {
             </div>
           </div>
           <div className="card-body">
-            <div className="row g-3 mb-3">
-              <div className="col-md-3">
-                <div className="p-3 bg-light rounded border">
-                  <div className="text-muted small">Notificaciones</div>
-                  <div className="fs-4 fw-bold">{notificaciones.length}</div>
+            <div className="row summary-grid g-3 mb-3">
+              <div className="col-12 col-md-3">
+                <div className="summary-mini-card">
+                  <div className="summary-label">Notificaciones</div>
+                  <div className="summary-value">{notificaciones.length}</div>
+                  <div className="summary-note">Mensajes totales</div>
                 </div>
               </div>
-              <div className="col-md-3">
-                <div className="p-3 bg-light rounded border">
-                  <div className="text-muted small">Leídas</div>
-                  <div className="fs-4 fw-bold">{stats.leidas}</div>
+              <div className="col-12 col-md-3">
+                <div className="summary-mini-card">
+                  <div className="summary-label">Leídas</div>
+                  <div className="summary-value">{stats.leidas}</div>
+                  <div className="summary-note">Mensajes atendidos</div>
                 </div>
               </div>
-              <div className="col-md-3">
-                <div className="p-3 bg-light rounded border">
-                  <div className="text-muted small">No leídas</div>
-                  <div className="fs-4 fw-bold">{stats.noleidas}</div>
+              <div className="col-12 col-md-3">
+                <div className="summary-mini-card">
+                  <div className="summary-label">No leídas</div>
+                  <div className="summary-value">{stats.noleidas}</div>
+                  <div className="summary-note">Pendientes visibles</div>
                 </div>
               </div>
-              <div className="col-md-3">
-                <div className="p-3 bg-light rounded border">
-                  <div className="text-muted small">Alertas</div>
-                  <div className="fs-4 fw-bold">{stats.alertas}</div>
+              <div className="col-12 col-md-3">
+                <div className="summary-mini-card">
+                  <div className="summary-label">Alertas</div>
+                  <div className="summary-value">{stats.alertas}</div>
+                  <div className="summary-note">Casos prioritarios</div>
                 </div>
               </div>
             </div>

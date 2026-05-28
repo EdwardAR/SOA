@@ -229,11 +229,18 @@ const Pagos: React.FC = () => {
   };
 
   return (
-    <div className="container-fluid p-4">
-      <h1 className="mb-4">
-        <i className="bi bi-credit-card me-2"></i>
-        Gestión de Pagos
-      </h1>
+    <div className="screen-page page-shell container-fluid p-2 p-md-4">
+      <div className="page-hero mb-4">
+        <div className="d-flex flex-wrap gap-2 mb-3">
+          <span className="badge rounded-pill bg-light text-primary px-3 py-2">Gestión financiera</span>
+          <span className="badge rounded-pill bg-white text-dark px-3 py-2">Responsive</span>
+        </div>
+        <h1 className="page-hero-title">
+          <i className="bi bi-credit-card me-2"></i>
+          Gestión de Pagos
+        </h1>
+        <p className="page-hero-subtitle">Consulta y administra pagos con un diseño más claro, ordenado y preparado para pantallas móviles.</p>
+      </div>
 
       {error && (
         <div className="alert alert-danger alert-dismissible fade show" role="alert">
@@ -250,37 +257,33 @@ const Pagos: React.FC = () => {
       )}
 
       {/* Summary Cards */}
-      <div className="row mb-4">
-        <div className="col-md-3">
-          <div className="card dashboard-card border-success">
-            <div className="card-body text-center">
-              <h6 className="card-title text-muted">Pagado</h6>
-              <h3 className="text-success">S/. {totals.totalPagado.toFixed(2)}</h3>
-            </div>
+      <div className="row summary-grid g-3 mb-4">
+        <div className="col-12 col-md-3">
+          <div className="summary-mini-card border-success">
+            <div className="summary-label">Pagado</div>
+            <div className="summary-value text-success">S/. {totals.totalPagado.toFixed(2)}</div>
+            <div className="summary-note">Ingresos confirmados</div>
           </div>
         </div>
-        <div className="col-md-3">
-          <div className="card dashboard-card border-danger">
-            <div className="card-body text-center">
-              <h6 className="card-title text-muted">Pendiente</h6>
-              <h3 className="text-danger">S/. {totals.totalPendiente.toFixed(2)}</h3>
-            </div>
+        <div className="col-12 col-md-3">
+          <div className="summary-mini-card border-danger">
+            <div className="summary-label">Pendiente</div>
+            <div className="summary-value text-danger">S/. {totals.totalPendiente.toFixed(2)}</div>
+            <div className="summary-note">Cuentas por regularizar</div>
           </div>
         </div>
-        <div className="col-md-3">
-          <div className="card dashboard-card border-primary">
-            <div className="card-body text-center">
-              <h6 className="card-title text-muted">Total</h6>
-              <h3 className="text-primary">S/. {totals.total.toFixed(2)}</h3>
-            </div>
+        <div className="col-12 col-md-3">
+          <div className="summary-mini-card border-primary">
+            <div className="summary-label">Total</div>
+            <div className="summary-value text-primary">S/. {totals.total.toFixed(2)}</div>
+            <div className="summary-note">Monto acumulado</div>
           </div>
         </div>
-        <div className="col-md-3">
-          <div className="card dashboard-card border-info">
-            <div className="card-body text-center">
-              <h6 className="card-title text-muted">Transacciones</h6>
-              <h3 className="text-info">{totals.transacciones}</h3>
-            </div>
+        <div className="col-12 col-md-3">
+          <div className="summary-mini-card border-info">
+            <div className="summary-label">Transacciones</div>
+            <div className="summary-value text-info">{totals.transacciones}</div>
+            <div className="summary-note">Operaciones registradas</div>
           </div>
         </div>
       </div>
@@ -290,7 +293,7 @@ const Pagos: React.FC = () => {
           <div className="spinner-border" role="status" />
         </div>
       ) : (
-        <div className="card dashboard-card">
+        <div className="card dashboard-card table-shell">
           <div className="card-header bg-warning text-white">
             <div className="d-flex justify-content-between align-items-center">
               <h5 className="mb-0">Listado de Pagos</h5>
@@ -306,23 +309,26 @@ const Pagos: React.FC = () => {
             </div>
           </div>
           <div className="card-body">
-            <div className="row g-3 mb-3">
-              <div className="col-md-4">
-                <div className="p-3 bg-light rounded border">
-                  <div className="text-muted small">Pagos cargados</div>
-                  <div className="fs-4 fw-bold">{pagos.length}</div>
+            <div className="row summary-grid g-3 mb-3">
+              <div className="col-12 col-md-4">
+                <div className="summary-mini-card">
+                  <div className="summary-label">Pagos cargados</div>
+                  <div className="summary-value">{pagos.length}</div>
+                  <div className="summary-note">Movimientos visibles para gestión</div>
                 </div>
               </div>
-              <div className="col-md-4">
-                <div className="p-3 bg-light rounded border">
-                  <div className="text-muted small">Alumnos disponibles</div>
-                  <div className="fs-4 fw-bold">{alumnos.length}</div>
+              <div className="col-12 col-md-4">
+                <div className="summary-mini-card">
+                  <div className="summary-label">Alumnos disponibles</div>
+                  <div className="summary-value">{alumnos.length}</div>
+                  <div className="summary-note">Base de referencia para cobros</div>
                 </div>
               </div>
-              <div className="col-md-4">
-                <div className="p-3 bg-light rounded border">
-                  <div className="text-muted small">Monto total</div>
-                  <div className="fs-4 fw-bold">S/. {totals.total.toFixed(2)}</div>
+              <div className="col-12 col-md-4">
+                <div className="summary-mini-card">
+                  <div className="summary-label">Monto total</div>
+                  <div className="summary-value">S/. {totals.total.toFixed(2)}</div>
+                  <div className="summary-note">Consolidado general del periodo</div>
                 </div>
               </div>
             </div>
@@ -426,16 +432,7 @@ const Pagos: React.FC = () => {
             {alumnos.map(a => (
               <option key={a.id} value={a.id}>{a.primer_nombre} {a.apellido_paterno} ({a.numero_matricula})</option>
             ))}
-            <option value="__other">Otro (manual)</option>
           </select>
-          {formData.alumno_id === '__other' && (
-            <input
-              className="form-control mt-2"
-              placeholder="Ingrese nombre o ID manualmente"
-              value={formData.observaciones || ''}
-              onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
-            />
-          )}
         </div>
         <div className="mb-3">
           <label className="form-label">Concepto</label>

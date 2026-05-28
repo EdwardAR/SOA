@@ -166,11 +166,18 @@ const Alumnos: React.FC = () => {
   };
 
   return (
-    <div className="container-fluid p-4">
-      <h1 className="mb-4">
-        <i className="bi bi-people me-2"></i>
-        Gestión de Alumnos
-      </h1>
+    <div className="screen-page page-shell container-fluid p-2 p-md-4">
+      <div className="page-hero mb-4">
+        <div className="d-flex flex-wrap gap-2 mb-3">
+          <span className="badge rounded-pill bg-light text-primary px-3 py-2">Gestión académica</span>
+          <span className="badge rounded-pill bg-white text-dark px-3 py-2">Responsive</span>
+        </div>
+        <h1 className="page-hero-title">
+          <i className="bi bi-people me-2"></i>
+          Gestión de Alumnos
+        </h1>
+        <p className="page-hero-subtitle">Controla el padrón estudiantil con una vista más clara, moderna y adaptable a cualquier pantalla.</p>
+      </div>
 
       {error && (
         <div className="alert alert-danger alert-dismissible fade show" role="alert">
@@ -199,7 +206,7 @@ const Alumnos: React.FC = () => {
           <div className="spinner-border" role="status" />
         </div>
       ) : (
-        <div className="card dashboard-card">
+        <div className="card dashboard-card table-shell">
           <div className="card-header bg-primary text-white">
             <div className="d-flex justify-content-between align-items-center">
               <h5 className="mb-0">Listado de Alumnos ({alumnos.length})</h5>

@@ -1,18 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { cursosService, profesoresService } from '../api/services';
 import Modal from '../components/Modal';
-import { generateStructuredCode } from '../utils/codeGenerators';
 import { useSortableData } from '../utils/tableSort';
+import { generateStructuredCode } from '../utils/codeGenerators';
 
 interface Curso {
   id?: string;
   nombre: string;
   codigo?: string;
-  grado?: string;
-  capacidad?: number;
+  grado_nivel?: string;
+  capacidad_maxima?: number;
   profesor_id?: string;
   seccion?: string;
-  salon?: string;
+  aula_asignada?: string;
+  periodo_academico?: string;
 }
 
 const Cursos: React.FC = () => {
@@ -26,11 +27,12 @@ const Cursos: React.FC = () => {
   const [formData, setFormData] = useState<Curso>({
     nombre: '',
     codigo: '',
-    grado: '',
-    capacidad: 40,
+    grado_nivel: '',
+    capacidad_maxima: 40,
     profesor_id: '',
     seccion: 'A',
-    salon: '',
+    aula_asignada: '',
+    periodo_academico: `${new Date().getFullYear()}-1`,
   });
   const { sortConfig, requestSort, sortedRows: cursosOrdenados } = useSortableData(cursos, 'nombre');
 
@@ -60,30 +62,10 @@ const Cursos: React.FC = () => {
     }
   };
 
-  const handleAutoGenerateCodigo = () => {
-    setFormData((prev) => ({
-      ...prev,
-      codigo: generateStructuredCode({
-        prefix: 'CUR',
-        rows: cursos,
-        field: 'codigo',
-        padding: 4,
-      }),
-    }));
-  };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => {
-      const next = { ...prev, [name]: name === 'capacidad' ? parseInt(value) : value } as any;
-      // When a professor is selected, link the course name to the professor's especialidad
-      if (name === 'profesor_id') {
-        const prof = profesores.find((p) => p.id === value);
-        if (prof) {
-          next.nombre = prof.especialidad || prev.nombre;
-        }
-      }
-      return next;
+      return { ...prev, [name]: name === 'capacidad_maxima' ? parseInt(value) : value } as any;
     });
   };
 
@@ -93,13 +75,14 @@ const Cursos: React.FC = () => {
       setEditingId(curso.id);
     } else {
       setFormData({
-        nombre: profesores[0]?.especialidad || '',
+        nombre: '',
         codigo: '',
-        grado: '',
-        capacidad: 40,
+        grado_nivel: '',
+        capacidad_maxima: 40,
         profesor_id: profesores[0]?.id || '',
         seccion: 'A',
-        salon: '',
+        aula_asignada: '',
+        periodo_academico: `${new Date().getFullYear()}-1`,
       });
       setEditingId(null);
     }
@@ -111,11 +94,12 @@ const Cursos: React.FC = () => {
     setFormData({
       nombre: '',
       codigo: '',
-      grado: '',
-      capacidad: 40,
-        profesor_id: profesores[0]?.id || '',
-        seccion: 'A',
-        salon: '',
+      grado_nivel: '',
+      capacidad_maxima: 40,
+      profesor_id: profesores[0]?.id || '',
+      seccion: 'A',
+      aula_asignada: '',
+      periodo_academico: `${new Date().getFullYear()}-1`,
     });
     setEditingId(null);
   };
@@ -123,11 +107,28 @@ const Cursos: React.FC = () => {
   const handleSave = async () => {
     try {
       setError('');
+      if (!formData.nombre || !formData.codigo || !formData.grado_nivel || !formData.profesor_id || !formData.periodo_academico) {
+        setError('Completa nombre, código, grado/nivel, profesor y período académico');
+        return;
+      }
+
+      const payload = {
+        nombre: formData.nombre,
+        codigo: formData.codigo,
+        descripcion: '',
+        grado_nivel: formData.grado_nivel,
+        capacidad_maxima: formData.capacidad_maxima,
+        profesor_id: formData.profesor_id,
+        seccion: formData.seccion,
+        aula_asignada: formData.aula_asignada,
+        periodo_academico: formData.periodo_academico,
+      };
+
       if (editingId) {
-        await cursosService.update(editingId, formData);
+        await cursosService.update(editingId, payload);
         setSuccess('Curso actualizado correctamente');
       } else {
-        await cursosService.create(formData);
+        await cursosService.create(payload);
         setSuccess('Curso creado correctamente');
       }
       handleCloseModal();
@@ -136,6 +137,23 @@ const Cursos: React.FC = () => {
     } catch (err: any) {
       setError(err.response?.data?.mensaje || 'Error al guardar curso');
     }
+  };
+
+  const handleAutoGenerateCodigo = () => {
+    const codigoGenerado = generateStructuredCode({
+      prefix: 'CUR',
+      rows: cursos,
+      field: 'codigo',
+      padding: 4,
+      year: new Date().getFullYear(),
+    });
+
+    setFormData((prev) => ({
+      ...prev,
+      codigo: codigoGenerado,
+    }));
+    setSuccess('Código generado automáticamente');
+    setTimeout(() => setSuccess(''), 2500);
   };
 
   const handleDelete = async (id: string) => {
@@ -152,11 +170,18 @@ const Cursos: React.FC = () => {
   };
 
   return (
-    <div className="container-fluid p-4">
-      <h1 className="mb-4">
-        <i className="bi bi-book me-2"></i>
-        Gestión de Cursos
-      </h1>
+    <div className="screen-page page-shell container-fluid p-2 p-md-4">
+      <div className="page-hero mb-4">
+        <div className="d-flex flex-wrap gap-2 mb-3">
+          <span className="badge rounded-pill bg-light text-primary px-3 py-2">Gestión académica</span>
+          <span className="badge rounded-pill bg-white text-dark px-3 py-2">Responsive</span>
+        </div>
+        <h1 className="page-hero-title">
+          <i className="bi bi-book me-2"></i>
+          Gestión de Cursos
+        </h1>
+        <p className="page-hero-subtitle">Centraliza secciones, grados y profesores en una interfaz más ordenada y fácil de navegar en cualquier dispositivo.</p>
+      </div>
 
       {error && (
         <div className="alert alert-danger alert-dismissible fade show" role="alert">
@@ -185,7 +210,7 @@ const Cursos: React.FC = () => {
           <div className="spinner-border" role="status" />
         </div>
       ) : (
-        <div className="card dashboard-card">
+        <div className="card dashboard-card table-shell">
           <div className="card-header bg-success text-white">
             <div className="d-flex justify-content-between align-items-center">
               <h5 className="mb-0">Listado de Cursos ({cursos.length})</h5>
@@ -212,8 +237,8 @@ const Cursos: React.FC = () => {
                     <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('codigo')}>
                       Código {sortConfig.key === 'codigo' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
                     </th>
-                    <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('grado')}>
-                      Grado {sortConfig.key === 'grado' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                    <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('grado_nivel')}>
+                      Grado {sortConfig.key === 'grado_nivel' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
                     </th>
                     <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('profesor_nombre')}>
                       Profesor {sortConfig.key === 'profesor_nombre' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
@@ -241,14 +266,14 @@ const Cursos: React.FC = () => {
                         <td>
                           <span className="badge bg-info">{curso.codigo}</span>
                         </td>
-                        <td>{curso.grado || '-'}</td>
+                        <td>{curso.grado_nivel || '-'}</td>
                         <td>
                           <div className="fw-semibold">{curso.profesor_nombre || '-'}</div>
-                          <small className="text-muted">{curso.profesor_numero_empleado || ''}</small>
+                          <small className="text-muted">{curso.profesor_numero_documento || ''}</small>
                         </td>
                         <td>
                           <span className="badge bg-secondary">
-                            {curso.capacidad}
+                            {curso.capacidad_maxima}
                           </span>
                         </td>
                         <td>
@@ -296,10 +321,8 @@ const Cursos: React.FC = () => {
               name="nombre"
               value={formData.nombre}
               onChange={handleInputChange}
-              readOnly
               required
             />
-            <div className="form-text">Se completa automáticamente según la especialidad del profesor.</div>
           </div>
           <div className="mb-3">
             <label htmlFor="codigo" className="form-label">
@@ -321,14 +344,14 @@ const Cursos: React.FC = () => {
             </div>
           </div>
           <div className="mb-3">
-            <label htmlFor="grado" className="form-label">
-              Grado
+            <label htmlFor="grado_nivel" className="form-label">
+              Grado/Nivel *
             </label>
             <select
               className="form-select"
-              id="grado"
-              name="grado"
-              value={formData.grado}
+              id="grado_nivel"
+              name="grado_nivel"
+              value={formData.grado_nivel}
               onChange={handleInputChange}
             >
               <option value="">Seleccionar grado</option>
@@ -354,7 +377,7 @@ const Cursos: React.FC = () => {
               <option value="">Seleccionar profesor</option>
               {profesores.map((profesor) => (
                 <option key={profesor.id} value={profesor.id}>
-                  {profesor.primer_nombre} {profesor.apellido_paterno} ({profesor.numero_empleado || 'sin código'})
+                  {profesor.primer_nombre} {profesor.apellido_paterno} ({profesor.numero_documento || 'sin documento'})
                 </option>
               ))}
             </select>
@@ -375,35 +398,49 @@ const Cursos: React.FC = () => {
               />
             </div>
             <div className="col-md-6 mb-3">
-              <label htmlFor="salon" className="form-label">
-                Salón
+              <label htmlFor="aula_asignada" className="form-label">
+                  Aula asignada
               </label>
               <input
                 type="text"
                 className="form-control"
-                id="salon"
-                name="salon"
-                value={formData.salon}
+                  id="aula_asignada"
+                  name="aula_asignada"
+                  value={formData.aula_asignada}
                 onChange={handleInputChange}
                 placeholder="A-101"
               />
             </div>
           </div>
           <div className="mb-3">
-            <label htmlFor="capacidad" className="form-label">
-              Capacidad
+              <label htmlFor="periodo_academico" className="form-label">
+                Período académico *
             </label>
-            <input
-              type="number"
+              <input
+                type="text"
               className="form-control"
-              id="capacidad"
-              name="capacidad"
-              value={formData.capacidad}
+                id="periodo_academico"
+                name="periodo_academico"
+                value={formData.periodo_academico}
               onChange={handleInputChange}
-              min="1"
-              max="100"
+                placeholder="2026-1"
             />
           </div>
+            <div className="mb-3">
+              <label htmlFor="capacidad_maxima" className="form-label">
+                Capacidad máxima
+              </label>
+              <input
+                type="number"
+                className="form-control"
+                id="capacidad_maxima"
+                name="capacidad_maxima"
+                value={formData.capacidad_maxima}
+                onChange={handleInputChange}
+                min="1"
+                max="100"
+              />
+            </div>
         </form>
       </Modal>
     </div>

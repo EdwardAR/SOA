@@ -9,8 +9,9 @@ interface Calificacion {
   id?: string;
   alumno_id: string;
   curso_id: string;
-  nota: number;
-  periodo: string;
+  tipo_evaluacion: string;
+  puntuacion: number;
+  periodo_academico: string;
   observaciones?: string;
   alumno_nombre?: string;
   alumno_numero_matricula?: string;
@@ -30,10 +31,11 @@ const Calificaciones: React.FC = () => {
   const [formData, setFormData] = useState<Calificacion>({
     alumno_id: '',
     curso_id: '',
-    nota: 0,
-    periodo: '1'
+    tipo_evaluacion: 'parcial',
+    puntuacion: 0,
+    periodo_academico: `${new Date().getFullYear()}-1`
   });
-  const { sortConfig, requestSort, sortedRows: calificacionesOrdenadas } = useSortableData(calificaciones, 'nota');
+  const { sortConfig, requestSort, sortedRows: calificacionesOrdenadas } = useSortableData(calificaciones, 'puntuacion');
 
   useEffect(() => {
     fetchCalificaciones();
@@ -84,8 +86,9 @@ const Calificaciones: React.FC = () => {
       setFormData({
         alumno_id: '',
         curso_id: '',
-        nota: 0,
-        periodo: '1'
+        tipo_evaluacion: 'parcial',
+        puntuacion: 0,
+        periodo_academico: `${new Date().getFullYear()}-1`
       });
     }
     setShowModal(true);
@@ -97,17 +100,26 @@ const Calificaciones: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!formData.alumno_id || !formData.curso_id || formData.nota < 0 || formData.nota > 20) {
-      setError('Por favor completa los campos correctamente (nota entre 0 y 20)');
+    if (!formData.alumno_id || !formData.curso_id || !formData.tipo_evaluacion || formData.puntuacion < 0 || formData.puntuacion > 20 || !formData.periodo_academico) {
+      setError('Por favor completa los campos correctamente');
       return;
     }
 
     try {
+      const payload = {
+        alumno_id: formData.alumno_id,
+        curso_id: formData.curso_id,
+        tipo_evaluacion: formData.tipo_evaluacion,
+        puntuacion: formData.puntuacion,
+        periodo_academico: formData.periodo_academico,
+        observaciones: formData.observaciones,
+      };
+
       if (editingId) {
-        await calificacionesService.update(editingId, formData);
+        await calificacionesService.update(editingId, payload);
         setSuccess('Calificación actualizada correctamente');
       } else {
-        await calificacionesService.create(formData);
+        await calificacionesService.create(payload);
         setSuccess('Calificación registrada correctamente');
       }
       handleCloseModal();
@@ -148,21 +160,28 @@ const Calificaciones: React.FC = () => {
   const stats = calculateStats();
 
   const getAlumnoNombre = (id: number) => {
-    const alumno = alumnos.find(a => Number(a.id) === Number(id));
+    const alumno = alumnos.find(a => String(a.id) === String(id));
     return alumno ? `${alumno.primer_nombre} ${alumno.apellido_paterno}` : id;
   };
 
   const getCursoNombre = (id: number) => {
-    const curso = cursos.find(c => Number(c.id) === Number(id));
+    const curso = cursos.find(c => String(c.id) === String(id));
     return curso ? `${curso.nombre} (${curso.codigo || curso.id})` : id;
   };
 
   return (
-    <div className="container-fluid p-4">
-      <h1 className="mb-4">
-        <i className="bi bi-graph-up me-2"></i>
-        Gestión de Calificaciones
-      </h1>
+    <div className="screen-page page-shell container-fluid p-2 p-md-4">
+      <div className="page-hero mb-4">
+        <div className="d-flex flex-wrap gap-2 mb-3">
+          <span className="badge rounded-pill bg-light text-primary px-3 py-2">Gestión académica</span>
+          <span className="badge rounded-pill bg-white text-dark px-3 py-2">Responsive</span>
+        </div>
+        <h1 className="page-hero-title">
+          <i className="bi bi-graph-up me-2"></i>
+          Gestión de Calificaciones
+        </h1>
+        <p className="page-hero-subtitle">Supervisa el rendimiento académico con una interfaz más limpia, consistente y adaptada a cualquier pantalla.</p>
+      </div>
 
       {error && (
         <div className="alert alert-danger alert-dismissible fade show" role="alert">
@@ -179,37 +198,33 @@ const Calificaciones: React.FC = () => {
       )}
 
       {/* Statistics Cards */}
-      <div className="row mb-4">
-        <div className="col-md-3">
-          <div className="card dashboard-card border-info">
-            <div className="card-body text-center">
-              <h6 className="card-title text-muted">Promedio</h6>
-              <h3 className="text-info">{stats.promedio}</h3>
-            </div>
+      <div className="row summary-grid g-3 mb-4">
+        <div className="col-12 col-md-3">
+          <div className="summary-mini-card border-info">
+            <div className="summary-label">Promedio</div>
+            <div className="summary-value text-info">{stats.promedio}</div>
+            <div className="summary-note">Rendimiento general</div>
           </div>
         </div>
-        <div className="col-md-3">
-          <div className="card dashboard-card border-success">
-            <div className="card-body text-center">
-              <h6 className="card-title text-muted">Nota Máxima</h6>
-              <h3 className="text-success">{stats.maxima}</h3>
-            </div>
+        <div className="col-12 col-md-3">
+          <div className="summary-mini-card border-success">
+            <div className="summary-label">Nota Máxima</div>
+            <div className="summary-value text-success">{stats.maxima}</div>
+            <div className="summary-note">Mejor desempeño</div>
           </div>
         </div>
-        <div className="col-md-3">
-          <div className="card dashboard-card border-danger">
-            <div className="card-body text-center">
-              <h6 className="card-title text-muted">Nota Mínima</h6>
-              <h3 className="text-danger">{stats.minima}</h3>
-            </div>
+        <div className="col-12 col-md-3">
+          <div className="summary-mini-card border-danger">
+            <div className="summary-label">Nota Mínima</div>
+            <div className="summary-value text-danger">{stats.minima}</div>
+            <div className="summary-note">Seguimiento de riesgo</div>
           </div>
         </div>
-        <div className="col-md-3">
-          <div className="card dashboard-card border-warning">
-            <div className="card-body text-center">
-              <h6 className="card-title text-muted">Total Registros</h6>
-              <h3 className="text-warning">{stats.total}</h3>
-            </div>
+        <div className="col-12 col-md-3">
+          <div className="summary-mini-card border-warning">
+            <div className="summary-label">Total Registros</div>
+            <div className="summary-value text-warning">{stats.total}</div>
+            <div className="summary-note">Notas disponibles</div>
           </div>
         </div>
       </div>
@@ -219,7 +234,7 @@ const Calificaciones: React.FC = () => {
           <div className="spinner-border" role="status" />
         </div>
       ) : (
-        <div className="card dashboard-card">
+        <div className="card dashboard-card table-shell">
           <div className="card-header bg-primary text-white">
             <div className="d-flex justify-content-between align-items-center">
               <h5 className="mb-0">Listado de Calificaciones</h5>
@@ -235,29 +250,33 @@ const Calificaciones: React.FC = () => {
             </div>
           </div>
           <div className="card-body">
-            <div className="row g-3 mb-3">
-              <div className="col-md-3">
-                <div className="p-3 bg-light rounded border">
-                  <div className="text-muted small">Calificaciones</div>
-                  <div className="fs-4 fw-bold">{calificaciones.length}</div>
+            <div className="row summary-grid g-3 mb-3">
+              <div className="col-12 col-md-3">
+                <div className="summary-mini-card">
+                  <div className="summary-label">Calificaciones</div>
+                  <div className="summary-value">{calificaciones.length}</div>
+                  <div className="summary-note">Registros académicos</div>
                 </div>
               </div>
-              <div className="col-md-3">
-                <div className="p-3 bg-light rounded border">
-                  <div className="text-muted small">Alumnos</div>
-                  <div className="fs-4 fw-bold">{alumnos.length}</div>
+              <div className="col-12 col-md-3">
+                <div className="summary-mini-card">
+                  <div className="summary-label">Alumnos</div>
+                  <div className="summary-value">{alumnos.length}</div>
+                  <div className="summary-note">Base disponible</div>
                 </div>
               </div>
-              <div className="col-md-3">
-                <div className="p-3 bg-light rounded border">
-                  <div className="text-muted small">Cursos</div>
-                  <div className="fs-4 fw-bold">{cursos.length}</div>
+              <div className="col-12 col-md-3">
+                <div className="summary-mini-card">
+                  <div className="summary-label">Cursos</div>
+                  <div className="summary-value">{cursos.length}</div>
+                  <div className="summary-note">Secciones activas</div>
                 </div>
               </div>
-              <div className="col-md-3">
-                <div className="p-3 bg-light rounded border">
-                  <div className="text-muted small">Promedio</div>
-                  <div className="fs-4 fw-bold">{stats.promedio}</div>
+              <div className="col-12 col-md-3">
+                <div className="summary-mini-card">
+                  <div className="summary-label">Promedio</div>
+                  <div className="summary-value">{stats.promedio}</div>
+                  <div className="summary-note">Rendimiento global</div>
                 </div>
               </div>
             </div>
@@ -277,11 +296,11 @@ const Calificaciones: React.FC = () => {
                       <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('curso_nombre')}>
                         Curso {sortConfig.key === 'curso_nombre' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
                       </th>
-                      <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('nota')}>
-                        Nota {sortConfig.key === 'nota' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                      <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('puntuacion')}>
+                        Nota {sortConfig.key === 'puntuacion' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
                       </th>
-                      <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('periodo')}>
-                        Período {sortConfig.key === 'periodo' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                      <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('periodo_academico')}>
+                        Período {sortConfig.key === 'periodo_academico' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
                       </th>
                       <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('observaciones')}>
                         Observaciones {sortConfig.key === 'observaciones' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
@@ -312,20 +331,20 @@ const Calificaciones: React.FC = () => {
                         </td>
                         <td>
                           <strong className={calificacion.nota >= 11 ? 'text-success' : 'text-danger'}>
-                            {calificacion.nota}
+                            {calificacion.puntuacion}
                           </strong>
                         </td>
-                        <td>P{calificacion.periodo}</td>
+                        <td>{calificacion.periodo_academico}</td>
                         <td>{calificacion.observaciones || 'Sin observaciones'}</td>
                         <td>
                           <span className={`badge bg-${
-                            calificacion.nota >= 15 ? 'success' :
-                            calificacion.nota >= 11 ? 'info' :
-                            calificacion.nota >= 6 ? 'warning' : 'danger'
+                            calificacion.puntuacion >= 15 ? 'success' :
+                            calificacion.puntuacion >= 11 ? 'info' :
+                            calificacion.puntuacion >= 6 ? 'warning' : 'danger'
                           }`}>
-                            {calificacion.nota >= 15 ? 'Excelente' :
-                             calificacion.nota >= 11 ? 'Aprobado' :
-                             calificacion.nota >= 6 ? 'En desarrollo' : 'Desaprobado'}
+                            {calificacion.puntuacion >= 15 ? 'Excelente' :
+                             calificacion.puntuacion >= 11 ? 'Aprobado' :
+                             calificacion.puntuacion >= 6 ? 'En desarrollo' : 'Desaprobado'}
                           </span>
                         </td>
                         <td>
@@ -373,16 +392,7 @@ const Calificaciones: React.FC = () => {
             {alumnos.map(a => (
               <option key={a.id} value={a.id}>{a.primer_nombre} {a.apellido_paterno} ({a.numero_matricula})</option>
             ))}
-            <option value="__other">Otro (manual)</option>
           </select>
-          {formData.alumno_id === '__other' && (
-            <input
-              className="form-control mt-2"
-              placeholder="Ingrese nombre o ID manualmente"
-              value={formData.observaciones || ''}
-              onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
-            />
-          )}
         </div>
         <div className="mb-3">
           <label className="form-label">Curso *</label>
@@ -395,24 +405,27 @@ const Calificaciones: React.FC = () => {
             {cursos.map(c => (
               <option key={c.id} value={c.id}>{c.nombre} ({c.codigo})</option>
             ))}
-            <option value="__other">Otro (manual)</option>
           </select>
-          {formData.curso_id === '__other' && (
-            <input
-              className="form-control mt-2"
-              placeholder="Ingrese nombre o ID manualmente"
-              value={formData.observaciones || ''}
-              onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
-            />
-          )}
         </div>
         <div className="mb-3">
-          <label className="form-label">Nota * (0-20)</label>
+          <label className="form-label">Tipo de evaluación *</label>
+          <select
+            className="form-select"
+            value={formData.tipo_evaluacion}
+            onChange={(e) => setFormData({ ...formData, tipo_evaluacion: e.target.value })}
+          >
+            <option value="parcial">Parcial</option>
+            <option value="final">Final</option>
+            <option value="extra">Extra</option>
+          </select>
+        </div>
+        <div className="mb-3">
+          <label className="form-label">Puntuación * (0-20)</label>
           <input
             type="number"
             className="form-control"
-            value={formData.nota}
-            onChange={(e) => setFormData({ ...formData, nota: parseFloat(e.target.value) })}
+            value={formData.puntuacion}
+            onChange={(e) => setFormData({ ...formData, puntuacion: parseFloat(e.target.value) })}
             min="0"
             max="20"
             step="0.5"
@@ -420,17 +433,23 @@ const Calificaciones: React.FC = () => {
           />
         </div>
         <div className="mb-3">
-          <label className="form-label">Período *</label>
-          <select
+          <label className="form-label">Período académico *</label>
+          <input
+            type="text"
             className="form-control"
-            value={formData.periodo}
-            onChange={(e) => setFormData({ ...formData, periodo: e.target.value })}
-          >
-            <option value="1">Período 1</option>
-            <option value="2">Período 2</option>
-            <option value="3">Período 3</option>
-            <option value="4">Período 4</option>
-          </select>
+            value={formData.periodo_academico}
+            onChange={(e) => setFormData({ ...formData, periodo_academico: e.target.value })}
+            placeholder="2026-1"
+          />
+        </div>
+        <div className="mb-3">
+          <label className="form-label">Observaciones</label>
+          <textarea
+            className="form-control"
+            value={formData.observaciones || ''}
+            onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
+            rows={3}
+          />
         </div>
       </Modal>
     </div>

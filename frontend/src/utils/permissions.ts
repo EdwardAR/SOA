@@ -42,7 +42,19 @@ export function can(role: Role | undefined | null, resource: string, action: 'vi
 
 export function filterMenuByRole(role: Role | undefined | null, menuItems: Array<{ path: string; label: string; icon?: string }>) {
   const normalize = (p: string) => p.replace(/^\//, '').split('/')[0];
-  return menuItems.filter(item => can(role, normalize(item.path), 'view'));
+  const singularize = (r: string) => {
+    if (!r) return r;
+    // common spanish plural -> singular heuristics
+    if (r.endsWith('es')) return r.slice(0, -2);
+    if (r.endsWith('s')) return r.slice(0, -1);
+    return r;
+  };
+
+  return menuItems.filter(item => {
+    const res = normalize(item.path);
+    const candidates = [res, singularize(res), `${res}es`, `${res}s`].filter(Boolean);
+    return candidates.some(c => can(role, c, 'view'));
+  });
 }
 
 const permissions = { can, filterMenuByRole };
