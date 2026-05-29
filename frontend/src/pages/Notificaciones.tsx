@@ -158,6 +158,13 @@ const Notificaciones: React.FC = () => {
     return 'info';
   };
 
+  const getTipoIcon = (tipo: string) => {
+    if (tipo === 'alerta') return 'bi-exclamation-triangle';
+    if (tipo === 'urgente') return 'bi-lightning-charge';
+    if (tipo === 'recordatorio') return 'bi-calendar-event';
+    return 'bi-info-circle';
+  };
+
   const stats = calculateStats();
 
   return (
@@ -241,6 +248,28 @@ const Notificaciones: React.FC = () => {
             </div>
           </div>
           <div className="card-body">
+            <div className="notification-inbox mb-4">
+              {notificacionesOrdenadas.slice(0, 6).map((notificacion) => (
+                <article className={`inbox-item ${notificacion.leida ? '' : 'inbox-unread'}`} key={`inbox-${notificacion.id}`}>
+                  <div className={`inbox-icon inbox-${getTipoBadge(notificacion.tipo)}`}>
+                    <i className={`bi ${getTipoIcon(notificacion.tipo)}`}></i>
+                  </div>
+                  <div>
+                    <div className="d-flex flex-wrap align-items-center gap-2 mb-1">
+                      <strong>{notificacion.destinatario_nombre || getDestinatarioNombre(notificacion.destinatario_id)}</strong>
+                      <span className={`badge bg-${getTipoBadge(notificacion.tipo)}`}>{notificacion.tipo}</span>
+                      {!notificacion.leida && <span className="badge bg-warning">Nuevo</span>}
+                    </div>
+                    <p>{notificacion.mensaje}</p>
+                    <small>
+                      {notificacion.fecha_creacion
+                        ? new Date(notificacion.fecha_creacion).toLocaleString()
+                        : 'Fecha no registrada'}
+                    </small>
+                  </div>
+                </article>
+              ))}
+            </div>
             <div className="row g-3 mb-3">
               <div className="col-md-3">
                 <div className="p-3 bg-light rounded border">

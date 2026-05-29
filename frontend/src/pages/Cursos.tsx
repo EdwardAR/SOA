@@ -3,6 +3,9 @@ import { cursosService, profesoresService } from '../api/services';
 import Modal from '../components/Modal';
 import { generateStructuredCode } from '../utils/codeGenerators';
 import { useSortableData } from '../utils/tableSort';
+import { useAuth } from '../context/AuthContext';
+import { can } from '../utils/permissions';
+import { downloadPdfReport } from '../utils/downloads';
 
 interface Curso {
   id?: string;
@@ -13,6 +16,9 @@ interface Curso {
   profesor_id?: string;
   seccion?: string;
   salon?: string;
+  dia_semana?: string;
+  horario_inicio?: string;
+  horario_fin?: string;
 }
 
 const Cursos: React.FC = () => {
@@ -33,6 +39,12 @@ const Cursos: React.FC = () => {
     salon: '',
   });
   const { sortConfig, requestSort, sortedRows: cursosOrdenados } = useSortableData(cursos, 'nombre');
+  const { user } = useAuth();
+  const role = user?.tipo_usuario;
+  const isAlumno = role?.toLowerCase() === 'alumno';
+  const allowCreate = can(role, 'cursos', 'create');
+  const allowEdit = can(role, 'cursos', 'edit');
+  const allowDelete = can(role, 'cursos', 'delete');
 
   useEffect(() => {
     fetchCursos();
@@ -144,14 +156,56 @@ const Cursos: React.FC = () => {
     }
   };
 
+  const formatHorario = (curso: any) => {
+    const dia = curso.dia_semana || curso.dia || 'Por definir';
+    const inicio = curso.horario_inicio || curso.hora_inicio;
+    const fin = curso.horario_fin || curso.hora_fin;
+
+    if (!inicio && !fin) return dia;
+    return `${dia} ${inicio || ''}${inicio || fin ? ' - ' : ''}${fin || ''}`.trim();
+  };
+
+  const handleDownloadHorarioPdf = () => {
+    const fecha = new Date().toISOString().slice(0, 10);
+
+    downloadPdfReport({
+      title: 'Mi horario de cursos',
+      subtitle: 'Cursos matriculados con docente, aula y horario disponible.',
+      filename: `horario-cursos-${fecha}.pdf`,
+      headers: ['Curso', 'Código', 'Grado', 'Sección', 'Horario', 'Profesor', 'Salón'],
+      summary: [
+        { label: 'Cursos', value: cursosOrdenados.length },
+        { label: 'Aulas', value: new Set(cursosOrdenados.map((curso) => curso.salon).filter(Boolean)).size },
+        { label: 'Docentes', value: new Set(cursosOrdenados.map((curso) => curso.profesor_nombre).filter(Boolean)).size },
+        { label: 'Fecha', value: fecha },
+      ],
+      rows: cursosOrdenados.map((curso) => ({
+        accent: 'info',
+        cells: [
+          curso.nombre,
+          curso.codigo,
+          curso.grado || '-',
+          curso.seccion || '-',
+          formatHorario(curso),
+          curso.profesor_nombre || '-',
+          curso.salon || 'Por definir',
+        ],
+      })),
+    });
+  };
+
   return (
     <div className="page-shell container-fluid p-2 p-md-4">
       <div className="page-hero mb-4">
         <h1 className="page-hero-title">
-          <i className="bi bi-book me-2"></i>
-          Gestión de Cursos
+          <i className={`bi ${isAlumno ? 'bi-calendar-week' : 'bi-book'} me-2`}></i>
+          {isAlumno ? 'Mi Horario de Cursos' : 'Gestión de Cursos'}
         </h1>
-        <p className="page-hero-subtitle">Organiza y administra las materias académicas y asignación de aulas</p>
+        <p className="page-hero-subtitle">
+          {isAlumno
+            ? 'Consulta tus cursos matriculados, docentes, aulas y horarios'
+            : 'Organiza y administra las materias académicas y asignación de aulas'}
+        </p>
       </div>
 
       {error && (
@@ -184,7 +238,20 @@ const Cursos: React.FC = () => {
         <div className="card dashboard-card">
           <div className="card-header" style={{ background: 'rgba(102, 126, 234, 0.05)', borderBottom: '1px solid rgba(102, 126, 234, 0.1)', padding: '16px 20px' }}>
             <div className="d-flex justify-content-between align-items-center">
-              <h5 className="mb-0 fw-bold text-dark">Listado de Cursos ({cursos.length})</h5>
+              <h5 className="mb-0 fw-bold">{isAlumno ? 'Horario de Cursos' : 'Listado de Cursos'} ({cursos.length})</h5>
+              <div className="d-flex flex-wrap gap-2 justify-content-end">
+              {isAlumno && (
+                <button
+                  className="btn btn-sm btn-outline-primary"
+                  onClick={handleDownloadHorarioPdf}
+                  disabled={cursos.length === 0}
+                  title="Descargar mi horario en PDF"
+                >
+                  <i className="bi bi-download"></i>
+                  Descargar PDF
+                </button>
+              )}
+              {allowCreate && (
               <button
                 className="btn btn-sm btn-primary"
                 onClick={() => handleOpenModal()}
@@ -192,9 +259,33 @@ const Cursos: React.FC = () => {
                 <i className="bi bi-plus-circle"></i>
                 Nuevo Curso
               </button>
+              )}
+              </div>
             </div>
           </div>
           <div className="card-body">
+            {isAlumno && (
+              <div className="row g-3 mb-4">
+                {cursosOrdenados.map((curso) => (
+                  <div className="col-12 col-md-6 col-xl-4" key={`schedule-${curso.id}`}>
+                    <div className="schedule-card h-100">
+                      <div className="d-flex justify-content-between gap-3">
+                        <div>
+                          <div className="text-muted small fw-bold text-uppercase">{curso.codigo || 'Curso'}</div>
+                          <h6 className="mb-1 fw-bold">{curso.nombre}</h6>
+                          <div className="text-muted small">{curso.profesor_nombre || 'Profesor por asignar'}</div>
+                        </div>
+                        <i className="bi bi-calendar-week text-primary fs-4"></i>
+                      </div>
+                      <div className="schedule-meta mt-3">
+                        <span><i className="bi bi-clock"></i>{formatHorario(curso)}</span>
+                        <span><i className="bi bi-door-open"></i>{curso.salon || 'Aula por definir'}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="table-responsive">
               <table className="table table-hover">
                 <thead className="table-light">
@@ -217,13 +308,13 @@ const Cursos: React.FC = () => {
                     <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('capacidad')}>
                       Capacidad {sortConfig.key === 'capacidad' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
                     </th>
-                    <th>Acciones</th>
+                    {!isAlumno && <th>Acciones</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {cursosOrdenados.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="text-center py-4 text-muted">
+                      <td colSpan={isAlumno ? 6 : 7} className="text-center py-4 text-muted">
                         No hay cursos registrados
                       </td>
                     </tr>
@@ -247,7 +338,9 @@ const Cursos: React.FC = () => {
                             {curso.capacidad}
                           </span>
                         </td>
+                        {!isAlumno && (
                         <td>
+                          {allowEdit && (
                           <button
                             className="btn btn-sm btn-primary me-2"
                             onClick={() => handleOpenModal(curso)}
@@ -255,6 +348,8 @@ const Cursos: React.FC = () => {
                           >
                             <i className="bi bi-pencil"></i>
                           </button>
+                          )}
+                          {allowDelete && (
                           <button
                             className="btn btn-sm btn-danger"
                             onClick={() => handleDelete(curso.id)}
@@ -262,7 +357,9 @@ const Cursos: React.FC = () => {
                           >
                             <i className="bi bi-trash"></i>
                           </button>
+                          )}
                         </td>
+                        )}
                       </tr>
                     ))
                   )}

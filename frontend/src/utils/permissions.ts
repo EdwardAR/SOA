@@ -10,10 +10,10 @@ type PermissionSet = {
 const rolePermissions: Record<string, PermissionSet> = {
   director: { view: ['*'], create: ['*'], edit: ['*'], delete: ['*'] },
   administrativo: { view: ['*'], create: ['*'], edit: ['*'], delete: ['*'] },
-  docente: { view: ['alumnos', 'cursos', 'asistencia', 'calificaciones', 'notificaciones'], create: ['asistencia', 'calificaciones'], edit: ['asistencia', 'calificaciones'], delete: [] },
-  profesor: { view: ['alumnos', 'cursos', 'asistencia', 'calificaciones'], create: ['calificaciones'], edit: ['calificaciones'], delete: [] },
-  padre: { view: ['alumnos', 'pagos', 'notificaciones'], create: [], edit: [], delete: [] },
-  alumno: { view: ['calificaciones', 'asistencia', 'notificaciones'], create: [], edit: [], delete: [] }
+  docente: { view: ['dashboard', 'alumnos', 'cursos', 'asistencia', 'calificaciones', 'notificaciones'], create: ['asistencia', 'calificaciones'], edit: ['asistencia', 'calificaciones'], delete: [] },
+  profesor: { view: ['dashboard', 'alumnos', 'cursos', 'asistencia', 'calificaciones'], create: ['calificaciones'], edit: ['calificaciones'], delete: [] },
+  padre: { view: ['dashboard', 'alumnos', 'pagos', 'calificaciones', 'notificaciones'], create: [], edit: [], delete: [] },
+  alumno: { view: ['dashboard', 'cursos', 'calificaciones', 'asistencia', 'notificaciones'], create: [], edit: [], delete: [] }
 };
 
 function matches(list: string[] | undefined, resource: string) {

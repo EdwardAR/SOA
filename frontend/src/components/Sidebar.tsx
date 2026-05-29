@@ -10,11 +10,13 @@ const Sidebar: React.FC = () => {
 
   const isActive = (path: string) => location.pathname === path;
 
+  const isAlumno = user?.tipo_usuario?.toLowerCase() === 'alumno';
+
   const menuItems = [
     { path: '/dashboard', label: 'Dashboard', icon: 'bi-speedometer2' },
     { path: '/alumnos', label: 'Alumnos', icon: 'bi-people' },
     { path: '/profesores', label: 'Profesores', icon: 'bi-person-check' },
-    { path: '/cursos', label: 'Cursos', icon: 'bi-book' },
+    { path: '/cursos', label: isAlumno ? 'Mi Horario' : 'Cursos', icon: isAlumno ? 'bi-calendar-week' : 'bi-book' },
     { path: '/matriculas', label: 'Matrículas', icon: 'bi-clipboard-check' },
     { path: '/pagos', label: 'Pagos', icon: 'bi-credit-card' },
     { path: '/asistencia', label: 'Asistencia', icon: 'bi-calendar-check' },

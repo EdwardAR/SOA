@@ -4,6 +4,7 @@ import Modal from '../components/Modal';
 import { useAuth } from '../context/AuthContext';
 import { can } from '../utils/permissions';
 import { useSortableData } from '../utils/tableSort';
+import { downloadPdfReport } from '../utils/downloads';
 
 interface Calificacion {
   id?: string;
@@ -45,6 +46,8 @@ const Calificaciones: React.FC = () => {
   const allowCreate = can(role, 'calificaciones', 'create');
   const allowEdit = can(role, 'calificaciones', 'edit');
   const allowDelete = can(role, 'calificaciones', 'delete');
+  const isPadre = role?.toLowerCase() === 'padre';
+  const isFamilyView = ['padre', 'alumno'].includes(role?.toLowerCase() || '');
 
   const fetchRelacionados = async () => {
     try {
@@ -146,6 +149,16 @@ const Calificaciones: React.FC = () => {
   };
 
   const stats = calculateStats();
+  const aprobadas = calificaciones.filter((c) => Number(c.nota) >= 11).length;
+  const porcentajeAprobado = calificaciones.length ? Math.round((aprobadas / calificaciones.length) * 100) : 0;
+  const alumnosRiesgo = new Set(
+    calificaciones.filter((c) => Number(c.nota) < 11).map((c) => c.alumno_id || c.alumno_nombre)
+  ).size;
+  const promedioPorCurso = cursos.map((curso) => {
+    const notasCurso = calificaciones.filter((c) => String(c.curso_id) === String(curso.id)).map((c) => Number(c.nota));
+    const promedio = notasCurso.length ? notasCurso.reduce((sum, nota) => sum + nota, 0) / notasCurso.length : 0;
+    return { curso, promedio, total: notasCurso.length };
+  }).filter((item) => item.total > 0);
 
   const getAlumnoNombre = (id: number) => {
     const alumno = alumnos.find(a => Number(a.id) === Number(id));
@@ -155,6 +168,55 @@ const Calificaciones: React.FC = () => {
   const getCursoNombre = (id: number) => {
     const curso = cursos.find(c => Number(c.id) === Number(id));
     return curso ? `${curso.nombre} (${curso.codigo || curso.id})` : id;
+  };
+
+  const handleDownloadCalificacionesPdf = () => {
+    const fecha = new Date().toISOString().slice(0, 10);
+
+    downloadPdfReport({
+      title: isPadre ? 'Calificaciones de mis hijos' : 'Reporte de calificaciones',
+      subtitle: isPadre
+        ? 'Resumen académico de los estudiantes vinculados a tu cuenta.'
+        : 'Resumen académico de estudiantes por curso y periodo.',
+      filename: `${isPadre ? 'calificaciones-hijos' : 'calificaciones'}-${fecha}.pdf`,
+      headers: ['Alumno', 'Matrícula', 'Curso', 'Nota', 'Periodo', 'Estado', 'Observaciones'],
+      summary: [
+        { label: 'Promedio', value: stats.promedio },
+        { label: 'Nota máxima', value: stats.maxima },
+        { label: 'Nota mínima', value: stats.minima },
+        { label: 'Registros', value: stats.total },
+      ],
+      studentName: isPadre
+        ? 'Estudiantes vinculados'
+        : calificacionesOrdenadas[0]?.alumno_nombre || user?.nombre || 'Reporte general',
+      observations: Number(stats.promedio) >= 15
+        ? 'Rendimiento sobresaliente. Se recomienda mantener el ritmo de estudio y participacion.'
+        : Number(stats.promedio) >= 11
+          ? 'Rendimiento aprobatorio. Se recomienda reforzar los cursos con menor nota.'
+          : 'Rendimiento en seguimiento. Se recomienda reunion con tutor y plan de recuperacion.',
+      rows: calificacionesOrdenadas.map((calificacion) => {
+        const estado =
+          calificacion.nota >= 15 ? 'Excelente' :
+          calificacion.nota >= 11 ? 'Aprobado' :
+          calificacion.nota >= 6 ? 'En desarrollo' : 'Desaprobado';
+
+        return {
+          accent:
+            calificacion.nota >= 15 ? 'success' :
+            calificacion.nota >= 11 ? 'info' :
+            calificacion.nota >= 6 ? 'warning' : 'danger',
+          cells: [
+            calificacion.alumno_nombre || getAlumnoNombre(calificacion.alumno_id),
+            calificacion.alumno_numero_matricula || calificacion.alumno_id,
+            `${calificacion.curso_nombre || getCursoNombre(calificacion.curso_id)} (${calificacion.curso_codigo || calificacion.curso_id})`,
+            calificacion.nota,
+            `P${calificacion.periodo}`,
+            estado,
+            calificacion.observaciones || 'Sin observaciones',
+          ],
+        };
+      }),
+    });
   };
 
   return (
@@ -217,6 +279,45 @@ const Calificaciones: React.FC = () => {
         </div>
       </div>
 
+      <div className="row g-3 mb-4">
+        <div className="col-12 col-lg-4">
+          <div className="performance-panel h-100">
+            <div>
+              <span>Porcentaje aprobado</span>
+              <strong>{porcentajeAprobado}%</strong>
+            </div>
+            <div className="mini-progress">
+              <span style={{ width: `${porcentajeAprobado}%` }}></span>
+            </div>
+            <small>{aprobadas} de {calificaciones.length} calificaciones aprobadas</small>
+          </div>
+        </div>
+        <div className="col-12 col-lg-4">
+          <div className="performance-panel h-100">
+            <div>
+              <span>Alumnos en riesgo</span>
+              <strong>{alumnosRiesgo}</strong>
+            </div>
+            <div className="mini-progress mini-progress-danger">
+              <span style={{ width: `${Math.min(100, alumnosRiesgo * 20)}%` }}></span>
+            </div>
+            <small>Notas menores a 11 requieren seguimiento</small>
+          </div>
+        </div>
+        <div className="col-12 col-lg-4">
+          <div className="performance-panel h-100">
+            <div>
+              <span>Mejor desempeno</span>
+              <strong>{stats.maxima}</strong>
+            </div>
+            <div className="mini-progress mini-progress-success">
+              <span style={{ width: `${Math.min(100, (Number(stats.maxima) / 20) * 100)}%` }}></span>
+            </div>
+            <small>Escala academica de 0 a 20</small>
+          </div>
+        </div>
+      </div>
+
       {loading ? (
         <div className="loading">
           <div className="spinner-border" role="status" />
@@ -225,7 +326,17 @@ const Calificaciones: React.FC = () => {
         <div className="card dashboard-card">
           <div className="card-header" style={{ background: 'rgba(102, 126, 234, 0.05)', borderBottom: '1px solid rgba(102, 126, 234, 0.1)', padding: '16px 20px' }}>
             <div className="d-flex justify-content-between align-items-center">
-              <h5 className="mb-0 fw-bold text-dark">Listado de Calificaciones</h5>
+              <h5 className="mb-0 fw-bold">Listado de Calificaciones</h5>
+              <div className="d-flex flex-wrap gap-2 justify-content-end">
+              <button
+                className="btn btn-sm btn-outline-primary"
+                onClick={handleDownloadCalificacionesPdf}
+                disabled={calificaciones.length === 0}
+                title={isPadre ? 'Descargar PDF de calificaciones de mis hijos' : 'Descargar PDF de calificaciones'}
+              >
+                <i className="bi bi-download"></i>
+                {isPadre ? 'PDF de mis hijos' : 'Descargar PDF'}
+              </button>
               {allowCreate && (
                 <button 
                   className="btn btn-sm btn-primary"
@@ -235,9 +346,48 @@ const Calificaciones: React.FC = () => {
                   Registrar Calificación
                 </button>
               )}
+              </div>
             </div>
           </div>
           <div className="card-body">
+            {isFamilyView && calificaciones.length > 0 && (
+              <div className="row g-3 mb-4">
+                {calificacionesOrdenadas.slice(0, 6).map((calificacion) => {
+                  const progress = Math.max(0, Math.min(100, (Number(calificacion.nota) / 20) * 100));
+                  return (
+                    <div className="col-12 col-md-6 col-xl-4" key={`grade-card-${calificacion.id}`}>
+                      <div className="grade-card h-100">
+                        <div className="d-flex justify-content-between gap-3">
+                          <div>
+                            <span className="text-muted small fw-bold text-uppercase">{calificacion.curso_codigo || 'Curso'}</span>
+                            <h6>{calificacion.curso_nombre || getCursoNombre(calificacion.curso_id)}</h6>
+                            <p>{calificacion.alumno_nombre || getAlumnoNombre(calificacion.alumno_id)}</p>
+                          </div>
+                          <strong className={calificacion.nota >= 11 ? 'text-success' : 'text-danger'}>{calificacion.nota}</strong>
+                        </div>
+                        <div className={`mini-progress ${calificacion.nota >= 11 ? 'mini-progress-success' : 'mini-progress-danger'}`}>
+                          <span style={{ width: `${progress}%` }}></span>
+                        </div>
+                        <small>{calificacion.observaciones || 'Sin observaciones'}</small>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {promedioPorCurso.length > 0 && (
+              <div className="course-performance mb-4">
+                {promedioPorCurso.slice(0, 5).map((item) => (
+                  <div key={`course-avg-${item.curso.id}`}>
+                    <span>{item.curso.nombre}</span>
+                    <div className="mini-progress">
+                      <span style={{ width: `${Math.min(100, (item.promedio / 20) * 100)}%` }}></span>
+                    </div>
+                    <strong>{item.promedio.toFixed(1)}</strong>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="row g-3 mb-3">
               <div className="col-md-3">
                 <div className="p-3 bg-light rounded border">
