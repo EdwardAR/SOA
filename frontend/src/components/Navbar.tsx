@@ -1,23 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { alumnosService, cursosService, profesoresService, matriculasService } from '../api/services';
-
-type SearchResult = {
-  label: string;
-  detail: string;
-  icon: string;
-  path: string;
-};
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = () => {
@@ -39,114 +28,30 @@ const Navbar: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
     document.documentElement.setAttribute('data-bs-theme', isDarkMode ? 'dark' : 'light');
     document.body.classList.toggle('dark-mode', isDarkMode);
     localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
   }, [isDarkMode]);
-
-  useEffect(() => {
-    const term = searchTerm.trim().toLowerCase();
-    if (term.length < 2) {
-      setSearchResults([]);
-      return;
-    }
-
-    const timer = window.setTimeout(async () => {
-      setIsSearching(true);
-      try {
-        const [alumnos, cursos, profesores, matriculas] = await Promise.allSettled([
-          alumnosService.getAll(),
-          cursosService.getAll(),
-          profesoresService.getAll(),
-          matriculasService.getAll(),
-        ]);
-
-        const rows = (result: PromiseSettledResult<any>) =>
-          result.status === 'fulfilled' ? result.value.data?.datos || [] : [];
-
-        const allResults: SearchResult[] = [
-          ...rows(alumnos).map((alumno: any) => ({
-            label: `${alumno.primer_nombre || ''} ${alumno.apellido_paterno || ''}`.trim(),
-            detail: `Alumno · ${alumno.numero_matricula || alumno.email_contacto || 'sin matricula'}`,
-            icon: 'bi-person',
-            path: '/alumnos',
-          })),
-          ...rows(cursos).map((curso: any) => ({
-            label: curso.nombre,
-            detail: `Curso · ${curso.codigo || curso.grado || 'sin codigo'}`,
-            icon: 'bi-book',
-            path: '/cursos',
-          })),
-          ...rows(profesores).map((profesor: any) => ({
-            label: `${profesor.primer_nombre || ''} ${profesor.apellido_paterno || ''}`.trim(),
-            detail: `Profesor · ${profesor.especialidad || profesor.numero_empleado || 'docente'}`,
-            icon: 'bi-person-check',
-            path: '/profesores',
-          })),
-          ...rows(matriculas).map((matricula: any) => ({
-            label: matricula.alumno_nombre || matricula.curso_nombre || 'Matricula',
-            detail: `Matricula · ${matricula.curso_nombre || matricula.periodo_academico || 'activa'}`,
-            icon: 'bi-clipboard-check',
-            path: '/matriculas',
-          })),
-        ];
-
-        setSearchResults(
-          allResults
-            .filter((item) => `${item.label} ${item.detail}`.toLowerCase().includes(term))
-            .slice(0, 6)
-        );
-      } finally {
-        setIsSearching(false);
-      }
-    }, 250);
-
-    return () => window.clearTimeout(timer);
-  }, [searchTerm]);
 
   return (
     <nav className="navbar navbar-expand-lg navbar navbar-custom" style={{ position: 'sticky', top: 0, zIndex: 1040 }}>
       <div className="container-fluid">
         <a className="navbar-brand" href="/">
           <i className="bi bi-mortarboard me-2"></i>
-          <span className="d-none d-sm-inline">Colegio Futuro Digital</span>
-          <span className="d-sm-none">CFD</span>
+          <span className="d-none d-sm-inline">Futuro Digital</span>
+          <span className="d-sm-none">FD</span>
         </a>
-        <div className="global-search d-none d-lg-block">
-          <i className="bi bi-search"></i>
-          <input
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="Buscar alumno, curso, profesor o matricula"
-          />
-          {searchTerm && (
-            <button type="button" onClick={() => setSearchTerm('')} aria-label="Limpiar busqueda">
-              <i className="bi bi-x"></i>
-            </button>
-          )}
-          {(searchResults.length > 0 || isSearching) && (
-            <div className="global-search-results">
-              {isSearching && <div className="global-search-empty">Buscando...</div>}
-              {!isSearching && searchResults.map((result) => (
-                <button
-                  key={`${result.path}-${result.label}-${result.detail}`}
-                  type="button"
-                  onClick={() => {
-                    navigate(result.path);
-                    setSearchTerm('');
-                    setSearchResults([]);
-                  }}
-                >
-                  <i className={`bi ${result.icon}`}></i>
-                  <span>
-                    <strong>{result.label}</strong>
-                    <small>{result.detail}</small>
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
         <div className="ms-auto d-flex align-items-center gap-2">
           <button
             className="btn btn-outline-light navbar-icon-btn"

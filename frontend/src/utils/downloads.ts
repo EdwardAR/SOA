@@ -297,7 +297,7 @@ export const downloadPdfReport = ({
               </div>
             </div>
             <div class="brand">
-              <strong>Colegio Futuro Digital</strong><br />
+              <strong>Futuro Digital</strong><br />
               Boletin academico oficial<br />
               Generado: ${escapeHtml(generatedAt)}
             </div>

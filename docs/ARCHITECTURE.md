@@ -1,4 +1,4 @@
-# 🏗️ Arquitectura del Sistema SOA - Colegio Futuro Digital
+# 🏗️ Arquitectura del Sistema SOA - Futuro Digital
 
 ## Visión General
 

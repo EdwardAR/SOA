@@ -224,6 +224,38 @@ const Dashboard: React.FC = () => {
     };
   }, [data]);
 
+  const hasCharts = role === 'director' || role === 'administrativo';
+  const isDocente = role === 'docente';
+  const isAlumno = role === 'alumno';
+  const isPadre = role === 'padre';
+
+  const dashboardCards = [
+    {
+      icon: 'bi-people',
+      label: isPadre ? 'Hijos vinculados' : isAlumno ? 'Mis cursos' : 'Alumnos',
+      value: isAlumno ? data.cursos.length : data.alumnos.length,
+      tone: 'primary',
+    },
+    {
+      icon: 'bi-book',
+      label: 'Cursos',
+      value: data.cursos.length,
+      tone: 'success',
+    },
+    {
+      icon: 'bi-graph-up-arrow',
+      label: 'Promedio',
+      value: insights.promedio.toFixed(1),
+      tone: 'info',
+    },
+    {
+      icon: 'bi-credit-card',
+      label: isPadre ? 'Pagos pendientes' : 'Pendiente',
+      value: isPadre ? insights.pagosPendientes : money(insights.deuda),
+      tone: 'warning',
+    },
+  ];
+
   const roleCopy = {
     director: {
       title: 'Centro de mando institucional',
@@ -307,6 +339,22 @@ const Dashboard: React.FC = () => {
     { label: 'En riesgo', value: data.calificaciones.filter((item) => Number(item.nota) < 11).length, color: '#dc2626' },
   ];
 
+  const directorRiskRows = [
+    { label: 'Alumnos en riesgo', value: insights.alumnosRiesgo, color: '#dc2626' },
+    { label: 'Cursos sin profesor', value: insights.cursosSinProfesor, color: '#f59e0b' },
+    { label: 'Faltas', value: insights.faltas, color: '#0284c7' },
+  ];
+
+  const administrativoOpsRows = [
+    { label: 'Cursos activos', value: Math.max(0, data.cursos.length - insights.cursosSinProfesor), color: '#0ea5e9' },
+    { label: 'Sin docente', value: insights.cursosSinProfesor, color: '#f59e0b' },
+    { label: 'Notificaciones', value: data.notificaciones.length, color: '#6366f1' },
+  ];
+
+  const paymentRate = data.pagos.length
+    ? (paymentRows[0].value / data.pagos.length) * 100
+    : 0;
+
   const todayCourses = data.cursos.slice(0, 4);
 
   return (
@@ -328,36 +376,90 @@ const Dashboard: React.FC = () => {
       ) : (
         <>
           <div className="row g-3 g-xl-4 mb-4 metric-grid">
-            <StatCard icon="bi-people" label={role === 'padre' ? 'Hijos vinculados' : 'Alumnos'} value={data.alumnos.length} tone="primary" />
-            <StatCard icon="bi-book" label={role === 'alumno' ? 'Mis cursos' : 'Cursos'} value={data.cursos.length} tone="success" />
-            <StatCard icon="bi-graph-up-arrow" label="Promedio" value={insights.promedio.toFixed(1)} tone="info" />
-            <StatCard icon="bi-credit-card" label="Pendiente" value={money(insights.deuda)} tone="warning" />
+            {dashboardCards.map((card) => (
+              <StatCard key={card.label} icon={card.icon} label={card.label} value={card.value} tone={card.tone} />
+            ))}
           </div>
 
-          <div className="row g-3 g-xl-4 mb-4">
-            <div className="col-12 col-xl-4">
-              <div className="card dashboard-card h-100">
-                <div className="card-header">
-                  <h5 className="mb-0 fw-bold">
-                    <i className="bi bi-pie-chart me-2 text-primary"></i>
-                    Salud academica
-                  </h5>
-                </div>
-                <div className="card-body">
-                  <div className="dashboard-chart-grid">
-                    <DonutChart title="Aprobacion" value={insights.aprobacion} label="notas" color="#16a34a" />
-                    <DonutChart title="Asistencia" value={insights.asistencia} label="presente" color="#0284c7" />
+          {!hasCharts && (
+            <div className="row g-3 g-xl-4 mb-4">
+              <div className="col-12">
+                <div className="card dashboard-card h-100">
+                  <div className="card-body d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
+                    <div>
+                      <h5 className="mb-2 fw-bold">Panel de consulta académica</h5>
+                      <p className="mb-0 text-muted">
+                        {isDocente
+                          ? 'Accede a tus cursos, revisa asistencia y consulta las calificaciones de tus estudiantes.'
+                          : isPadre
+                            ? 'Consulta la información académica de tu hija o hijo. No tienes permisos de edición ni eliminación.'
+                            : 'Visualiza tu información académica y de pagos sin permisos de edición.'}
+                      </p>
+                    </div>
+                    <span className="badge bg-info text-dark text-uppercase" style={{ fontSize: '0.8rem' }}>
+                      Consulta sólo
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
-            <div className="col-12 col-xl-4">
-              <BarChart title="Rendimiento por notas" rows={gradesRows} />
+          )}
+
+          {hasCharts ? (
+            <div className="row g-3 g-xl-4 mb-4">
+              {role === 'director' ? (
+                <>
+                  <div className="col-12 col-xl-4">
+                    <div className="card dashboard-card h-100">
+                      <div className="card-header">
+                        <h5 className="mb-0 fw-bold">
+                          <i className="bi bi-pie-chart me-2 text-primary"></i>
+                          Salud escolar
+                        </h5>
+                      </div>
+                      <div className="card-body">
+                        <div className="dashboard-chart-grid">
+                          <DonutChart title="Aprobación" value={insights.aprobacion} label="notas" color="#16a34a" />
+                          <DonutChart title="Asistencia" value={insights.asistencia} label="presente" color="#0284c7" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-12 col-xl-4">
+                    <BarChart title="Rendimiento por notas" rows={gradesRows} />
+                  </div>
+                  <div className="col-12 col-xl-4">
+                    <BarChart title="Riesgos clave" rows={directorRiskRows} />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="col-12 col-xl-4">
+                    <div className="card dashboard-card h-100">
+                      <div className="card-header">
+                        <h5 className="mb-0 fw-bold">
+                          <i className="bi bi-wallet2 me-2 text-primary"></i>
+                          Flujo de pagos
+                        </h5>
+                      </div>
+                      <div className="card-body">
+                        <div className="dashboard-chart-grid">
+                          <DonutChart title="Pagos al día" value={paymentRate} label="pagos" color="#16a34a" />
+                          <DonutChart title="Deuda" value={Math.max(0, 100 - paymentRate)} label="pendiente" color="#f59e0b" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-12 col-xl-4">
+                    <BarChart title="Estado de pagos" rows={paymentRows} />
+                  </div>
+                  <div className="col-12 col-xl-4">
+                    <BarChart title="Operación académica" rows={administrativoOpsRows} />
+                  </div>
+                </>
+              )}
             </div>
-            <div className="col-12 col-xl-4">
-              <BarChart title="Estado de pagos" rows={paymentRows} />
-            </div>
-          </div>
+          ) : null}
 
           <div className="row g-3 g-xl-4">
             <div className="col-12 col-xl-5">

@@ -1,4 +1,4 @@
-# 📡 Documentación de la API - Sistema SOA Colegio Futuro Digital
+# 📡 Documentación de la API - Sistema SOA Futuro Digital
 
 Base URL: `http://localhost:3000`
 

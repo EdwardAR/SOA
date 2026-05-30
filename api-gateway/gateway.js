@@ -1379,7 +1379,7 @@ const iniciarGateway = async () => {
     app.listen(GATEWAY_PORT, () => {
       console.log(`
 ╔══════════════════════════════════════════════════════════╗
-║  🚀 API GATEWAY - SISTEMA SOA COLEGIO FUTURO DIGITAL  🚀 ║
+║  🚀 API GATEWAY - SISTEMA SOA FUTURO DIGITAL  🚀 ║
 ╠══════════════════════════════════════════════════════════╣
 ║  Servidor corriendo en: http://localhost:${GATEWAY_PORT}             ║
 ║  Ambiente: ${process.env.NODE_ENV || 'development'}                        ║

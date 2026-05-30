@@ -11,9 +11,9 @@ const rolePermissions: Record<string, PermissionSet> = {
   director: { view: ['*'], create: ['*'], edit: ['*'], delete: ['*'] },
   administrativo: { view: ['*'], create: ['*'], edit: ['*'], delete: ['*'] },
   docente: { view: ['dashboard', 'alumnos', 'cursos', 'asistencia', 'calificaciones', 'notificaciones'], create: ['asistencia', 'calificaciones'], edit: ['asistencia', 'calificaciones'], delete: [] },
-  profesor: { view: ['dashboard', 'alumnos', 'cursos', 'asistencia', 'calificaciones'], create: ['calificaciones'], edit: ['calificaciones'], delete: [] },
-  padre: { view: ['dashboard', 'alumnos', 'pagos', 'calificaciones', 'notificaciones'], create: [], edit: [], delete: [] },
-  alumno: { view: ['dashboard', 'cursos', 'calificaciones', 'asistencia', 'notificaciones'], create: [], edit: [], delete: [] }
+  profesor: { view: ['dashboard', 'alumnos', 'cursos', 'asistencia', 'calificaciones', 'notificaciones'], create: ['asistencia', 'calificaciones'], edit: ['asistencia', 'calificaciones'], delete: [] },
+  alumno: { view: ['dashboard', 'cursos', 'matriculas', 'pagos', 'asistencia', 'calificaciones', 'notificaciones', 'perfil'], create: [], edit: [], delete: [] },
+  padre: { view: ['dashboard', 'pagos', 'asistencia', 'calificaciones', 'notificaciones', 'perfil'], create: [], edit: [], delete: [] }
 };
 
 function matches(list: string[] | undefined, resource: string) {

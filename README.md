@@ -1,4 +1,4 @@
-# Sistema SOA - Colegio Futuro Digital
+# Sistema SOA - Futuro Digital
 
 Sistema de gestión académica basado en una arquitectura orientada a servicios (SOA) con API Gateway, frontend en React y base de datos SQLite.
 
