@@ -1,12 +1,7 @@
 import axios from 'axios';
 
 const resolveApiBaseUrl = () => {
-  // Variable de entorno para Vite
-  const viteApiUrl = import.meta.env.VITE_API_URL;
-
-  if (viteApiUrl) {
-    return viteApiUrl;
-  }
+  if (process.env.REACT_APP_API_URL) return process.env.REACT_APP_API_URL;
 
   // En tiempo de ejecución (navegador) derivamos la API del origen cuando
   // el frontend se sirve desde ngrok u otro túnel público.
@@ -14,13 +9,13 @@ const resolveApiBaseUrl = () => {
     const host = window.location.hostname || '';
 
     // Si estamos en un dominio público (no localhost),
-    // asumimos que la API está disponible bajo /api
+    // asumimos que la API está disponible en la misma origen bajo /api.
     if (host && host !== 'localhost' && host !== '127.0.0.1') {
       return `${window.location.protocol}//${window.location.host}/api`;
     }
   }
 
-  // Desarrollo local
+  // Fallback para desarrollo local
   return 'http://localhost:3000/api';
 };
 
@@ -40,7 +35,7 @@ apiClient.interceptors.request.use((config) => {
 
   console.log(
     '[APIClient] Request a:',
-    `${config.baseURL ?? ''}${config.url ?? ''}`
+    `${config.baseURL || ''}${config.url || ''}`
   );
 
   console.log('[APIClient] Método:', config.method);
