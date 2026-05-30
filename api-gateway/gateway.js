@@ -359,6 +359,42 @@ app.get('/api/alumnos/:id', authMiddleware, asyncHandler(async (req, res) => {
   }
 }));
 
+// Obtener alumno correspondiente al usuario autenticado
+app.get('/api/alumnos/mi', authMiddleware, asyncHandler(async (req, res) => {
+  try {
+    const usuarioId = req.usuario.id;
+    const alumno = await getOne('SELECT * FROM alumnos WHERE usuario_id = ?', [usuarioId]);
+    if (!alumno) return res.status(404).json(respuestaError('Alumno no encontrado para el usuario'));
+    res.json(respuestaExito(alumno, 'Alumno obtenido (mi perfil)'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al obtener alumno'));
+  }
+}));
+
+// Obtener horario del alumno (según matrícula activa -> grado)
+app.get('/api/alumnos/mi/horario', authMiddleware, asyncHandler(async (req, res) => {
+  try {
+    const usuarioId = req.usuario.id;
+    const alumno = await getOne('SELECT id FROM alumnos WHERE usuario_id = ?', [usuarioId]);
+    if (!alumno) return res.status(404).json(respuestaError('Alumno no encontrado'));
+
+    const matricula = await getOne(
+      `SELECT m.*, c.grado as curso_grado FROM matriculas m
+       JOIN cursos c ON m.curso_id = c.id
+       WHERE m.alumno_id = ? AND m.estado = 'activa' ORDER BY m.fecha_matricula DESC LIMIT 1`,
+      [alumno.id]
+    );
+
+    if (!matricula) return res.json(respuestaExito({ horarios: [] }, 'No hay matrícula activa'));
+
+    const grado = matricula.curso_grado;
+    const horarios = await getAll('SELECT * FROM horarios_grado WHERE grado = ? ORDER BY dia_semana, hora_inicio', [grado]);
+    res.json(respuestaExito({ grado, horarios }, 'Horario obtenido'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al obtener horario'));
+  }
+}));
+
 // CURSOS desde BD
 app.get('/api/cursos', authMiddleware, asyncHandler(async (req, res) => {
   try {
@@ -428,6 +464,59 @@ app.get('/api/cursos', authMiddleware, asyncHandler(async (req, res) => {
     res.json(respuestaExito(cursos, 'Cursos obtenidos'));
   } catch (error) {
     res.status(500).json(respuestaError('Error al obtener cursos'));
+  }
+}));
+
+// HORARIOS por grado (lectura para todos autenticados)
+app.get('/api/horarios/grado/:grado', authMiddleware, asyncHandler(async (req, res) => {
+  try {
+    const { grado } = req.params;
+    const horarios = await getAll('SELECT * FROM horarios_grado WHERE grado = ? ORDER BY dia_semana, hora_inicio', [grado]);
+    res.json(respuestaExito(horarios, 'Horarios por grado obtenidos'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al obtener horarios'));
+  }
+}));
+
+// Admin: crear horario
+app.post('/api/horarios', authMiddleware, requireRole(['director', 'administrativo']), asyncHandler(async (req, res) => {
+  try {
+    const id = generarId();
+    const { grado, curso, dia_semana, hora_inicio, hora_fin, aula, periodo_academico } = req.body;
+    await runQuery(`INSERT INTO horarios_grado (id, grado, curso, dia_semana, hora_inicio, hora_fin, aula, periodo_academico) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [id, grado, curso, dia_semana, hora_inicio || null, hora_fin || null, aula || null, periodo_academico || null]);
+    res.status(201).json(respuestaExito({ id, grado, curso, dia_semana, hora_inicio, hora_fin, aula, periodo_academico }, 'Horario creado'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al crear horario'));
+  }
+}));
+
+// Admin: actualizar horario
+app.put('/api/horarios/:id', authMiddleware, requireRole(['director', 'administrativo']), asyncHandler(async (req, res) => {
+  try {
+    const { id } = req.params;
+    const campos = [];
+    const valores = [];
+    for (const [k, v] of Object.entries(req.body)) {
+      if (v !== undefined && k !== 'id') { campos.push(`${k} = ?`); valores.push(v); }
+    }
+    if (campos.length === 0) return res.status(400).json(respuestaError('No hay campos para actualizar'));
+    valores.push(id);
+    await runQuery(`UPDATE horarios_grado SET ${campos.join(', ')}, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id = ?`, valores);
+    const updated = await getOne('SELECT * FROM horarios_grado WHERE id = ?', [id]);
+    res.json(respuestaExito(updated, 'Horario actualizado'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al actualizar horario'));
+  }
+}));
+
+// Admin: eliminar horario
+app.delete('/api/horarios/:id', authMiddleware, requireRole(['director', 'administrativo']), asyncHandler(async (req, res) => {
+  try {
+    const { id } = req.params;
+    await runQuery('DELETE FROM horarios_grado WHERE id = ?', [id]);
+    res.json(respuestaExito(null, 'Horario eliminado'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al eliminar horario'));
   }
 }));
 

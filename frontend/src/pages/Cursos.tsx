@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { cursosService, profesoresService } from '../api/services';
+import { cursosService, profesoresService, alumnosService } from '../api/services';
 import Modal from '../components/Modal';
 import { generateStructuredCode } from '../utils/codeGenerators';
 import { useSortableData } from '../utils/tableSort';
 import { useAuth } from '../context/AuthContext';
 import { can } from '../utils/permissions';
-import { downloadPdfReport } from '../utils/downloads';
+import { downloadHorarioPdf } from '../utils/downloads';
+import { horariosService } from '../api/services';
 
 interface Curso {
   id?: string;
@@ -45,11 +46,50 @@ const Cursos: React.FC = () => {
   const allowCreate = can(role, 'cursos', 'create');
   const allowEdit = can(role, 'cursos', 'edit');
   const allowDelete = can(role, 'cursos', 'delete');
+  const canManageHorarios = role && ['director', 'administrativo'].includes(role.toLowerCase());
 
   useEffect(() => {
-    fetchCursos();
+    if (isAlumno) fetchMiHorario();
+    else fetchCursos();
     fetchProfesores();
-  }, []);
+  }, [isAlumno]);
+
+  const [horariosGrado, setHorariosGrado] = useState<any[]>([]);
+  const [gradoAlumno, setGradoAlumno] = useState('');
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [confirmMessage, setConfirmMessage] = useState('');
+  const [confirmOnSave, setConfirmOnSave] = useState<(() => Promise<void>) | null>(null);
+
+  const fetchMiHorario = async () => {
+    try {
+      const resp = await alumnosService.getMiHorario();
+      const datos = resp.data?.datos || resp.data || {};
+      const horarios = datos.horarios || [];
+      setHorariosGrado(horarios);
+      setGradoAlumno(datos.grado || '');
+      setLoading(false);
+    } catch (err: any) {
+      console.error('Error cargando mi horario:', err);
+      setError('Error al cargar mi horario');
+      setLoading(false);
+    }
+  };
+
+  const buildMatrix = (horarios: any[]) => {
+    const days = ['Lunes','Martes','Miércoles','Jueves','Viernes'];
+    // obtener slots uniques
+    const slots = Array.from(new Set(horarios.map(h => `${h.hora_inicio}-${h.hora_fin}`))).sort();
+    const matrix: any = {};
+    for (const slot of slots) matrix[slot] = {};
+    horarios.forEach(h => {
+      const slot = `${h.hora_inicio}-${h.hora_fin}`;
+      const dayIndex = (h.dia_semana || 1) - 1;
+      const day = days[dayIndex] || `D${h.dia_semana}`;
+      if (!matrix[slot]) matrix[slot] = {};
+      matrix[slot][day] = { curso: h.curso, aula: h.aula };
+    });
+    return { days, slots, matrix };
+  };
 
   const fetchCursos = async () => {
     try {
@@ -143,54 +183,67 @@ const Cursos: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('¿Estás seguro de que deseas eliminar este curso?')) {
+  const handleDelete = (id: string) => {
+    setConfirmMessage('¿Estás seguro de que deseas eliminar este curso?');
+    setConfirmOnSave(() => async () => {
       try {
-        await cursosService.delete(id);
+       if (cursosService.delete) {
+  await cursosService.delete(id);
+}
         setSuccess('Curso eliminado correctamente');
         fetchCursos();
         setTimeout(() => setSuccess(''), 3000);
       } catch (err: any) {
         setError(err.response?.data?.mensaje || 'Error al eliminar curso');
       }
+    });
+    setConfirmModalOpen(true);
+  };
+
+  // Admin: gestionar horarios por grado
+  const [showAdminHorarios, setShowAdminHorarios] = useState(false);
+  const [selectedGrade, setSelectedGrade] = useState('1ro');
+  const [adminHorarios, setAdminHorarios] = useState<any[]>([]);
+
+  const fetchAdminHorarios = async (grado?: string) => {
+    try {
+      const resp = await horariosService.getByGrado(grado || selectedGrade);
+      setAdminHorarios(resp.data?.datos || resp.data || []);
+    } catch (err: any) {
+      console.error('Error cargando horarios por grado', err);
     }
   };
 
-  const formatHorario = (curso: any) => {
-    const dia = curso.dia_semana || curso.dia || 'Por definir';
-    const inicio = curso.horario_inicio || curso.hora_inicio;
-    const fin = curso.horario_fin || curso.hora_fin;
+  const handleCreateHorario = async (payload: any) => {
+    try {
+      await horariosService.create(payload);
+      await fetchAdminHorarios(payload.grado);
+    } catch (err: any) {
+      console.error('Error creando horario', err);
+    }
+  };
 
-    if (!inicio && !fin) return dia;
-    return `${dia} ${inicio || ''}${inicio || fin ? ' - ' : ''}${fin || ''}`.trim();
+  const handleDeleteHorario = (id: string) => {
+    setConfirmMessage('¿Eliminar horario?');
+    setConfirmOnSave(() => async () => {
+      try {
+        await horariosService.delete(id);
+        fetchAdminHorarios();
+      } catch (err: any) {
+        console.error('Error eliminando horario', err);
+      }
+    });
+    setConfirmModalOpen(true);
   };
 
   const handleDownloadHorarioPdf = () => {
     const fecha = new Date().toISOString().slice(0, 10);
 
-    downloadPdfReport({
+    downloadHorarioPdf({
       title: 'Mi horario de cursos',
-      subtitle: 'Cursos matriculados con docente, aula y horario disponible.',
       filename: `horario-cursos-${fecha}.pdf`,
-      headers: ['Curso', 'Código', 'Grado', 'Sección', 'Horario', 'Profesor', 'Salón'],
-      summary: [
-        { label: 'Cursos', value: cursosOrdenados.length },
-        { label: 'Aulas', value: new Set(cursosOrdenados.map((curso) => curso.salon).filter(Boolean)).size },
-        { label: 'Docentes', value: new Set(cursosOrdenados.map((curso) => curso.profesor_nombre).filter(Boolean)).size },
-        { label: 'Fecha', value: fecha },
-      ],
-      rows: cursosOrdenados.map((curso) => ({
-        accent: 'info',
-        cells: [
-          curso.nombre,
-          curso.codigo,
-          curso.grado || '-',
-          curso.seccion || '-',
-          formatHorario(curso),
-          curso.profesor_nombre || '-',
-          curso.salon || 'Por definir',
-        ],
-      })),
+      grado: gradoAlumno,
+      horarios: horariosGrado,
     });
   };
 
@@ -244,11 +297,16 @@ const Cursos: React.FC = () => {
                 <button
                   className="btn btn-sm btn-outline-primary"
                   onClick={handleDownloadHorarioPdf}
-                  disabled={cursos.length === 0}
-                  title="Descargar mi horario en PDF"
+                  disabled={horariosGrado.length === 0}
+                  title={horariosGrado.length === 0 ? 'No hay horario disponible para descargar' : 'Descargar mi horario en PDF'}
                 >
                   <i className="bi bi-download"></i>
                   Descargar PDF
+                </button>
+              )}
+              {canManageHorarios && (
+                <button className="btn btn-sm btn-outline-secondary" onClick={() => { setShowAdminHorarios(!showAdminHorarios); if (!showAdminHorarios) fetchAdminHorarios(); }}>
+                  <i className="bi bi-calendar2-week"></i> Gestionar Horarios
                 </button>
               )}
               {allowCreate && (
@@ -265,25 +323,128 @@ const Cursos: React.FC = () => {
           </div>
           <div className="card-body">
             {isAlumno && (
-              <div className="row g-3 mb-4">
-                {cursosOrdenados.map((curso) => (
-                  <div className="col-12 col-md-6 col-xl-4" key={`schedule-${curso.id}`}>
-                    <div className="schedule-card h-100">
-                      <div className="d-flex justify-content-between gap-3">
-                        <div>
-                          <div className="text-muted small fw-bold text-uppercase">{curso.codigo || 'Curso'}</div>
-                          <h6 className="mb-1 fw-bold">{curso.nombre}</h6>
-                          <div className="text-muted small">{curso.profesor_nombre || 'Profesor por asignar'}</div>
-                        </div>
-                        <i className="bi bi-calendar-week text-primary fs-4"></i>
+              <div className="mb-4">
+                <h6 className="mb-3">Horario semanal</h6>
+                {horariosGrado.length === 0 ? (
+                  <div className="text-muted">No se encontró horario para tu grado.</div>
+                ) : (
+                  (() => {
+                    const { days, slots, matrix } = buildMatrix(horariosGrado);
+                    return (
+                      <div className="table-responsive">
+                        <table className="table table-bordered align-middle text-center">
+                          <thead>
+                            <tr>
+                              <th style={{ width: '160px' }}>Hora</th>
+                              {days.map((d) => (
+                                <th key={d}>{d}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {slots.map((slot) => (
+                              <tr key={slot}>
+                                <td className="fw-semibold">{slot.replace('-', ' - ')}</td>
+                                {days.map((d) => (
+                                  <td key={`${slot}-${d}`}>
+                                    {matrix[slot] && matrix[slot][d] ? (
+                                      <div>
+                                        {matrix[slot][d].curso}
+                                        <div className="text-muted small">{matrix[slot][d].aula}</div>
+                                      </div>
+                                    ) : ('')}
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
-                      <div className="schedule-meta mt-3">
-                        <span><i className="bi bi-clock"></i>{formatHorario(curso)}</span>
-                        <span><i className="bi bi-door-open"></i>{curso.salon || 'Aula por definir'}</span>
-                      </div>
+                    );
+                  })()
+                )}
+              </div>
+            )}
+            {showAdminHorarios && canManageHorarios && (
+              <div className="card mb-3">
+                <div className="card-body">
+                  <div className="d-flex align-items-center gap-2 mb-3">
+                    <label className="mb-0">Grado:</label>
+                    <select className="form-select form-select-sm w-auto" value={selectedGrade} onChange={(e) => setSelectedGrade(e.target.value)}>
+                      <option value="1ro">1ro</option>
+                      <option value="2do">2do</option>
+                      <option value="3ro">3ro</option>
+                      <option value="4to">4to</option>
+                      <option value="5to">5to</option>
+                    </select>
+                    <button className="btn btn-sm btn-primary" onClick={() => fetchAdminHorarios()}>Cargar</button>
+                  </div>
+
+                  <div className="table-responsive mb-3">
+                    <table className="table table-sm table-striped">
+                      <thead>
+                        <tr>
+                          <th>Curso</th>
+                          <th>Día</th>
+                          <th>Inicio</th>
+                          <th>Fin</th>
+                          <th>Aula</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {adminHorarios.map(h => (
+                          <tr key={h.id}>
+                            <td>{h.curso}</td>
+                            <td>{['Lun','Mar','Mie','Jue','Vie'][h.dia_semana - 1] || h.dia_semana}</td>
+                            <td>{h.hora_inicio}</td>
+                            <td>{h.hora_fin}</td>
+                            <td>{h.aula}</td>
+                            <td><button className="btn btn-sm btn-danger" onClick={() => handleDeleteHorario(h.id)}>Eliminar</button></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="row g-2">
+                    <div className="col-auto">
+                      <input id="newCurso" className="form-control form-control-sm" placeholder="Curso" />
+                    </div>
+                    <div className="col-auto">
+                      <select id="newDia" className="form-select form-select-sm">
+                        <option value="1">Lunes</option>
+                        <option value="2">Martes</option>
+                        <option value="3">Miércoles</option>
+                        <option value="4">Jueves</option>
+                        <option value="5">Viernes</option>
+                      </select>
+                    </div>
+                    <div className="col-auto">
+                      <input id="newInicio" className="form-control form-control-sm" placeholder="Inicio (HH:MM)" />
+                    </div>
+                    <div className="col-auto">
+                      <input id="newFin" className="form-control form-control-sm" placeholder="Fin (HH:MM)" />
+                    </div>
+                    <div className="col-auto">
+                      <input id="newAula" className="form-control form-control-sm" placeholder="Aula" />
+                    </div>
+                    <div className="col-auto">
+                      <button className="btn btn-sm btn-success" onClick={() => {
+                        const curso = (document.getElementById('newCurso') as HTMLInputElement).value;
+                        const dia = parseInt((document.getElementById('newDia') as HTMLSelectElement).value, 10);
+                        const inicio = (document.getElementById('newInicio') as HTMLInputElement).value;
+                        const fin = (document.getElementById('newFin') as HTMLInputElement).value;
+                        const aula = (document.getElementById('newAula') as HTMLInputElement).value;
+                        if (!curso) {
+                          setError('Ingrese el nombre del curso antes de crear el horario');
+                          return;
+                        }
+                        handleCreateHorario({ grado: selectedGrade, curso, dia_semana: dia, hora_inicio: inicio, hora_fin: fin, aula });
+                      }}>Crear</button>
                     </div>
                   </div>
-                ))}
+                </div>
               </div>
             )}
             <div className="table-responsive">
@@ -497,6 +658,22 @@ const Cursos: React.FC = () => {
             />
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        show={confirmModalOpen}
+        title={"Confirmar"}
+        onClose={() => { setConfirmModalOpen(false); setConfirmOnSave(null); setConfirmMessage(''); }}
+        onSave={async () => {
+          if (confirmOnSave) await confirmOnSave();
+          setConfirmModalOpen(false);
+          setConfirmOnSave(null);
+          setConfirmMessage('');
+        }}
+        saveButtonText={"Confirmar"}
+        saveButtonColor={"danger"}
+      >
+        <p>{confirmMessage}</p>
       </Modal>
     </div>
   );

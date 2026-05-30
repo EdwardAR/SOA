@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { initDatabase, getOne, getAll, runQuery } = require('../../config/database');
+const { authMiddleware, requireRole } = require('../../api-gateway/middleware/auth');
 const { errorHandler, asyncHandler } = require('../../api-gateway/middleware/errorHandler');
 const { respuestaExito, respuestaError, generarId, obtenerParametrosPaginacion } = require('../../shared/utils');
 const { validarCurso, validadores } = require('../../shared/validators');
@@ -222,6 +223,60 @@ app.get('/cursos-profesor/:profesor_id', asyncHandler(async (req, res) => {
       total_paginas: Math.ceil(totalResult.total / limite)
     }
   }, 'Cursos obtenidos'));
+}));
+
+// ============================================
+// ENDPOINTS: HORARIOS POR GRADO
+// Directores/Administrativos pueden CRUD, cualquiera puede consultar
+// ============================================
+
+// Listar horarios por grado
+app.get('/horarios/grado/:grado', asyncHandler(async (req, res) => {
+  const { grado } = req.params;
+  const horarios = await getAll(
+    `SELECT * FROM horarios_grado WHERE grado = ? ORDER BY dia_semana, hora_inicio`,
+    [grado]
+  );
+  res.json(respuestaExito(horarios, 'Horarios por grado obtenidos'));
+}));
+
+// Crear horario (admin/director)
+app.post('/horarios', authMiddleware, requireRole(['director', 'administrativo']), asyncHandler(async (req, res) => {
+  const data = req.body;
+  const id = generarId();
+  await runQuery(
+    `INSERT INTO horarios_grado (id, grado, curso, dia_semana, hora_inicio, hora_fin, aula, periodo_academico)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [id, data.grado, data.curso, data.dia_semana, data.hora_inicio || null, data.hora_fin || null, data.aula || null, data.periodo_academico || null]
+  );
+  res.status(201).json(respuestaExito({ id, ...data }, 'Horario creado', 'HORARIO_CREATED'));
+}));
+
+// Actualizar horario
+app.put('/horarios/:id', authMiddleware, requireRole(['director', 'administrativo']), asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const existe = await getOne('SELECT id FROM horarios_grado WHERE id = ?', [id]);
+  if (!existe) return res.status(404).json(respuestaError('Horario no encontrado', 'NOT_FOUND'));
+
+  const campos = [];
+  const valores = [];
+  for (const [k, v] of Object.entries(req.body)) {
+    if (v !== undefined && k !== 'id') { campos.push(`${k} = ?`); valores.push(v); }
+  }
+  if (campos.length === 0) return res.status(400).json(respuestaError('No hay campos para actualizar'));
+  valores.push(id);
+  await runQuery(`UPDATE horarios_grado SET ${campos.join(', ')}, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id = ?`, valores);
+  const updated = await getOne('SELECT * FROM horarios_grado WHERE id = ?', [id]);
+  res.json(respuestaExito(updated, 'Horario actualizado', 'HORARIO_UPDATED'));
+}));
+
+// Eliminar horario
+app.delete('/horarios/:id', authMiddleware, requireRole(['director', 'administrativo']), asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const existe = await getOne('SELECT id FROM horarios_grado WHERE id = ?', [id]);
+  if (!existe) return res.status(404).json(respuestaError('Horario no encontrado', 'NOT_FOUND'));
+  await runQuery('DELETE FROM horarios_grado WHERE id = ?', [id]);
+  res.json(respuestaExito(null, 'Horario eliminado', 'HORARIO_DELETED'));
 }));
 
 // ============================================

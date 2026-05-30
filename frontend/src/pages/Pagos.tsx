@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { pagosService, alumnosService } from '../api/services';
 import Modal from '../components/Modal';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { can } from '../utils/permissions';
 import { useSortableData } from '../utils/tableSort';
 
@@ -53,6 +54,7 @@ const Pagos: React.FC = () => {
   }, []);
 
   const { user } = useAuth();
+  const { notify, confirm } = useToast();
   const role = user?.tipo_usuario;
   const allowCreate = can(role, 'pagos', 'create');
   const allowEdit = can(role, 'pagos', 'edit');
@@ -83,11 +85,17 @@ const Pagos: React.FC = () => {
 
   const handleOpenModal = (pago?: Pago) => {
     if (pago) {
-      if (!allowEdit) return alert('No autorizado para editar pagos');
+      if (!allowEdit) {
+        notify({ message: 'No autorizado para editar pagos', type: 'warning' });
+        return;
+      }
       setEditingId(pago.id || null);
       setFormData(pago);
     } else {
-      if (!allowCreate) return alert('No autorizado para crear pagos');
+      if (!allowCreate) {
+        notify({ message: 'No autorizado para crear pagos', type: 'warning' });
+        return;
+      }
       setEditingId(null);
       setFormData({
         alumno_id: 0,
@@ -131,7 +139,7 @@ const Pagos: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('¿Estás seguro de eliminar este pago?')) return;
+    if (!(await confirm({ message: '¿Estás seguro de eliminar este pago?' }))) return;
 
     try {
       await pagosService.delete(id);

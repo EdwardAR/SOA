@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { calificacionesService, alumnosService, cursosService } from '../api/services';
 import Modal from '../components/Modal';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { can } from '../utils/permissions';
 import { useSortableData } from '../utils/tableSort';
 import { downloadPdfReport } from '../utils/downloads';
@@ -42,6 +43,7 @@ const Calificaciones: React.FC = () => {
   }, []);
 
   const { user } = useAuth();
+  const { notify, confirm } = useToast();
   const role = user?.tipo_usuario;
   const allowCreate = can(role, 'calificaciones', 'create');
   const allowEdit = can(role, 'calificaciones', 'edit');
@@ -78,11 +80,17 @@ const Calificaciones: React.FC = () => {
 
   const handleOpenModal = (calificacion?: Calificacion) => {
     if (calificacion) {
-      if (!allowEdit) return alert('No autorizado para editar calificaciones');
+      if (!allowEdit) {
+        notify({ message: 'No autorizado para editar calificaciones', type: 'warning' });
+        return;
+      }
       setEditingId(calificacion.id || null);
       setFormData(calificacion as Calificacion);
     } else {
-      if (!allowCreate) return alert('No autorizado para crear calificaciones');
+      if (!allowCreate) {
+        notify({ message: 'No autorizado para crear calificaciones', type: 'warning' });
+        return;
+      }
       setEditingId(null);
       setFormData({
         alumno_id: '',
@@ -124,7 +132,7 @@ const Calificaciones: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('¿Estás seguro de eliminar esta calificación?')) return;
+    if (!(await confirm({ message: '¿Estás seguro de eliminar esta calificación?' }))) return;
 
     try {
       await calificacionesService.delete(id);

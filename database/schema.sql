@@ -283,3 +283,24 @@ CREATE INDEX idx_notificaciones_tipo ON notificaciones(tipo);
 CREATE INDEX idx_logs_auditoria_usuario_id ON logs_auditoria(usuario_id);
 CREATE INDEX idx_logs_auditoria_tabla ON logs_auditoria(tabla_afectada);
 CREATE INDEX idx_logs_auditoria_fecha ON logs_auditoria(fecha_accion);
+
+-- ============================================
+-- TABLA: horarios_grado
+-- Define los cursos y franjas horarias por grado (no por alumno)
+-- campos: id, grado, curso, dia_semana (1=Lunes..7=Dom), hora_inicio, hora_fin, aula, periodo_academico
+-- ============================================
+CREATE TABLE IF NOT EXISTS horarios_grado (
+  id TEXT PRIMARY KEY,
+  grado TEXT NOT NULL,
+  curso TEXT NOT NULL,
+  dia_semana INTEGER NOT NULL,
+  hora_inicio TEXT,
+  hora_fin TEXT,
+  aula TEXT,
+  periodo_academico TEXT,
+  fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+  fecha_actualizacion DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_horarios_grado_grado ON horarios_grado(grado);
+CREATE INDEX idx_horarios_grado_dia ON horarios_grado(dia_semana);

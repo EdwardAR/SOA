@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { profesoresService } from '../api/services';
 import Modal from '../components/Modal';
 import { generateStructuredCode } from '../utils/codeGenerators';
+import { useToast } from '../context/ToastContext';
 import { useSortableData } from '../utils/tableSort';
 
 interface Profesor {
@@ -33,6 +34,7 @@ const Profesores: React.FC = () => {
     estado: 'activo'
   });
   const { sortConfig, requestSort, sortedRows: profesoresOrdenados } = useSortableData(profesores, 'numero_empleado');
+  const { confirm } = useToast();
 
   useEffect(() => {
     fetchProfesores();
@@ -132,16 +134,16 @@ const Profesores: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('¿Estás seguro de que deseas eliminar este profesor?')) {
-      try {
-        await profesoresService.delete(id);
-        setSuccess('Profesor eliminado correctamente');
-        fetchProfesores();
-        setTimeout(() => setSuccess(''), 3000);
-      } catch (err: any) {
-        console.error('Delete error:', err);
-        setError(err.response?.data?.mensaje || 'Error al eliminar profesor');
-      }
+    if (!(await confirm({ message: '¿Estás seguro de que deseas eliminar este profesor?' }))) return;
+
+    try {
+      await profesoresService.delete(id);
+      setSuccess('Profesor eliminado correctamente');
+      fetchProfesores();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      setError(err.response?.data?.mensaje || 'Error al eliminar profesor');
     }
   };
 

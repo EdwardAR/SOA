@@ -336,3 +336,66 @@ export const downloadPdfReport = ({
 
   reportWindow.document.close();
 };
+
+export const downloadHorarioPdf = ({
+  title,
+  filename,
+  grado,
+  horarios,
+}: {
+  title: string;
+  filename: string;
+  grado?: string;
+  horarios: Array<any>;
+}) => {
+  const win = window.open('', '_blank', 'width=1100,height=800');
+  if (!win) { alert('Permite ventanas emergentes para generar el PDF.'); return; }
+
+  const generatedAt = new Date().toLocaleString('es-PE', { dateStyle: 'long', timeStyle: 'short' });
+
+  const days = ['Lunes','Martes','Miércoles','Jueves','Viernes'];
+  const slots = Array.from(new Set(horarios.map((h:any) => `${h.hora_inicio || ''}-${h.hora_fin || ''}`))).sort();
+  // build matrix
+  const matrix: any = {};
+  for (const slot of slots) matrix[slot] = {};
+  horarios.forEach((h:any) => {
+    const slot = `${h.hora_inicio || ''}-${h.hora_fin || ''}`;
+    const dayIndex = (h.dia_semana || 1) - 1;
+    const day = days[dayIndex] || `D${h.dia_semana}`;
+    if (!matrix[slot]) matrix[slot] = {};
+    matrix[slot][day] = { curso: h.curso, aula: h.aula };
+  });
+
+  const tableHead = `<tr><th>Hora</th>${days.map(d => `<th>${d}</th>`).join('')}</tr>`;
+  const tableBody = slots.length ? slots.map(slot => `
+    <tr>
+      <td class="slot">${escapeHtml(slot.replace('-', ' - '))}</td>
+      ${days.map(d => `<td>${matrix[slot] && matrix[slot][d] ? `<div class="cell-title">${escapeHtml(matrix[slot][d].curso)}</div><div class="cell-sub">${escapeHtml(matrix[slot][d].aula || '')}</div>` : ''}</td>`).join('')}
+    </tr>
+  `).join('') : `<tr><td colspan="${1 + days.length}" class="empty">No hay horarios disponibles</td></tr>`;
+
+  win.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"/><title>${escapeHtml(filename)}</title><style>
+    @page { margin: 16mm; size: A4 landscape; }
+    body{font-family: "Segoe UI",Arial,sans-serif;background:#f8fafc;color:#172033;margin:0}
+    .sheet{padding:24px}
+    .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .title{font-size:22px;font-weight:700}
+    .meta{font-size:12px;color:#475569}
+    .card{background:#fff;padding:12px;border-radius:10px;border:1px solid #e6eef8}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th{background:#0f172a;color:#fff;padding:10px;text-align:left;font-size:12px}
+    td{padding:10px;border-bottom:1px solid #e6eef8;vertical-align:top}
+    .slot{font-weight:700;width:120px}
+    .cell-title{font-weight:700;color:#0f172a}
+    .cell-sub{font-size:12px;color:#64748b;margin-top:6px}
+    .footer{display:flex;justify-content:space-between;margin-top:18px;font-size:12px;color:#64748b}
+    @media print{body{background:#fff}}
+  </style></head><body><main class="sheet"><div class="header"><div>
+  <div class="title">${escapeHtml(title)}</div>
+  <div class="meta">Grado: ${escapeHtml(grado || '-')}</div>
+</div><div class="meta">Generado: ${escapeHtml(generatedAt)}</div></div>
+<div class="card"><table><thead>${tableHead}</thead><tbody>${tableBody}</tbody></table></div>
+<div class="footer"><span>${escapeHtml(filename)}</span><span>Horario oficial</span></div></main><script>window.onload=()=>{window.focus();window.print();}</script></body></html>`);
+
+  win.document.close();
+};

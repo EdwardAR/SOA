@@ -4,12 +4,12 @@
   "description": "React frontend for Colegio SOA System",
   "private": true,
   "dependencies": {
+    "axios": "^1.4.0",
+    "bootstrap": "^5.3.8",
+    "bootstrap-icons": "^1.13.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.11.0",
-    "axios": "^1.4.0",
-    "bootstrap": "^5.3.0",
-    "bootstrap-icons": "^1.11.0",
     "react-scripts": "5.0.1"
   },
   "scripts": {

@@ -65,6 +65,37 @@ app.get('/alumnos/:id', asyncHandler(async (req, res) => {
   res.json(respuestaExito(alumno, 'Alumno obtenido'));
 }));
 
+// GET mi perfil de alumno (por token)
+app.get('/alumnos/mi', authMiddleware, asyncHandler(async (req, res) => {
+  const usuarioId = req.userId;
+  const alumno = await getOne('SELECT * FROM alumnos WHERE usuario_id = ?', [usuarioId]);
+  if (!alumno) return res.status(404).json(respuestaError('Alumno no encontrado para el usuario', 'NOT_FOUND'));
+  res.json(respuestaExito(alumno, 'Alumno obtenido (mi perfil)'));
+}));
+
+// GET mi horario - obtiene la matrícula activa, determina el grado y devuelve horarios del grado
+app.get('/alumnos/mi/horario', authMiddleware, asyncHandler(async (req, res) => {
+  const usuarioId = req.userId;
+  const alumno = await getOne('SELECT id, periodo_academico FROM alumnos WHERE usuario_id = ?', [usuarioId]);
+  if (!alumno) return res.status(404).json(respuestaError('Alumno no encontrado', 'NOT_FOUND'));
+
+  const matricula = await getOne(
+    `SELECT m.*, c.grado as curso_grado FROM matriculas m
+     JOIN cursos c ON m.curso_id = c.id
+     WHERE m.alumno_id = ? AND m.estado = 'activa' ORDER BY m.fecha_matricula DESC LIMIT 1`,
+    [alumno.id]
+  );
+
+  if (!matricula) {
+    return res.json(respuestaExito([], 'No hay matrícula activa para el alumno'));
+  }
+
+  const grado = matricula.curso_grado;
+  const horarios = await getAll('SELECT * FROM horarios_grado WHERE grado = ? ORDER BY dia_semana, hora_inicio', [grado]);
+
+  res.json(respuestaExito({ grado, horarios }, 'Horario del grado obtenido'));
+}));
+
 // POST crear nuevo alumno
 app.post('/alumnos', asyncHandler(async (req, res) => {
   const alumnoData = req.body;

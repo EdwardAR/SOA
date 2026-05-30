@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { matriculasService, alumnosService, cursosService } from '../api/services';
 import Modal from '../components/Modal';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { can } from '../utils/permissions';
 import { useSortableData } from '../utils/tableSort';
 
@@ -38,6 +39,7 @@ const Matriculas: React.FC = () => {
   }, []);
 
   const { user } = useAuth();
+  const { notify, confirm } = useToast();
   const role = user?.tipo_usuario;
   const allowCreate = can(role, 'matriculas', 'create');
   const allowEdit = can(role, 'matriculas', 'edit');
@@ -73,7 +75,10 @@ const Matriculas: React.FC = () => {
 
   const handleOpenModal = (matricula?: any) => {
     if (matricula) {
-      if (!allowEdit) return alert('No autorizado para editar matrícula');
+      if (!allowEdit) {
+        notify({ message: 'No autorizado para editar matrícula', type: 'warning' });
+        return;
+      }
       setEditingId(matricula.id);
       setFormData({
         id: matricula.id,
@@ -84,7 +89,10 @@ const Matriculas: React.FC = () => {
         estado: matricula.estado || 'activa'
       });
     } else {
-      if (!allowCreate) return alert('No autorizado para crear matrícula');
+      if (!allowCreate) {
+        notify({ message: 'No autorizado para crear matrícula', type: 'warning' });
+        return;
+      }
       setEditingId(null);
       setFormData({
         alumno_id: '',
@@ -127,7 +135,7 @@ const Matriculas: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('¿Estás seguro de eliminar esta matrícula?')) return;
+    if (!(await confirm({ message: '¿Estás seguro de eliminar esta matrícula?' }))) return;
 
     try {
       await matriculasService.delete(id);

@@ -3,6 +3,7 @@ import { alumnosService } from '../api/services';
 import Modal from '../components/Modal';
 import { generateStructuredCode } from '../utils/codeGenerators';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { can } from '../utils/permissions';
 import { useSortableData } from '../utils/tableSort';
 
@@ -34,6 +35,7 @@ const Alumnos: React.FC = () => {
   });
   const { sortConfig, requestSort, sortedRows: alumnosOrdenados } = useSortableData(alumnos, 'numero_matricula');
   const { user } = useAuth();
+  const { confirm } = useToast();
   const role = user?.tipo_usuario;
   const allowCreate = can(role, 'alumnos', 'create');
   const allowEdit = can(role, 'alumnos', 'edit');
@@ -144,16 +146,16 @@ const Alumnos: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('¿Estás seguro de que deseas eliminar este alumno?')) {
-      try {
-        await alumnosService.delete(id);
-        setSuccess('Alumno eliminado correctamente');
-        fetchAlumnos();
-        setTimeout(() => setSuccess(''), 3000);
-      } catch (err: any) {
-        console.error('Delete error:', err);
-        setError(err.response?.data?.mensaje || 'Error al eliminar alumno');
-      }
+    if (!(await confirm({ message: '¿Estás seguro de que deseas eliminar este alumno?' }))) return;
+
+    try {
+      await alumnosService.delete(id);
+      setSuccess('Alumno eliminado correctamente');
+      fetchAlumnos();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      setError(err.response?.data?.mensaje || 'Error al eliminar alumno');
     }
   };
 

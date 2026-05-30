@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { asistenciaService, alumnosService, cursosService } from '../api/services';
 import Modal from '../components/Modal';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { can } from '../utils/permissions';
 import { useSortableData } from '../utils/tableSort';
 
@@ -45,6 +46,7 @@ const Asistencia: React.FC = () => {
 
   const { user } = useAuth();
   const role = user?.tipo_usuario;
+  const { notify, confirm } = useToast();
   const allowCreate = can(role, 'asistencia', 'create');
   const allowEdit = can(role, 'asistencia', 'edit');
   const allowDelete = can(role, 'asistencia', 'delete');
@@ -78,11 +80,17 @@ const Asistencia: React.FC = () => {
 
   const handleOpenModal = (asistencia?: AsistenciaRecord) => {
     if (asistencia) {
-      if (!allowEdit) return alert('No autorizado para editar asistencia');
+      if (!allowEdit) {
+        notify({ message: 'No autorizado para editar asistencia', type: 'warning' });
+        return;
+      }
       setEditingId(asistencia.id || null);
       setFormData(asistencia as AsistenciaRecord);
     } else {
-      if (!allowCreate) return alert('No autorizado para crear asistencia');
+      if (!allowCreate) {
+        notify({ message: 'No autorizado para crear asistencia', type: 'warning' });
+        return;
+      }
       setEditingId(null);
       setFormData({
         alumno_id: '',
@@ -133,7 +141,7 @@ const Asistencia: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('¿Estás seguro de eliminar este registro?')) return;
+    if (!(await confirm({ message: '¿Estás seguro de eliminar este registro?' }))) return;
 
     try {
       await asistenciaService.delete(id);

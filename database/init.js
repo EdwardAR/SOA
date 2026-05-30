@@ -376,6 +376,45 @@ async function seedDatabase() {
     }
     console.log('✓ Matrículas creadas (2 matrículas base)');
 
+    // Insertar horarios por grado (semilla)
+    const grados = ['1ro', '2do', '3ro', '4to', '5to'];
+    const materiasBase = [
+      'Matemática', 'Comunicación', 'Ciencia y Tecnología', 'Ciencias Sociales', 'DPCC',
+      'Educación para el Trabajo', 'Inglés', 'Arte y Cultura', 'Educación Física', 'Educación Religiosa', 'Tutoría'
+    ];
+
+    const horas = [
+      { inicio: '08:00', fin: '08:45' },
+      { inicio: '08:50', fin: '09:35' },
+      { inicio: '09:50', fin: '10:35' },
+      { inicio: '10:40', fin: '11:25' },
+      { inicio: '11:30', fin: '12:15' },
+      { inicio: '13:30', fin: '14:15' },
+      { inicio: '14:20', fin: '15:05' }
+    ];
+
+    let horarioCount = 0;
+    for (const grado of grados) {
+      // distribuir materias en días y franjas horarias de manera secuencial
+      for (let i = 0; i < materiasBase.length; i++) {
+        const dia = (i % 5) + 1; // 1..5 (Lun-Vie)
+        const horaSlot = hoursSafe(horas, i);
+        const horario = {
+          id: uuidv4(),
+          grado,
+          curso: materiasBase[i],
+          dia_semana: dia,
+          hora_inicio: horaSlot.inicio,
+          hora_fin: horaSlot.fin,
+          aula: `A-${100 + (horarioCount % 10)}`,
+          periodo_academico: '2026-1'
+        };
+        await insertHorario(horario);
+        horarioCount++;
+      }
+    }
+    console.log('✓ Horarios por grado insertados (semilla)');
+
     // Insertar pagos
     const pagos = [
       {
@@ -743,6 +782,7 @@ function resetSeedData() {
        DELETE FROM pagos;
        DELETE FROM matriculas;
        DELETE FROM cursos;
+       DELETE FROM horarios_grado;
        DELETE FROM profesores;
        DELETE FROM alumnos;
        DELETE FROM usuarios;
@@ -753,6 +793,24 @@ function resetSeedData() {
       }
     );
   });
+}
+
+function insertHorario(horario) {
+  return new Promise((resolve, reject) => {
+    db.run(
+      `INSERT INTO horarios_grado (id, grado, curso, dia_semana, hora_inicio, hora_fin, aula, periodo_academico)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [horario.id, horario.grado, horario.curso, horario.dia_semana, horario.hora_inicio || null, horario.hora_fin || null, horario.aula || null, horario.periodo_academico || '2026-1'],
+      (err) => {
+        if (err && !err.message.includes('UNIQUE constraint failed')) reject(err);
+        else resolve();
+      }
+    );
+  });
+}
+
+function hoursSafe(horas, idx) {
+  return horas[idx % horas.length];
 }
 
 function ensureMatriculasPeriodoAcademicoColumn() {

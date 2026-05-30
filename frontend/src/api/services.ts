@@ -31,7 +31,14 @@ export const authService = {
 };
 
 // Alumnos
-export const alumnosService = createCrudService('/alumnos');
+export const alumnosService = {
+  ...createCrudService('/alumnos'),
+
+  getMi: () => apiClient.get('/alumnos/mi'),
+
+  getMiHorario: () =>
+    apiClient.get('/alumnos/mi/horario'),
+};
 
 // Usuarios
 export const usuariosService = createCrudService('/usuarios');
@@ -44,6 +51,14 @@ export const profesoresService = createCrudService('/profesores');
 
 // Matrículas
 export const matriculasService = createCrudService('/matriculas');
+
+// Horarios por grado (admin CRUD + consulta)
+export const horariosService = {
+  getByGrado: (grado: string) => apiClient.get(`/horarios/grado/${grado}`),
+  create: (data: any) => apiClient.post('/horarios', data),
+  update: (id: string, data: any) => apiClient.put(`/horarios/${id}`, data),
+  delete: (id: string) => apiClient.delete(`/horarios/${id}`)
+};
 
 // Pagos
 export const pagosService = createCrudService('/pagos');

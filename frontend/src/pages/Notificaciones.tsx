@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { notificacionesService, usuariosService, alumnosService } from '../api/services';
 import Modal from '../components/Modal';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { can } from '../utils/permissions';
 import { useSortableData } from '../utils/tableSort';
 
@@ -53,6 +54,7 @@ const Notificaciones: React.FC = () => {
   };
 
   const { user } = useAuth();
+  const { notify, confirm } = useToast();
   const role = user?.tipo_usuario;
   const allowCreate = can(role, 'notificaciones', 'create');
   const allowEdit = can(role, 'notificaciones', 'edit');
@@ -74,11 +76,17 @@ const Notificaciones: React.FC = () => {
 
   const handleOpenModal = (notificacion?: Notificacion) => {
     if (notificacion) {
-      if (!allowEdit) return alert('No autorizado para editar notificaciones');
+      if (!allowEdit) {
+        notify({ message: 'No autorizado para editar notificaciones', type: 'warning' });
+        return;
+      }
       setEditingId(notificacion.id || null);
       setFormData(notificacion as Notificacion);
     } else {
-      if (!allowCreate) return alert('No autorizado para crear notificaciones');
+      if (!allowCreate) {
+        notify({ message: 'No autorizado para crear notificaciones', type: 'warning' });
+        return;
+      }
       setEditingId(null);
       setFormData({
         destinatario_id: '',
@@ -120,7 +128,7 @@ const Notificaciones: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('¿Estás seguro de eliminar esta notificación?')) return;
+    if (!(await confirm({ message: '¿Estás seguro de eliminar esta notificación?' }))) return;
 
     try {
       await notificacionesService.delete(id);
