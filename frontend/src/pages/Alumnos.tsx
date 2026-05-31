@@ -149,7 +149,9 @@ const Alumnos: React.FC = () => {
     if (!(await confirm({ message: '¿Estás seguro de que deseas eliminar este alumno?' }))) return;
 
     try {
-      await alumnosService.delete(id);
+      if (alumnosService.delete) {
+        await alumnosService.delete(id);
+      }
       setSuccess('Alumno eliminado correctamente');
       fetchAlumnos();
       setTimeout(() => setSuccess(''), 3000);

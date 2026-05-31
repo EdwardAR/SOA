@@ -137,7 +137,9 @@ const Profesores: React.FC = () => {
     if (!(await confirm({ message: '¿Estás seguro de que deseas eliminar este profesor?' }))) return;
 
     try {
-      await profesoresService.delete(id);
+      if (profesoresService.delete) {
+        await profesoresService.delete(id);
+      }
       setSuccess('Profesor eliminado correctamente');
       fetchProfesores();
       setTimeout(() => setSuccess(''), 3000);

@@ -85,7 +85,10 @@ const Asistencia: React.FC = () => {
         return;
       }
       setEditingId(asistencia.id || null);
-      setFormData(asistencia as AsistenciaRecord);
+      setFormData({
+        ...asistencia,
+        observacion: asistencia.motivo_falta || asistencia.observacion || ''
+      });
     } else {
       if (!allowCreate) {
         notify({ message: 'No autorizado para crear asistencia', type: 'warning' });
@@ -116,7 +119,9 @@ const Asistencia: React.FC = () => {
 
     const estadoNormalizado = String(formData.estado || '').toUpperCase();
     const payload = {
-      ...formData,
+      alumno_id: formData.alumno_id,
+      curso_id: formData.curso_id,
+      fecha: formData.fecha,
       estado: estadoNormalizado,
       registrada: true,
       motivo_falta: formData.observacion || null,
@@ -140,7 +145,7 @@ const Asistencia: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!(await confirm({ message: '¿Estás seguro de eliminar este registro?' }))) return;
 
     try {
@@ -173,14 +178,14 @@ const Asistencia: React.FC = () => {
     return 'warning';
   };
 
-  const getAlumnoNombre = (id: number) => {
-    const alumno = alumnos.find(a => Number(a.id) === Number(id));
+  const getAlumnoNombre = (id: string) => {
+    const alumno = alumnos.find(a => String(a.id) === String(id));
     return alumno ? `${alumno.primer_nombre} ${alumno.apellido_paterno}` : id;
   };
 
-  const getCursoNombre = (id?: number) => {
+  const getCursoNombre = (id?: string) => {
     if (!id) return '-';
-    const curso = cursos.find(c => Number(c.id) === Number(id));
+    const curso = cursos.find(c => String(c.id) === String(id));
     return curso ? `${curso.nombre} (${curso.codigo || curso.id})` : id;
   };
 

@@ -131,11 +131,13 @@ const Calificaciones: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!(await confirm({ message: '¿Estás seguro de eliminar esta calificación?' }))) return;
 
     try {
-      await calificacionesService.delete(id);
+      if (calificacionesService.delete) {
+        await calificacionesService.delete(id);
+      }
       setSuccess('Calificación eliminada correctamente');
       fetchCalificaciones();
       setTimeout(() => setSuccess(''), 3000);
@@ -168,13 +170,13 @@ const Calificaciones: React.FC = () => {
     return { curso, promedio, total: notasCurso.length };
   }).filter((item) => item.total > 0);
 
-  const getAlumnoNombre = (id: number) => {
-    const alumno = alumnos.find(a => Number(a.id) === Number(id));
+  const getAlumnoNombre = (id: string) => {
+    const alumno = alumnos.find(a => String(a.id) === String(id));
     return alumno ? `${alumno.primer_nombre} ${alumno.apellido_paterno}` : id;
   };
 
-  const getCursoNombre = (id: number) => {
-    const curso = cursos.find(c => Number(c.id) === Number(id));
+  const getCursoNombre = (id: string) => {
+    const curso = cursos.find(c => String(c.id) === String(id));
     return curso ? `${curso.nombre} (${curso.codigo || curso.id})` : id;
   };
 

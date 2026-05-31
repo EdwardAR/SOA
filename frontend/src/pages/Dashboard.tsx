@@ -234,25 +234,25 @@ const Dashboard: React.FC = () => {
       icon: 'bi-people',
       label: isPadre ? 'Hijos vinculados' : isAlumno ? 'Mis cursos' : 'Alumnos',
       value: isAlumno ? data.cursos.length : data.alumnos.length,
-      tone: 'primary',
+      tone: 'primary' as const,
     },
     {
       icon: 'bi-book',
       label: 'Cursos',
       value: data.cursos.length,
-      tone: 'success',
+      tone: 'success' as const,
     },
     {
       icon: 'bi-graph-up-arrow',
       label: 'Promedio',
       value: insights.promedio.toFixed(1),
-      tone: 'info',
+      tone: 'info' as const,
     },
     {
       icon: 'bi-credit-card',
       label: isPadre ? 'Pagos pendientes' : 'Pendiente',
       value: isPadre ? insights.pagosPendientes : money(insights.deuda),
-      tone: 'warning',
+      tone: 'warning' as const,
     },
   ];
 

@@ -11,7 +11,7 @@ const createCrudService = (resource: string, includeDelete = true) => {
     getById: (id: string | number) => Promise<any>;
     create: (data: any) => Promise<any>;
     update: (id: string | number, data: any) => Promise<any>;
-    delete?: (id: string | number) => Promise<any>;
+    delete: (id: string | number) => Promise<any>;
   };
 
   service.delete = includeDelete
@@ -64,13 +64,13 @@ export const horariosService = {
 export const pagosService = createCrudService('/pagos');
 
 // Asistencia
-export const asistenciaService = createCrudService('/asistencia', false);
+export const asistenciaService = createCrudService('/asistencia', true);
 
 // Calificaciones
-export const calificacionesService = createCrudService('/calificaciones', false);
+export const calificacionesService = createCrudService('/calificaciones', true);
 
 // Notificaciones
 export const notificacionesService = {
-  getAll: () => apiClient.get('/notificaciones'),
+  ...createCrudService('/notificaciones'),
   markAsRead: (id: string) => apiClient.put(`/notificaciones/${id}/read`, {}),
 };

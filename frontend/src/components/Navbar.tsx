@@ -141,7 +141,7 @@ const Navbar: React.FC = () => {
                       textDecoration: 'none',
                       transition: 'all 0.2s ease',
                     }}
-                    onClick={(e) => {
+                    onClick={() => {
                       setIsDropdownOpen(false);
                     }}
                   >

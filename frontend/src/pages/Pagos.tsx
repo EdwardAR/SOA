@@ -98,7 +98,7 @@ const Pagos: React.FC = () => {
       }
       setEditingId(null);
       setFormData({
-        alumno_id: 0,
+        alumno_id: '',
         monto: 0,
         concepto: '',
         estado: 'pendiente',
@@ -138,11 +138,13 @@ const Pagos: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!(await confirm({ message: '¿Estás seguro de eliminar este pago?' }))) return;
 
     try {
-      await pagosService.delete(id);
+      if (pagosService.delete) {
+        await pagosService.delete(id);
+      }
       setSuccess('Pago eliminado correctamente');
       fetchPagos();
       setTimeout(() => setSuccess(''), 3000);
@@ -438,7 +440,7 @@ const Pagos: React.FC = () => {
           <input
             type="date"
             className="form-control"
-            value={formData.fecha_pago}
+            value={formData.fecha_pago || ''}
             onChange={(e) => setFormData({ ...formData, fecha_pago: e.target.value })}
           />
         </div>
@@ -446,7 +448,7 @@ const Pagos: React.FC = () => {
           <label className="form-label">Método de Pago</label>
           <select
             className="form-control"
-            value={formData.metodo_pago}
+            value={formData.metodo_pago || ''}
             onChange={(e) => setFormData({ ...formData, metodo_pago: e.target.value })}
           >
             <option value="transferencia">Transferencia</option>
