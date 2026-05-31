@@ -13,6 +13,16 @@ if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }
 
+// Eliminar base de datos anterior si existe para evitar conflictos de restricciones
+if (fs.existsSync(DB_PATH)) {
+  try {
+    fs.unlinkSync(DB_PATH);
+    console.log('✓ Base de datos anterior eliminada para recrear esquema');
+  } catch (err) {
+    console.error('Error al eliminar base de datos anterior:', err);
+  }
+}
+
 const db = new sqlite3.Database(DB_PATH, (err) => {
   if (err) {
     console.error('Error al conectar con la base de datos:', err);

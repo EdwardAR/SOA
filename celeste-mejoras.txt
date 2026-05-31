@@ -1,0 +1,96 @@
+
+Cambios que hice en la rama celeste-mejoras-ui
+te dejo un resumen rápido de todo lo que fui tocando para que lo revises y veas qué cosas quieres pasar al main.
+
+🎨 Cambios visuales
+Mejoré varias pantallas para que se vean más limpias y modernas.
+Ajusté estilos en tablas, cards y formularios.
+Hice algunos cambios en el dashboard para que la información se vea más ordenada.
+Mejoré la experiencia visual para los distintos roles.
+📅 Sistema de horarios
+
+Este fue el cambio más grande.
+
+Antes el alumno solo veía algo como:
+
+Secundaria 1° A
+
+pero no veía realmente qué cursos tenía.
+
+Ahora implementé un sistema de horarios por grado.
+
+La idea es:
+
+El alumno inicia sesión.
+El sistema identifica en qué grado está matriculado.
+Busca los horarios de ese grado.
+Muestra automáticamente todos los cursos y horarios correspondientes.
+
+Por ejemplo, si está en 1° de secundaria, verá Matemática, Comunicación, Inglés, Ciencia y Tecnología, etc.
+
+📚 Cursos
+Ajusté parte del módulo de cursos para integrarlo con los horarios.
+Ahora los horarios dependen del grado académico.
+📊 Calificaciones
+Hice mejoras en la visualización.
+Preparé la estructura para mostrar mejor la información académica.
+Se agregaron elementos visuales para que sea más fácil interpretar las notas.
+📈 Gráficos y métricas
+Se añadieron gráficos e indicadores visuales en algunas vistas.
+Esto ayuda a que el dashboard tenga información más útil y no solo tablas.
+👨‍🎓 Matrículas
+Ajusté la relación entre matrícula y grado.
+Esto era necesario para que funcione correctamente la asignación automática de horarios.
+🔌 APIs y servicios
+
+Toqué varios servicios para soportar las nuevas funcionalidades.
+
+Principalmente:
+
+alumnosService
+horariosService
+integración frontend ↔ backend
+
+También corregí algunos detalles de consumo de APIs.
+
+🔐 Roles y permisos
+
+Revisé algunas validaciones relacionadas con roles para que cada usuario vea solamente lo que le corresponde.
+
+Roles:
+
+Director
+Administrativo
+Docente
+Alumno
+Padre de Familia
+🗄️ Base de datos
+
+Se hicieron ajustes para soportar los horarios y las nuevas relaciones necesarias.
+
+✅ Estado actual
+
+Probé:
+
+Login
+Dashboard
+Cursos
+Matrículas
+Horarios
+Calificaciones
+Alumnos
+
+Además ejecuté:
+
+npm run build
+
+y compiló correctamente sin errores.
+
+⚠️ Lo que me gustaría que revises
+
+Principalmente:
+
+Sistema de horarios por grado.
+Integración con cursos.
+Cambios visuales.
+Servicios que fueron modificados.

@@ -1380,6 +1380,37 @@ app.put('/api/notificaciones/:id', authMiddleware, requireRole(['administrativo'
   }
 }));
 
+// PUT marcar notificación como leída
+app.put('/api/notificaciones/:id/read', authMiddleware, asyncHandler(async (req, res) => {
+  try {
+    const usuarioId = req.usuario.id;
+    const rol = req.usuario.tipo_usuario;
+
+    // Verificar si la notificación pertenece a este usuario o si es administrativo/director
+    const notificacion = await getOne('SELECT * FROM notificaciones WHERE id = ?', [req.params.id]);
+
+    if (!notificacion) {
+      return res.status(404).json(respuestaError('Notificación no encontrada'));
+    }
+
+    if (!ROLES_CON_ACCESO_TOTAL.has(rol) && notificacion.destinatario_id !== usuarioId) {
+      return res.status(403).json(respuestaError('No autorizado para modificar esta notificación'));
+    }
+
+    await runQuery(
+      `UPDATE notificaciones
+       SET leida = 1, fecha_lectura = CURRENT_TIMESTAMP
+       WHERE id = ?`,
+      [req.params.id]
+    );
+
+    res.json(respuestaExito({}, 'Notificación marcada como leída'));
+  } catch (error) {
+    console.error('Error al marcar la notificación como leída:', error);
+    res.status(500).json(respuestaError('Error al marcar la notificación como leída: ' + error.message));
+  }
+}));
+
 // DELETE NOTIFICACIONES
 app.delete('/api/notificaciones/:id', authMiddleware, requireRole(['administrativo', 'director', 'docente']), asyncHandler(async (req, res) => {
   try {

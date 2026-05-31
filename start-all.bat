@@ -11,7 +11,7 @@ echo.
 
 REM Inicializar base de datos si es necesario
 echo [1/3] Verificando base de datos...
-node config/init-db.js >nul 2>&1
+node database/init.js >nul 2>&1
 echo Base de datos lista
 
 REM Iniciar Backend desde la raiz del proyecto
