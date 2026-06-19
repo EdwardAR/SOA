@@ -15,6 +15,7 @@ import Notificaciones from './pages/Notificaciones';
 import Perfil from './pages/Perfil';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
+import NotificationBanner from './components/NotificationBanner';
 
 const AppContent: React.FC = () => {
   const { isAuthenticated, loading } = useAuth();
@@ -52,6 +53,7 @@ const AppContent: React.FC = () => {
           }}
           className="main-content"
         >
+          <NotificationBanner />
           <Routes>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/alumnos" element={<Alumnos />} />

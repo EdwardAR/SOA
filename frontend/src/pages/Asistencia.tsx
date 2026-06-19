@@ -20,6 +20,14 @@ interface AsistenciaRecord {
   curso_codigo?: string;
 }
 
+const toLocalDate = (dateStr: string) => {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T00:00:00');
+  const offset = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - offset * 60 * 1000);
+  return local.toISOString().split('T')[0];
+};
+
 const Asistencia: React.FC = () => {
   const [asistencias, setAsistencias] = useState<AsistenciaRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,7 +88,7 @@ const Asistencia: React.FC = () => {
     if (asistencia) {
       if (!allowEdit) return alert('No autorizado para editar asistencia');
       setEditingId(asistencia.id || null);
-      setFormData(asistencia as AsistenciaRecord);
+      setFormData({ ...asistencia, fecha: toLocalDate(asistencia.fecha) } as AsistenciaRecord);
     } else {
       if (!allowCreate) return alert('No autorizado para crear asistencia');
       setEditingId(null);
@@ -197,20 +205,6 @@ const Asistencia: React.FC = () => {
         </h1>
         <p className="page-hero-subtitle">Visualiza y registra asistencia con una interfaz más legible, moderna y optimizada para pantallas pequeñas.</p>
       </div>
-
-      {error && (
-        <div className="alert alert-danger alert-dismissible fade show" role="alert">
-          {error}
-          <button type="button" className="btn-close" onClick={() => setError('')}></button>
-        </div>
-      )}
-
-      {success && (
-        <div className="alert alert-success alert-dismissible fade show" role="alert">
-          {success}
-          <button type="button" className="btn-close" onClick={() => setSuccess('')}></button>
-        </div>
-      )}
 
       {/* Statistics Cards */}
       <div className="row summary-grid g-3 mb-4">
@@ -329,7 +323,7 @@ const Asistencia: React.FC = () => {
                   <tbody>
                     {asistenciasOrdenadas.map((asistencia) => (
                       <tr key={asistencia.id}>
-                        <td>{asistencia.id}</td>
+                        <td><code title={asistencia.id}>{asistencia.id.substring(0, 8)}…</code></td>
                         <td>
                           <div className="fw-semibold">
                             {asistencia.alumno_nombre || getAlumnoNombre(asistencia.alumno_id)}
@@ -389,6 +383,8 @@ const Asistencia: React.FC = () => {
         title={editingId ? 'Editar Asistencia' : 'Registrar Asistencia'}
         onClose={handleCloseModal}
         onSave={handleSave}
+        error={error}
+        success={success}
       >
           <div className="mb-3">
             <label className="form-label">Alumno *</label>

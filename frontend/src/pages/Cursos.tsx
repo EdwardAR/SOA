@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { cursosService, profesoresService } from '../api/services';
 import Modal from '../components/Modal';
+import { useAuth } from '../context/AuthContext';
+import { can } from '../utils/permissions';
 import { useSortableData } from '../utils/tableSort';
 import { generateStructuredCode } from '../utils/codeGenerators';
+import { validarCurso } from '../utils/validators';
 
 interface Curso {
   id?: string;
@@ -52,6 +55,12 @@ const Cursos: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const { user } = useAuth();
+  const role = user?.tipo_usuario;
+  const allowCreate = can(role, 'cursos', 'create');
+  const allowEdit = can(role, 'cursos', 'edit');
+  const allowDelete = can(role, 'cursos', 'delete');
 
   const fetchProfesores = async () => {
     try {
@@ -109,6 +118,11 @@ const Cursos: React.FC = () => {
       setError('');
       if (!formData.nombre || !formData.codigo || !formData.grado_nivel || !formData.profesor_id || !formData.periodo_academico) {
         setError('Completa nombre, código, grado/nivel, profesor y período académico');
+        return;
+      }
+      const errores = validarCurso(formData);
+      if (errores.length > 0) {
+        setError(errores.join('. '));
         return;
       }
 
@@ -183,28 +197,6 @@ const Cursos: React.FC = () => {
         <p className="page-hero-subtitle">Centraliza secciones, grados y profesores en una interfaz más ordenada y fácil de navegar en cualquier dispositivo.</p>
       </div>
 
-      {error && (
-        <div className="alert alert-danger alert-dismissible fade show" role="alert">
-          {error}
-          <button
-            type="button"
-            className="btn-close"
-            onClick={() => setError('')}
-          ></button>
-        </div>
-      )}
-
-      {success && (
-        <div className="alert alert-success alert-dismissible fade show" role="alert">
-          {success}
-          <button
-            type="button"
-            className="btn-close"
-            onClick={() => setSuccess('')}
-          ></button>
-        </div>
-      )}
-
       {loading ? (
         <div className="loading">
           <div className="spinner-border" role="status" />
@@ -214,13 +206,15 @@ const Cursos: React.FC = () => {
           <div className="card-header bg-success text-white">
             <div className="d-flex justify-content-between align-items-center">
               <h5 className="mb-0">Listado de Cursos ({cursos.length})</h5>
-              <button
-                className="btn btn-sm btn-light"
-                onClick={() => handleOpenModal()}
-              >
-                <i className="bi bi-plus-circle me-2"></i>
-                Nuevo Curso
-              </button>
+              {allowCreate && (
+                <button
+                  className="btn btn-sm btn-light"
+                  onClick={() => handleOpenModal()}
+                >
+                  <i className="bi bi-plus-circle me-2"></i>
+                  Nuevo Curso
+                </button>
+              )}
             </div>
           </div>
           <div className="card-body">
@@ -260,7 +254,7 @@ const Cursos: React.FC = () => {
                     cursosOrdenados.map((curso) => (
                       <tr key={curso.id}>
                         <td>
-                          <small className="text-muted">{curso.id}</small>
+                          <code className="text-muted" title={curso.id}>{curso.id.substring(0, 8)}…</code>
                         </td>
                         <td>{curso.nombre}</td>
                         <td>
@@ -277,20 +271,24 @@ const Cursos: React.FC = () => {
                           </span>
                         </td>
                         <td>
-                          <button
-                            className="btn btn-sm btn-primary me-2"
-                            onClick={() => handleOpenModal(curso)}
-                            title="Editar"
-                          >
-                            <i className="bi bi-pencil"></i>
-                          </button>
-                          <button
-                            className="btn btn-sm btn-danger"
-                            onClick={() => handleDelete(curso.id)}
-                            title="Eliminar"
-                          >
-                            <i className="bi bi-trash"></i>
-                          </button>
+                          {allowEdit && (
+                            <button
+                              className="btn btn-sm btn-primary me-2"
+                              onClick={() => handleOpenModal(curso)}
+                              title="Editar"
+                            >
+                              <i className="bi bi-pencil"></i>
+                            </button>
+                          )}
+                          {allowDelete && (
+                            <button
+                              className="btn btn-sm btn-danger"
+                              onClick={() => handleDelete(curso.id)}
+                              title="Eliminar"
+                            >
+                              <i className="bi bi-trash"></i>
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))
@@ -308,6 +306,8 @@ const Cursos: React.FC = () => {
         onClose={handleCloseModal}
         onSave={handleSave}
         saveButtonText={editingId ? 'Actualizar' : 'Crear'}
+        error={error}
+        success={success}
       >
         <form>
           <div className="mb-3">

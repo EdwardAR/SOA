@@ -4,6 +4,7 @@ import Modal from '../components/Modal';
 import { useAuth } from '../context/AuthContext';
 import { can } from '../utils/permissions';
 import { useSortableData } from '../utils/tableSort';
+import { validarMatricula } from '../utils/validators';
 
 interface Matricula {
   id?: string;
@@ -109,6 +110,11 @@ const Matriculas: React.FC = () => {
       setError('Por favor selecciona alumno, curso y periodo académico');
       return;
     }
+    const errores = validarMatricula(formData);
+    if (errores.length > 0) {
+      setError(errores.join('. '));
+      return;
+    }
 
     try {
       setError('');
@@ -180,20 +186,6 @@ const Matriculas: React.FC = () => {
         </h1>
         <p className="page-hero-subtitle">Registra y controla matrículas con una vista más moderna, clara y cómoda en cualquier dispositivo.</p>
       </div>
-
-      {error && (
-        <div className="alert alert-danger alert-dismissible fade show" role="alert">
-          {error}
-          <button type="button" className="btn-close" onClick={() => setError('')}></button>
-        </div>
-      )}
-
-      {success && (
-        <div className="alert alert-success alert-dismissible fade show" role="alert">
-          {success}
-          <button type="button" className="btn-close" onClick={() => setSuccess('')}></button>
-        </div>
-      )}
 
       {loading ? (
         <div className="loading">
@@ -274,7 +266,7 @@ const Matriculas: React.FC = () => {
                   ) : (
                     matriculasOrdenadas.map((matricula) => (
                       <tr key={matricula.id}>
-                        <td><small className="text-muted">{matricula.id}</small></td>
+                        <td><code className="text-muted" title={matricula.id}>{matricula.id.substring(0, 8)}…</code></td>
                         <td>
                           <div className="fw-semibold">
                             {matricula.alumno_nombre || getAlumnoNombre(matricula.alumno_id)}
@@ -327,6 +319,8 @@ const Matriculas: React.FC = () => {
         onClose={handleCloseModal}
         onSave={handleSave}
         saveButtonText={editingId ? 'Actualizar' : 'Registrar'}
+        error={error}
+        success={success}
       >
         <form>
           <div className="mb-3">

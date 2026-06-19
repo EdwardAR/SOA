@@ -937,6 +937,18 @@ app.post('/api/alumnos', authMiddleware, requireRole(['administrativo', 'directo
   if (!numero_matricula || !apellido_paterno || !primer_nombre) {
     return res.status(400).json(respuestaError('Faltan campos requeridos: numero_matricula, apellido_paterno, primer_nombre'));
   }
+  if (!validadores.esNombreValido(apellido_paterno)) {
+    return res.status(400).json(respuestaError('Apellido paterno no debe contener números'));
+  }
+  if (!validadores.esNombreValido(primer_nombre)) {
+    return res.status(400).json(respuestaError('Primer nombre no debe contener números'));
+  }
+  if (numero_documento && !validadores.esDocumentoValido(numero_documento)) {
+    return res.status(400).json(respuestaError('Número de documento debe tener 8 dígitos'));
+  }
+  if (telefono && !validadores.esTelefonoValido(telefono)) {
+    return res.status(400).json(respuestaError('Teléfono debe tener 9 dígitos y empezar con 9'));
+  }
   
   try {
     let resolvedUsuarioId = usuario_id;
@@ -1071,6 +1083,21 @@ app.put('/api/cursos/:id', authMiddleware, requireRole(['director', 'administrat
 app.post('/api/profesores', authMiddleware, requireRole(['director']), asyncHandler(async (req, res) => {
   const { usuario_id, numero_empleado, apellido_paterno, primer_nombre, especialidad, email_contacto, telefono, numero_documento, estado } = req.body;
   const id = generarId();
+  if (!apellido_paterno || !primer_nombre) {
+    return res.status(400).json(respuestaError('Apellido paterno y primer nombre son requeridos'));
+  }
+  if (!validadores.esNombreValido(apellido_paterno)) {
+    return res.status(400).json(respuestaError('Apellido paterno no debe contener números'));
+  }
+  if (!validadores.esNombreValido(primer_nombre)) {
+    return res.status(400).json(respuestaError('Primer nombre no debe contener números'));
+  }
+  if (numero_documento && !validadores.esDocumentoValido(numero_documento)) {
+    return res.status(400).json(respuestaError('Número de documento debe tener 8 dígitos'));
+  }
+  if (telefono && !validadores.esTelefonoValido(telefono)) {
+    return res.status(400).json(respuestaError('Teléfono debe tener 9 dígitos y empezar con 9'));
+  }
   try {
     await runQuery('BEGIN TRANSACTION');
 
@@ -1300,14 +1327,15 @@ app.delete('/api/calificaciones/:id', authMiddleware, requireRole(['docente', 'd
 }));
 
 // PUT NOTIFICACIONES
-app.put('/api/notificaciones/:id', authMiddleware, requireRole(['administrativo', 'director', 'docente']), asyncHandler(async (req, res) => {
+app.put('/api/notificaciones/:id', authMiddleware, requireRole(['administrativo', 'director', 'docente', 'padre', 'alumno']), asyncHandler(async (req, res) => {
   const { destinatario_id, tipo, mensaje, leida, fecha_lectura } = req.body;
   try {
     await runQuery(
       `UPDATE notificaciones
-       SET destinatario_id = ?, tipo = ?, mensaje = ?, leida = ?, fecha_lectura = ?
+       SET destinatario_id = ?, tipo = ?, mensaje = ?, leida = ?,
+           fecha_lectura = CASE WHEN ? THEN CURRENT_TIMESTAMP ELSE ? END
        WHERE id = ?`,
-      [destinatario_id, tipo || 'informacion', mensaje, leida ? 1 : 0, fecha_lectura || null, req.params.id]
+      [destinatario_id, tipo || 'informacion', mensaje, leida ? 1 : 0, leida ? 1 : 0, fecha_lectura || null, req.params.id]
     );
     res.json(respuestaExito({}, 'Notificación actualizada exitosamente'));
   } catch (error) {

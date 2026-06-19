@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { alumnosService } from '../api/services';
 import Modal from '../components/Modal';
 import { generateStructuredCode } from '../utils/codeGenerators';
+import { validarAlumno } from '../utils/validators';
 import { useAuth } from '../context/AuthContext';
 import { can } from '../utils/permissions';
 import { useSortableData } from '../utils/tableSort';
@@ -32,6 +33,7 @@ const Alumnos: React.FC = () => {
     numero_matricula: '',
     numero_documento: '',
   });
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [emailLocal, setEmailLocal] = useState('');
   const { sortConfig, requestSort, sortedRows: alumnosOrdenados } = useSortableData(alumnos, 'numero_matricula');
   const { user } = useAuth();
@@ -71,12 +73,47 @@ const Alumnos: React.FC = () => {
     }));
   };
 
+  const validateField = (name: string, value: string) => {
+    if (name === 'apellido_paterno' || name === 'primer_nombre') {
+      if (value && !/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]*$/.test(value)) {
+        setFieldErrors(prev => ({ ...prev, [name]: 'No debe contener números' }));
+        return;
+      }
+    }
+    if (name === 'numero_documento' && value) {
+      if (!/^\d*$/.test(value)) {
+        setFieldErrors(prev => ({ ...prev, [name]: 'Solo dígitos' }));
+        return;
+      }
+      if (value.length > 8) {
+        setFieldErrors(prev => ({ ...prev, [name]: 'Máximo 8 dígitos' }));
+        return;
+      }
+    }
+    if (name === 'telefono' && value) {
+      if (!/^\d*$/.test(value)) {
+        setFieldErrors(prev => ({ ...prev, [name]: 'Solo dígitos' }));
+        return;
+      }
+      if (value.length > 9) {
+        setFieldErrors(prev => ({ ...prev, [name]: 'Máximo 9 dígitos' }));
+        return;
+      }
+      if (value.length > 0 && value[0] !== '9') {
+        setFieldErrors(prev => ({ ...prev, [name]: 'Debe empezar con 9' }));
+        return;
+      }
+    }
+    setFieldErrors(prev => ({ ...prev, [name]: '' }));
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
+    validateField(name, value);
   };
 
   const handleOpenModal = (alumno?: any) => {
@@ -94,6 +131,9 @@ const Alumnos: React.FC = () => {
       const local = (alumno.email_contacto || '').split('@')[0] || '';
       setEmailLocal(local);
       setEditingId(alumno.id);
+      setError('');
+      setSuccess('');
+      setFieldErrors({});
     } else {
       setFormData({
         apellido_paterno: '',
@@ -122,6 +162,7 @@ const Alumnos: React.FC = () => {
     });
     setEditingId(null);
     setEmailLocal('');
+    setFieldErrors({});
   };
 
   const handleSave = async () => {
@@ -129,6 +170,11 @@ const Alumnos: React.FC = () => {
       setError('');
       if (!formData.apellido_paterno || !formData.primer_nombre || !formData.numero_matricula) {
         setError('Completa los campos obligatorios');
+        return;
+      }
+      const errores = validarAlumno(formData);
+      if (errores.length > 0) {
+        setError(errores.join('. '));
         return;
       }
 
@@ -178,28 +224,6 @@ const Alumnos: React.FC = () => {
         </h1>
         <p className="page-hero-subtitle">Controla el padrón estudiantil con una vista más clara, moderna y adaptable a cualquier pantalla.</p>
       </div>
-
-      {error && (
-        <div className="alert alert-danger alert-dismissible fade show" role="alert">
-          {error}
-          <button
-            type="button"
-            className="btn-close"
-            onClick={() => setError('')}
-          ></button>
-        </div>
-      )}
-
-      {success && (
-        <div className="alert alert-success alert-dismissible fade show" role="alert">
-          {success}
-          <button
-            type="button"
-            className="btn-close"
-            onClick={() => setSuccess('')}
-          ></button>
-        </div>
-      )}
 
       {loading ? (
         <div className="loading">
@@ -297,6 +321,8 @@ const Alumnos: React.FC = () => {
         onClose={handleCloseModal}
         onSave={handleSave}
         saveButtonText={editingId ? 'Actualizar' : 'Crear'}
+        error={error}
+        success={success}
       >
         <form>
           <div className="mb-3">
@@ -327,13 +353,17 @@ const Alumnos: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  className="form-control"
+                  className={`form-control ${fieldErrors.apellido_paterno ? 'is-invalid' : ''}`}
                   id="apellido_paterno"
                   name="apellido_paterno"
                   value={formData.apellido_paterno}
                   onChange={handleInputChange}
+                  maxLength={50}
                   required
                 />
+                {fieldErrors.apellido_paterno && (
+                  <div className="invalid-feedback d-block">{fieldErrors.apellido_paterno}</div>
+                )}
               </div>
             </div>
             <div className="col-md-6">
@@ -343,13 +373,17 @@ const Alumnos: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  className="form-control"
+                  className={`form-control ${fieldErrors.primer_nombre ? 'is-invalid' : ''}`}
                   id="primer_nombre"
                   name="primer_nombre"
                   value={formData.primer_nombre}
                   onChange={handleInputChange}
+                  maxLength={50}
                   required
                 />
+                {fieldErrors.primer_nombre && (
+                  <div className="invalid-feedback d-block">{fieldErrors.primer_nombre}</div>
+                )}
               </div>
             </div>
           </div>
@@ -359,12 +393,18 @@ const Alumnos: React.FC = () => {
             </label>
             <input
               type="text"
-              className="form-control"
+              className={`form-control ${fieldErrors.numero_documento ? 'is-invalid' : ''}`}
               id="numero_documento"
               name="numero_documento"
               value={formData.numero_documento}
               onChange={handleInputChange}
+              inputMode="numeric"
+              maxLength={8}
+              placeholder="12345678"
             />
+            {fieldErrors.numero_documento && (
+              <div className="invalid-feedback d-block">{fieldErrors.numero_documento}</div>
+            )}
           </div>
           <div className="mb-3">
             <label htmlFor="email_local" className="form-label">
@@ -390,12 +430,18 @@ const Alumnos: React.FC = () => {
             </label>
             <input
               type="tel"
-              className="form-control"
+              className={`form-control ${fieldErrors.telefono ? 'is-invalid' : ''}`}
               id="telefono"
               name="telefono"
               value={formData.telefono}
               onChange={handleInputChange}
+              inputMode="numeric"
+              maxLength={9}
+              placeholder="987654321"
             />
+            {fieldErrors.telefono && (
+              <div className="invalid-feedback d-block">{fieldErrors.telefono}</div>
+            )}
           </div>
         </form>
       </Modal>

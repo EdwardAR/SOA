@@ -4,6 +4,7 @@ import Modal from '../components/Modal';
 import { useAuth } from '../context/AuthContext';
 import { can } from '../utils/permissions';
 import { useSortableData } from '../utils/tableSort';
+import { validarPago } from '../utils/validators';
 
 interface Pago {
   id?: string;
@@ -161,6 +162,11 @@ const Pagos: React.FC = () => {
       setError('Por favor completa todos los campos');
       return;
     }
+    const errores = validarPago(formData);
+    if (errores.length > 0) {
+      setError(errores.join('. '));
+      return;
+    }
 
     try {
       const payload = {
@@ -241,20 +247,6 @@ const Pagos: React.FC = () => {
         </h1>
         <p className="page-hero-subtitle">Consulta y administra pagos con un diseño más claro, ordenado y preparado para pantallas móviles.</p>
       </div>
-
-      {error && (
-        <div className="alert alert-danger alert-dismissible fade show" role="alert">
-          {error}
-          <button type="button" className="btn-close" onClick={() => setError('')}></button>
-        </div>
-      )}
-
-      {success && (
-        <div className="alert alert-success alert-dismissible fade show" role="alert">
-          {success}
-          <button type="button" className="btn-close" onClick={() => setSuccess('')}></button>
-        </div>
-      )}
 
       {/* Summary Cards */}
       <div className="row summary-grid g-3 mb-4">
@@ -366,7 +358,7 @@ const Pagos: React.FC = () => {
                   <tbody>
                       {pagosOrdenados.map((pago) => (
                       <tr key={pago.id}>
-                        <td>{pago.id}</td>
+                        <td><code title={pago.id}>{pago.id.substring(0, 8)}…</code></td>
                         <td>
                           <div className="fw-semibold">
                             {pago.alumno_nombre || getAlumnoNombre(String(pago.alumno_id))}
@@ -420,6 +412,8 @@ const Pagos: React.FC = () => {
         title={editingId ? 'Editar Pago' : 'Registrar Pago'}
         onClose={handleCloseModal}
         onSave={handleSave}
+        error={error}
+        success={success}
       >
         <div className="mb-3">
           <label className="form-label">Alumno *</label>

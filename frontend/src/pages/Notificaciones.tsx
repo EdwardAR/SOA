@@ -93,6 +93,8 @@ const Notificaciones: React.FC = () => {
         leida: false
       });
     }
+    setError('');
+    setSuccess('');
     setShowModal(true);
   };
 
@@ -127,6 +129,26 @@ const Notificaciones: React.FC = () => {
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
       setError('Error al guardar notificación');
+      console.error(err);
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
+  const handleToggleLeida = async (notificacion: Notificacion) => {
+    try {
+      const nuevaLeida = !notificacion.leida;
+      await notificacionesService.update(notificacion.id!, {
+        ...notificacion,
+        leida: nuevaLeida,
+        destinatario_id: notificacion.destinatario_id,
+        tipo: notificacion.tipo,
+        mensaje: notificacion.mensaje,
+      });
+      setSuccess(nuevaLeida ? 'Marcada como leída' : 'Marcada como no leída');
+      fetchNotificaciones();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err: any) {
+      setError('Error al actualizar notificación');
       console.error(err);
       setTimeout(() => setError(''), 3000);
     }
@@ -186,20 +208,6 @@ const Notificaciones: React.FC = () => {
         </h1>
         <p className="page-hero-subtitle">Comunica avisos y alertas con una presentación más ordenada y una lectura cómoda en cualquier pantalla.</p>
       </div>
-
-      {error && (
-        <div className="alert alert-danger alert-dismissible fade show" role="alert">
-          {error}
-          <button type="button" className="btn-close" onClick={() => setError('')}></button>
-        </div>
-      )}
-
-      {success && (
-        <div className="alert alert-success alert-dismissible fade show" role="alert">
-          {success}
-          <button type="button" className="btn-close" onClick={() => setSuccess('')}></button>
-        </div>
-      )}
 
       {/* Statistics Cards */}
       <div className="row summary-grid g-3 mb-4">
@@ -315,7 +323,7 @@ const Notificaciones: React.FC = () => {
                   <tbody>
                     {notificacionesOrdenadas.map((notificacion) => (
                       <tr key={notificacion.id} className={notificacion.leida ? '' : 'table-active'}>
-                        <td>{notificacion.id}</td>
+                        <td><code title={notificacion.id}>{notificacion.id.substring(0, 8)}…</code></td>
                         <td>
                           <div className="fw-semibold">
                             {notificacion.destinatario_nombre || getDestinatarioNombre(notificacion.destinatario_id)}
@@ -343,6 +351,13 @@ const Notificaciones: React.FC = () => {
                             : '-'}
                         </td>
                         <td>
+                          <button 
+                            className={`btn btn-sm ${notificacion.leida ? 'btn-warning' : 'btn-success'} me-2`}
+                            onClick={() => handleToggleLeida(notificacion)}
+                            title={notificacion.leida ? 'Marcar como no leída' : 'Marcar como leída'}
+                          >
+                            <i className={`bi ${notificacion.leida ? 'bi-envelope-open' : 'bi-envelope'}`}></i>
+                          </button>
                           {allowEdit && (
                             <button 
                               className="btn btn-sm btn-primary me-2"
@@ -375,6 +390,8 @@ const Notificaciones: React.FC = () => {
         title={editingId ? 'Editar Notificación' : 'Nueva Notificación'}
         onClose={handleCloseModal}
         onSave={handleSave}
+        error={error}
+        success={success}
       >
         <div className="mb-3">
           <label className="form-label">Destinatario *</label>

@@ -61,11 +61,18 @@ const Calificaciones: React.FC = () => {
     }
   };
 
+  const normalizeCalificacion = (c: any) => ({
+    ...c,
+    puntuacion: c.puntuacion ?? c.nota,
+    nota: c.puntuacion ?? c.nota,
+    periodo_academico: c.periodo_academico ?? c.periodo,
+  });
+
   const fetchCalificaciones = async () => {
     try {
       setLoading(true);
       const response = await calificacionesService.getAll();
-      setCalificaciones(response.data?.datos || []);
+      setCalificaciones((response.data?.datos || []).map(normalizeCalificacion));
       setError('');
     } catch (err: any) {
       setError('Error al cargar calificaciones');
@@ -109,9 +116,8 @@ const Calificaciones: React.FC = () => {
       const payload = {
         alumno_id: formData.alumno_id,
         curso_id: formData.curso_id,
-        tipo_evaluacion: formData.tipo_evaluacion,
-        puntuacion: formData.puntuacion,
-        periodo_academico: formData.periodo_academico,
+        nota: formData.puntuacion,
+        periodo: formData.periodo_academico,
         observaciones: formData.observaciones,
       };
 
@@ -148,11 +154,11 @@ const Calificaciones: React.FC = () => {
   };
 
   const calculateStats = () => {
-    const notas = calificaciones.map(c => c.nota);
+    const notas = calificaciones.map(c => c.puntuacion).filter((n): n is number => n != null);
     return {
-      promedio: notas.length > 0 ? (notas.reduce((a, b) => a + b, 0) / notas.length).toFixed(2) : 0,
-      maxima: notas.length > 0 ? Math.max(...notas) : 0,
-      minima: notas.length > 0 ? Math.min(...notas) : 0,
+      promedio: notas.length > 0 ? (notas.reduce((a, b) => a + b, 0) / notas.length).toFixed(2) : '—',
+      maxima: notas.length > 0 ? Math.max(...notas) : '—',
+      minima: notas.length > 0 ? Math.min(...notas) : '—',
       total: calificaciones.length
     };
   };
@@ -182,20 +188,6 @@ const Calificaciones: React.FC = () => {
         </h1>
         <p className="page-hero-subtitle">Supervisa el rendimiento académico con una interfaz más limpia, consistente y adaptada a cualquier pantalla.</p>
       </div>
-
-      {error && (
-        <div className="alert alert-danger alert-dismissible fade show" role="alert">
-          {error}
-          <button type="button" className="btn-close" onClick={() => setError('')}></button>
-        </div>
-      )}
-
-      {success && (
-        <div className="alert alert-success alert-dismissible fade show" role="alert">
-          {success}
-          <button type="button" className="btn-close" onClick={() => setSuccess('')}></button>
-        </div>
-      )}
 
       {/* Statistics Cards */}
       <div className="row summary-grid g-3 mb-4">
@@ -312,7 +304,7 @@ const Calificaciones: React.FC = () => {
                   <tbody>
                     {calificacionesOrdenadas.map((calificacion) => (
                       <tr key={calificacion.id}>
-                        <td>{calificacion.id}</td>
+                        <td><code title={calificacion.id}>{calificacion.id.substring(0, 8)}…</code></td>
                         <td>
                           <div className="fw-semibold">
                             {calificacion.alumno_nombre || getAlumnoNombre(calificacion.alumno_id)}
@@ -330,7 +322,7 @@ const Calificaciones: React.FC = () => {
                           </small>
                         </td>
                         <td>
-                          <strong className={calificacion.nota >= 11 ? 'text-success' : 'text-danger'}>
+                          <strong className={calificacion.puntuacion >= 11 ? 'text-success' : 'text-danger'}>
                             {calificacion.puntuacion}
                           </strong>
                         </td>
@@ -380,6 +372,8 @@ const Calificaciones: React.FC = () => {
         title={editingId ? 'Editar Calificación' : 'Registrar Calificación'}
         onClose={handleCloseModal}
         onSave={handleSave}
+        error={error}
+        success={success}
       >
         <div className="mb-3">
           <label className="form-label">Alumno *</label>

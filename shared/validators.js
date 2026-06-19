@@ -14,14 +14,24 @@ const validadores = {
     return regex.test(password);
   },
 
-  // Validar número de documento
+  // Validar número de documento (8 dígitos exactos para DNI)
   esDocumentoValido: (numero) => {
-    return /^\d{6,12}$/.test(numero);
+    return /^\d{8}$/.test(numero);
   },
 
-  // Validar teléfono
+  // Validar teléfono (9 dígitos, empieza con 9)
   esTelefonoValido: (telefono) => {
-    return /^[0-9\s\-\+\(\)]{7,}$/.test(telefono);
+    return /^9\d{8}$/.test(telefono);
+  },
+
+  // Validar nombre (solo letras, espacios, tildes)
+  esNombreValido: (nombre) => {
+    return /^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]+$/.test(nombre);
+  },
+
+  // Validar código alfanumérico
+  esCodigoValido: (codigo) => {
+    return /^[a-zA-Z0-9_-]+$/.test(codigo && codigo.trim());
   },
 
   // Validar UUID
@@ -71,16 +81,24 @@ const validarAlumno = (alumno) => {
 
   if (!alumno.apellido_paterno || alumno.apellido_paterno.trim() === '') {
     errores.push('Apellido paterno es requerido');
+  } else if (!validadores.esNombreValido(alumno.apellido_paterno)) {
+    errores.push('Apellido paterno no debe contener números');
   }
 
   if (!alumno.primer_nombre || alumno.primer_nombre.trim() === '') {
     errores.push('Primer nombre es requerido');
+  } else if (!validadores.esNombreValido(alumno.primer_nombre)) {
+    errores.push('Primer nombre no debe contener números');
   }
 
   if (!alumno.numero_documento) {
     errores.push('Número de documento es requerido');
   } else if (!validadores.esDocumentoValido(alumno.numero_documento)) {
-    errores.push('Número de documento inválido');
+    errores.push('Número de documento debe tener 8 dígitos');
+  }
+
+  if (alumno.telefono && !validadores.esTelefonoValido(alumno.telefono)) {
+    errores.push('Teléfono debe tener 9 dígitos y empezar con 9');
   }
 
   if (alumno.email && !validadores.esEmailValido(alumno.email)) {
@@ -98,16 +116,24 @@ const validarProfesor = (profesor) => {
 
   if (!profesor.apellido_paterno || profesor.apellido_paterno.trim() === '') {
     errores.push('Apellido paterno es requerido');
+  } else if (!validadores.esNombreValido(profesor.apellido_paterno)) {
+    errores.push('Apellido paterno no debe contener números');
   }
 
   if (!profesor.primer_nombre || profesor.primer_nombre.trim() === '') {
     errores.push('Primer nombre es requerido');
+  } else if (!validadores.esNombreValido(profesor.primer_nombre)) {
+    errores.push('Primer nombre no debe contener números');
   }
 
   if (!profesor.numero_documento) {
     errores.push('Número de documento es requerido');
   } else if (!validadores.esDocumentoValido(profesor.numero_documento)) {
-    errores.push('Número de documento inválido');
+    errores.push('Número de documento debe tener 8 dígitos');
+  }
+
+  if (profesor.telefono && !validadores.esTelefonoValido(profesor.telefono)) {
+    errores.push('Teléfono debe tener 9 dígitos y empezar con 9');
   }
 
   return {
