@@ -3,19 +3,10 @@ import axios from 'axios';
 const resolveApiBaseUrl = () => {
   if (process.env.REACT_APP_API_URL) return process.env.REACT_APP_API_URL;
 
-  // En tiempo de ejecución (navegador) derivamos la API del origen cuando
-  // el frontend se sirve desde ngrok u otro túnel público.
-  if (typeof window !== 'undefined' && window.location) {
-    const host = window.location.hostname || '';
-    // Si estamos en un dominio público (no localhost), asumimos que la API
-    // está disponible en la misma origen bajo /api. Esto facilita pruebas con ngrok.
-    if (host && host !== 'localhost' && host !== '127.0.0.1') {
-      return `${window.location.protocol}//${window.location.host}/api`;
-    }
-  }
-
-  // Fallback para desarrollo local
-  return 'http://localhost:3000/api';
+  // En desarrollo, React dev server proxy reenvía /api/* al gateway.
+  // En producción (build servido por gateway), misma origen sirve API y frontend.
+  // Con túnel, React dev server proxy maneja el reenvío → misma origen también.
+  return '/api';
 };
 
 export const API_BASE_URL = resolveApiBaseUrl();

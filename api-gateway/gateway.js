@@ -37,6 +37,9 @@ const corsOptions = {
 
       // Aceptar subdominios ngrok (públicos) para facilitar pruebas remotas
       if (host.endsWith('.ngrok.io') || host.endsWith('.trycloudflare.com')) return callback(null, true);
+
+      // Aceptar dominios de túneles de VS Code (preview.app.github.dev / devtunnels.ms)
+      if (host.endsWith('.preview.app.github.dev') || host.endsWith('.devtunnels.ms')) return callback(null, true);
     } catch (err) {
       // Si la URL no pudo parsearse, denegar
       return callback(new Error(`Origen no permitido por CORS: ${origin}`), false);
@@ -55,6 +58,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.static('api-gateway/public'));
+app.use(express.static(path.join(__dirname, '../frontend/build')));
 
 // URLs de los servicios
 const SERVICIOS = {
@@ -1463,11 +1467,16 @@ app.get('/api/usuarios', authMiddleware, asyncHandler(async (req, res) => {
   }
 }));
 
-// Servir archivo HTML de inicio
+// Servir frontend React para ruta raíz
 app.get('/', (req, res) => {
   const publicIndexPath = path.join(__dirname, 'public', 'index.html');
   if (fs.existsSync(publicIndexPath)) {
     return res.sendFile(publicIndexPath);
+  }
+
+  const buildIndexPath = path.join(__dirname, '../frontend/build', 'index.html');
+  if (fs.existsSync(buildIndexPath)) {
+    return res.sendFile(buildIndexPath);
   }
 
   res.json({
@@ -1479,6 +1488,16 @@ app.get('/', (req, res) => {
 // ============================================
 // MANEJO DE ERRORES
 // ============================================
+
+// Servir frontend React para rutas que no comiencen con /api
+app.get(/^\/(?!api).*/, (req, res) => {
+  const indexPath = path.join(__dirname, '../frontend/build', 'index.html');
+  res.sendFile(indexPath, err => {
+    if (err) {
+      res.status(404).json(respuestaError('Ruta no encontrada', 'NOT_FOUND'));
+    }
+  });
+});
 
 app.use((req, res) => {
   res.status(404).json(respuestaError('Ruta no encontrada', 'NOT_FOUND'));

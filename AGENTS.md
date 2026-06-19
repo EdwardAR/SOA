@@ -31,7 +31,18 @@
 - Gateway: `3000` — frontend talks here
 - Alumnos: `3001`, Matricula: `3002`, Profesores: `3003`, Cursos: `3004`, Pagos: `3005`, Notificaciones: `3006`, Asistencia: `3007`, Calificaciones: `3008`
 
-## Tech Stack
+## Tunnel / Compartir con VS Code
+
+Para compartir el sistema externamente usando VS Code Port Forwarding:
+
+1. **Primero construir el frontend:** `cd frontend && npm run build` (desde la raíz)
+2. **Iniciar solo el gateway:** `npm start` (o `npm run dev` para editar en vivo, pero el build ya está compilado)
+3. **En VS Code:** Pestaña "Puertos" → click derecho en puerto **3000** → "Port Visibility" → "Public"
+4. **Abrir la URL del túnel** (ej: `https://xxxx-3000.preview.app.github.dev`)
+
+El gateway sirve tanto la API (`/api/*`) como el frontend build (cualquier otra ruta). El `resolveApiBaseUrl()` detecta automáticamente el dominio del túnel y apunta al mismo origen.
+
+> **No usar el túnel en el puerto del dev server de React** (salvo desarrollo local). Para compartir externamente, siempre usar el puerto 3000 (gateway) con el frontend compilado.
 
 - **Backend:** Node.js (plain CommonJS JS, no TS), Express 4, SQLite3, JWT, bcryptjs
 - **Frontend:** React 18 + TypeScript (strict mode), react-router-dom 6, Bootstrap 5, axios
