@@ -908,6 +908,50 @@ a {
   padding: 0.85rem 1.5rem;
 }
 
+/* Ensure modal always fits in viewport and scrolls internally */
+.modal.d-block {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex !important;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto !important;
+  padding: 0 !important;
+  z-index: 1055;
+}
+
+.modal.d-block .modal-dialog {
+  margin: 3rem auto 1.5rem;
+  max-height: calc(100vh - 4.5rem);
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.modal.d-block .modal-dialog.modal-dialog-centered {
+  align-items: unset;
+}
+
+.modal.d-block .modal-content {
+  max-height: calc(100vh - 4.5rem);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal.d-block .modal-body {
+  overflow-y: auto;
+  flex: 1 1 auto;
+}
+
+.modal.d-block .modal-header,
+.modal.d-block .modal-footer {
+  flex-shrink: 0;
+}
+
 /* ── Confirm Modal ────────────────────────────────────────────────── */
 .confirm-modal-content {
   border: none;

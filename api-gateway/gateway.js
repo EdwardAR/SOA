@@ -1168,32 +1168,72 @@ app.put('/api/profesores/:id', authMiddleware, requireRole(['director']), asyncH
 
 // POST PAGOS
 app.post('/api/pagos', authMiddleware, asyncHandler(async (req, res) => {
-  const { alumno_id, monto, concepto, estado_pago, estado, fecha_pago, metodo_pago, observaciones, periodo_academico, fecha_vencimiento, referencia_pago, numero_comprobante } = req.body;
+  const { alumno_id, monto, concepto, estado_pago, estado, fecha_pago, metodo_pago, observaciones, numero_comprobante } = req.body;
   const id = generarId();
+  if (!alumno_id || !monto || !concepto) {
+    return res.status(400).json(respuestaError('Faltan campos requeridos: alumno_id, monto, concepto'));
+  }
+  const estadoFinal = estado || estado_pago || 'pendiente';
   try {
     await runQuery(
-      `INSERT INTO pagos (id, alumno_id, monto, concepto, periodo_academico, estado_pago, estado, fecha_vencimiento, fecha_pago, metodo_pago, referencia_pago, numero_comprobante, deuda_pendiente, observaciones, fecha_creacion, fecha_actualizacion)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      `INSERT INTO pagos (id, alumno_id, monto, concepto, estado_pago, estado, fecha_pago, metodo_pago, numero_comprobante, observaciones, fecha_creacion, fecha_actualizacion)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
       [
         id,
         alumno_id,
         monto,
         concepto,
-        periodo_academico || PERIODO_ACADEMICO_DEFECTO,
-        estado_pago || estado || 'pendiente',
-        estado || estado_pago || 'pendiente',
-        fecha_vencimiento || null,
+        estadoFinal,
+        estadoFinal,
         fecha_pago || null,
         metodo_pago || null,
-        referencia_pago || null,
         numero_comprobante || null,
-        (estado_pago || estado || 'pendiente') !== 'pagado' ? 1 : 0,
-        observaciones || null
+        observaciones || null,
       ]
     );
     res.status(201).json(respuestaExito({ id }, 'Pago registrado exitosamente'));
   } catch (error) {
-    res.status(500).json(respuestaError('Error al registrar pago'));
+    res.status(500).json(respuestaError('Error al registrar pago: ' + error.message));
+  }
+}));
+
+// PUT PAGOS
+app.put('/api/pagos/:id', authMiddleware, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { alumno_id, monto, concepto, estado_pago, estado, fecha_pago, metodo_pago, observaciones, numero_comprobante } = req.body;
+  const pago = await getOne('SELECT id FROM pagos WHERE id = ?', [id]);
+  if (!pago) return res.status(404).json(respuestaError('Pago no encontrado'));
+  const estadoFinal = estado || estado_pago;
+  const campos = [];
+  const valores = [];
+  if (alumno_id !== undefined)       { campos.push('alumno_id = ?');        valores.push(alumno_id); }
+  if (monto !== undefined)           { campos.push('monto = ?');            valores.push(monto); }
+  if (concepto !== undefined)        { campos.push('concepto = ?');         valores.push(concepto); }
+  if (estadoFinal !== undefined)     { campos.push('estado = ?');           valores.push(estadoFinal); campos.push('estado_pago = ?'); valores.push(estadoFinal); }
+  if (fecha_pago !== undefined)      { campos.push('fecha_pago = ?');       valores.push(fecha_pago); }
+  if (metodo_pago !== undefined)     { campos.push('metodo_pago = ?');      valores.push(metodo_pago); }
+  if (observaciones !== undefined)   { campos.push('observaciones = ?');    valores.push(observaciones); }
+  if (numero_comprobante !== undefined) { campos.push('numero_comprobante = ?'); valores.push(numero_comprobante); }
+  if (campos.length === 0) return res.status(400).json(respuestaError('No hay campos para actualizar'));
+  valores.push(id);
+  try {
+    await runQuery(`UPDATE pagos SET ${campos.join(', ')}, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id = ?`, valores);
+    res.json(respuestaExito({ id }, 'Pago actualizado exitosamente'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al actualizar pago: ' + error.message));
+  }
+}));
+
+// DELETE PAGOS
+app.delete('/api/pagos/:id', authMiddleware, requireRole(['administrativo', 'director']), asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const pago = await getOne('SELECT id FROM pagos WHERE id = ?', [id]);
+  if (!pago) return res.status(404).json(respuestaError('Pago no encontrado'));
+  try {
+    await runQuery('DELETE FROM pagos WHERE id = ?', [id]);
+    res.json(respuestaExito({}, 'Pago eliminado correctamente'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al eliminar pago: ' + error.message));
   }
 }));
 

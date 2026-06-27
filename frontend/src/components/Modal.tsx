@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
 interface ModalProps {
   show: boolean;
@@ -25,6 +25,16 @@ const Modal: React.FC<ModalProps> = ({
   success,
   size = 'md',
 }) => {
+  useEffect(() => {
+    if (show) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [show]);
+
   if (!show) return null;
 
   const sizeClass = size === 'lg' ? 'modal-lg' : size === 'sm' ? 'modal-sm' : '';
@@ -36,7 +46,10 @@ const Modal: React.FC<ModalProps> = ({
       style={{ backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(3px)' }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className={`modal-dialog modal-dialog-centered modal-dialog-scrollable ${sizeClass}`}>
+      <div
+        className={`modal-dialog modal-dialog-scrollable ${sizeClass}`}
+        style={{ margin: '3rem auto 1rem' }}
+      >
         <div className="modal-content app-modal-content">
           <div className="modal-header app-modal-header">
             <h5 className="modal-title fw-bold">
