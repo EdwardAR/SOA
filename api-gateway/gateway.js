@@ -1039,8 +1039,11 @@ app.delete('/api/alumnos/:id', authMiddleware, requireRole(['administrativo', 'd
     }
     await runQuery('DELETE FROM matriculas WHERE alumno_id = ?', [id]);
     await runQuery('DELETE FROM pagos WHERE alumno_id = ?', [id]);
-    await runQuery('DELETE FROM notificaciones WHERE usuario_id = ?', [alumno.usuario_id]);
+    await runQuery('DELETE FROM notificaciones WHERE destinatario_id = ?', [alumno.usuario_id]);
     await runQuery('DELETE FROM alumnos WHERE id = ?', [id]);
+    if (alumno.usuario_id) {
+      await runQuery('DELETE FROM usuarios WHERE id = ?', [alumno.usuario_id]);
+    }
 
     res.json(respuestaExito({}, 'Alumno eliminado completamente (con datos relacionados)'));
   } catch (error) {
@@ -1374,8 +1377,11 @@ app.delete('/api/profesores/:id', authMiddleware, requireRole(['administrativo',
       await runQuery('DELETE FROM matriculas WHERE curso_id = ?', [curso.id]);
     }
     await runQuery('DELETE FROM cursos WHERE profesor_id = ?', [id]);
-    await runQuery('DELETE FROM notificaciones WHERE usuario_id = ?', [profesor.usuario_id]);
+    await runQuery('DELETE FROM notificaciones WHERE destinatario_id = ?', [profesor.usuario_id]);
     await runQuery('DELETE FROM profesores WHERE id = ?', [id]);
+    if (profesor.usuario_id) {
+      await runQuery('DELETE FROM usuarios WHERE id = ?', [profesor.usuario_id]);
+    }
 
     res.json(respuestaExito({}, 'Profesor eliminado completamente (con datos relacionados)'));
   } catch (error) {

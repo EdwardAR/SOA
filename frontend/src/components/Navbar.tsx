@@ -2,6 +2,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
+const roleLabels: Record<string, { label: string; color: string }> = {
+  director:      { label: 'Director',      color: '#7c3aed' },
+  administrativo:{ label: 'Administrativo', color: '#0891b2' },
+  docente:       { label: 'Docente',        color: '#059669' },
+  padre:         { label: 'Apoderado',      color: '#d97706' },
+  alumno:        { label: 'Alumno',         color: '#0f62fe' },
+};
+
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -14,122 +22,167 @@ const Navbar: React.FC = () => {
     navigate('/login');
   };
 
-  // Cerrar dropdown cuando se clickea afuera
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const roleInfo = user?.tipo_usuario ? roleLabels[user.tipo_usuario] : null;
+  const initials = user?.nombre
+    ? user.nombre.split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()
+    : '?';
+
   return (
-    <nav className="navbar navbar-expand-lg navbar navbar-custom" style={{ position: 'sticky', top: 0, zIndex: 1040 }}>
-      <div className="container-fluid">
-        <Link className="navbar-brand text-decoration-none" to="/dashboard">
-          <i className="bi bi-mortarboard me-2"></i>
-          <span className="d-none d-sm-inline">Colegio Futuro Digital</span>
-          <span className="d-sm-none">CFD</span>
+    <nav className="navbar navbar-custom" style={{ position: 'sticky', top: 0, zIndex: 1040 }}>
+      <div className="container-fluid px-3 px-md-4">
+        <Link className="navbar-brand text-decoration-none d-flex align-items-center gap-2" to="/dashboard">
+          <div
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: 10,
+              background: 'rgba(255,255,255,0.18)',
+              display: 'grid',
+              placeItems: 'center',
+              fontSize: '1.1rem',
+            }}
+          >
+            <i className="bi bi-mortarboard"></i>
+          </div>
+          <span className="d-none d-sm-inline fw-bold" style={{ fontSize: '1.05rem', letterSpacing: '-0.01em' }}>
+            Colegio Futuro Digital
+          </span>
+          <span className="d-sm-none fw-bold">CFD</span>
         </Link>
+
         <div className="ms-auto d-flex align-items-center gap-2">
-          <span className="text-white me-2 d-none d-md-inline" style={{ fontSize: '0.9rem' }}>
-            <i className="bi bi-person me-1"></i>
-            {user?.nombre}
-          </span>
-          <span className="text-white me-2 d-md-none" style={{ fontSize: '0.75rem' }}>
-            <i className="bi bi-person me-1"></i>
-          </span>
-          <div className="dropdown" ref={dropdownRef} style={{ position: 'relative' }}>
-            <button
-              className="btn btn-outline-light dropdown-toggle"
-              type="button"
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              style={{
-                padding: '0.6rem 1.2rem',
-                fontWeight: 600,
-                letterSpacing: '0.5px',
-                fontSize: '1.1rem',
-                minWidth: '60px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-              }}
-              title="Menú de usuario"
-            >
-              <i className="bi bi-chevron-down"></i>
-            </button>
-            {isDropdownOpen && (
-              <ul 
-                className="dropdown-menu dropdown-menu-end show" 
-                style={{ 
-                  display: 'block',
-                  minWidth: '200px',
-                  position: 'absolute',
-                  top: '100%',
-                  right: 0,
-                  marginTop: '0.5rem',
-                  border: '1px solid #dee2e6',
-                  borderRadius: '0.25rem',
-                  boxShadow: '0 0.5rem 1rem rgba(0,0,0,0.15)',
+          {/* Nombre + rol (desktop) */}
+          <div className="d-none d-md-flex flex-column align-items-end me-1" style={{ lineHeight: 1.3 }}>
+            <span className="text-white fw-semibold" style={{ fontSize: '0.88rem' }}>
+              {user?.nombre}
+            </span>
+            {roleInfo && (
+              <span
+                style={{
+                  fontSize: '0.72rem',
+                  fontWeight: 600,
+                  color: roleInfo.color,
+                  background: 'rgba(255,255,255,0.15)',
+                  borderRadius: 6,
+                  padding: '1px 7px',
+                  marginTop: 1,
                 }}
               >
-                <li>
-                  <h6 className="dropdown-header">
-                    <i className="bi bi-person-circle me-2"></i>
+                {roleInfo.label}
+              </span>
+            )}
+          </div>
+
+          {/* Avatar + dropdown */}
+          <div className="dropdown" ref={dropdownRef} style={{ position: 'relative' }}>
+            <button
+              className="btn p-0 border-0"
+              type="button"
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              title="Menú de usuario"
+              style={{ background: 'none' }}
+            >
+              <div
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, rgba(255,255,255,0.28), rgba(255,255,255,0.16))',
+                  border: '2px solid rgba(255,255,255,0.35)',
+                  display: 'grid',
+                  placeItems: 'center',
+                  color: '#fff',
+                  fontWeight: 700,
+                  fontSize: '0.88rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.18s ease',
+                }}
+              >
+                {initials}
+              </div>
+            </button>
+
+            {isDropdownOpen && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 8px)',
+                  right: 0,
+                  minWidth: 220,
+                  background: '#fff',
+                  borderRadius: 16,
+                  boxShadow: '0 16px 40px rgba(15,23,42,0.18)',
+                  border: '1px solid rgba(148,163,184,0.18)',
+                  overflow: 'hidden',
+                  zIndex: 2000,
+                }}
+              >
+                {/* User info header */}
+                <div style={{ padding: '14px 16px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                  <div className="fw-semibold" style={{ fontSize: '0.9rem', color: '#0f172a' }}>
                     {user?.nombre}
-                  </h6>
-                </li>
-                <li>
-                  <hr className="dropdown-divider m-2" />
-                </li>
-                <li>
-                  <a 
-                    className="dropdown-item" 
-                    href="/perfil" 
-                    style={{ 
-                      padding: '0.5rem 1rem',
-                      cursor: 'pointer',
-                      display: 'block',
-                      color: '#212529',
-                      textDecoration: 'none',
-                    }}
-                    onClick={(e) => {
-                      setIsDropdownOpen(false);
-                    }}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: 2 }}>
+                    {user?.email}
+                  </div>
+                  {roleInfo && (
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        marginTop: 6,
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        color: roleInfo.color,
+                        background: `${roleInfo.color}18`,
+                        borderRadius: 6,
+                        padding: '2px 8px',
+                      }}
+                    >
+                      {roleInfo.label}
+                    </span>
+                  )}
+                </div>
+
+                {/* Menu items */}
+                <div style={{ padding: '6px 0' }}>
+                  <a
+                    href="/perfil"
+                    className="dropdown-item d-flex align-items-center gap-2"
+                    style={{ padding: '10px 16px', fontSize: '0.9rem', color: '#374151' }}
+                    onClick={() => setIsDropdownOpen(false)}
                   >
-                    <i className="bi bi-person-circle me-2"></i>
+                    <i className="bi bi-person-circle text-primary"></i>
                     Mi Perfil
                   </a>
-                </li>
-                <li>
+                  <hr style={{ margin: '4px 12px', borderColor: '#e2e8f0' }} />
                   <button
-                    className="dropdown-item"
+                    className="dropdown-item d-flex align-items-center gap-2 w-100"
                     onClick={handleLogout}
                     style={{
                       background: 'none',
                       border: 'none',
+                      padding: '10px 16px',
+                      fontSize: '0.9rem',
+                      color: '#dc2626',
                       cursor: 'pointer',
-                      width: '100%',
                       textAlign: 'left',
-                      padding: '0.5rem 1rem',
-                      color: '#212529',
-                      fontSize: '0.95rem',
-                    }}
-                    onMouseEnter={(e) => {
-                      (e.target as HTMLElement).style.backgroundColor = '#f8f9fa';
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.target as HTMLElement).style.backgroundColor = 'transparent';
                     }}
                   >
-                    <i className="bi bi-box-arrow-right me-2"></i>
+                    <i className="bi bi-box-arrow-right"></i>
                     Cerrar Sesión
                   </button>
-                </li>
-              </ul>
+                </div>
+              </div>
             )}
           </div>
         </div>

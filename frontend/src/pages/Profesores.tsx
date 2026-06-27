@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { profesoresService } from '../api/services';
 import Modal from '../components/Modal';
+import ConfirmModal from '../components/ConfirmModal';
+import { useAuth } from '../context/AuthContext';
+import { can } from '../utils/permissions';
 import { useSortableData } from '../utils/tableSort';
 import { validarProfesor } from '../utils/validators';
 
@@ -24,31 +27,32 @@ const Profesores: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Profesor>({
-    numero_documento: '',
-    apellido_paterno: '',
-    primer_nombre: '',
-    email_contacto: '',
-    telefono: '',
-    especialidad: '',
-    estado: 'activo'
+    numero_documento: '', apellido_paterno: '', primer_nombre: '',
+    email_contacto: '', telefono: '', especialidad: '', estado: 'activo',
   });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [emailLocal, setEmailLocal] = useState('');
-  const { sortConfig, requestSort, sortedRows: profesoresOrdenados } = useSortableData(profesores, 'numero_documento');
+  const [search, setSearch] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; id: string; nombre: string }>({
+    show: false, id: '', nombre: '',
+  });
 
-  useEffect(() => {
-    fetchProfesores();
-  }, []);
+  const { sortConfig, requestSort, sortedRows: profesoresOrdenados } = useSortableData(profesores, 'apellido_paterno');
+  const { user } = useAuth();
+  const role = user?.tipo_usuario;
+  const allowCreate = can(role, 'profesores', 'create');
+  const allowEdit = can(role, 'profesores', 'edit');
+  const allowDelete = can(role, 'profesores', 'delete');
+
+  useEffect(() => { fetchProfesores(); }, []);
 
   const fetchProfesores = async () => {
     try {
       setLoading(true);
       const response = await profesoresService.getAll();
-      console.log('Profesores response:', response.data);
       setProfesores(response.data?.datos || []);
       setError('');
-    } catch (err: any) {
-      console.error('Error fetching profesores:', err);
+    } catch {
       setError('Error al cargar profesores');
     } finally {
       setLoading(false);
@@ -56,45 +60,24 @@ const Profesores: React.FC = () => {
   };
 
   const validateField = (name: string, value: string) => {
-    if (name === 'apellido_paterno' || name === 'primer_nombre') {
-      if (value && !/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]*$/.test(value)) {
-        setFieldErrors(prev => ({ ...prev, [name]: 'No debe contener números' }));
-        return;
-      }
+    if ((name === 'apellido_paterno' || name === 'primer_nombre') && value && !/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]*$/.test(value)) {
+      setFieldErrors(prev => ({ ...prev, [name]: 'No debe contener números' })); return;
     }
     if (name === 'numero_documento' && value) {
-      if (!/^\d*$/.test(value)) {
-        setFieldErrors(prev => ({ ...prev, [name]: 'Solo dígitos' }));
-        return;
-      }
-      if (value.length > 8) {
-        setFieldErrors(prev => ({ ...prev, [name]: 'Máximo 8 dígitos' }));
-        return;
-      }
+      if (!/^\d*$/.test(value)) { setFieldErrors(prev => ({ ...prev, [name]: 'Solo dígitos' })); return; }
+      if (value.length > 8) { setFieldErrors(prev => ({ ...prev, [name]: 'Máximo 8 dígitos' })); return; }
     }
     if (name === 'telefono' && value) {
-      if (!/^\d*$/.test(value)) {
-        setFieldErrors(prev => ({ ...prev, [name]: 'Solo dígitos' }));
-        return;
-      }
-      if (value.length > 9) {
-        setFieldErrors(prev => ({ ...prev, [name]: 'Máximo 9 dígitos' }));
-        return;
-      }
-      if (value.length > 0 && value[0] !== '9') {
-        setFieldErrors(prev => ({ ...prev, [name]: 'Debe empezar con 9' }));
-        return;
-      }
+      if (!/^\d*$/.test(value)) { setFieldErrors(prev => ({ ...prev, [name]: 'Solo dígitos' })); return; }
+      if (value.length > 9) { setFieldErrors(prev => ({ ...prev, [name]: 'Máximo 9 dígitos' })); return; }
+      if (value.length > 0 && value[0] !== '9') { setFieldErrors(prev => ({ ...prev, [name]: 'Debe empezar con 9' })); return; }
     }
     setFieldErrors(prev => ({ ...prev, [name]: '' }));
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
     validateField(name, value);
   };
 
@@ -102,59 +85,39 @@ const Profesores: React.FC = () => {
     if (profesor) {
       setEditingId(profesor.id);
       setFormData({
-        id: profesor.id,
-        usuario_id: profesor.usuario_id,
+        id: profesor.id, usuario_id: profesor.usuario_id,
         numero_documento: profesor.numero_documento || '',
         apellido_paterno: profesor.apellido_paterno || '',
         primer_nombre: profesor.primer_nombre || '',
         email_contacto: profesor.email_contacto || '',
         telefono: profesor.telefono || '',
         especialidad: profesor.especialidad || '',
-        estado: profesor.estado || 'activo'
+        estado: profesor.estado || 'activo',
       });
       setEmailLocal((profesor.email_contacto || '').split('@')[0] || '');
-      setError('');
-      setSuccess('');
-      setFieldErrors({});
     } else {
       setEditingId(null);
-      setFormData({
-        numero_documento: '',
-        apellido_paterno: '',
-        primer_nombre: '',
-        email_contacto: '',
-        telefono: '',
-        especialidad: '',
-        estado: 'activo'
-      });
+      setFormData({ numero_documento: '', apellido_paterno: '', primer_nombre: '', email_contacto: '', telefono: '', especialidad: '', estado: 'activo' });
       setEmailLocal('');
     }
+    setError(''); setSuccess(''); setFieldErrors({});
     setShowModal(true);
   };
 
   const handleCloseModal = () => {
-    setShowModal(false);
-    setEditingId(null);
-    setEmailLocal('');
-    setFieldErrors({});
+    setShowModal(false); setEditingId(null); setEmailLocal(''); setFieldErrors({});
   };
 
   const handleSave = async () => {
     if (!formData.apellido_paterno || !formData.primer_nombre || !formData.especialidad || !formData.numero_documento) {
-      setError('Por favor completa los campos obligatorios');
-      return;
+      setError('Completa los campos obligatorios'); return;
     }
     const errores = validarProfesor(formData);
-    if (errores.length > 0) {
-      setError(errores.join('. '));
-      return;
-    }
-
+    if (errores.length > 0) { setError(errores.join('. ')); return; }
     try {
       setError('');
       const payload: any = { ...formData };
       if (emailLocal) payload.email_contacto = `${emailLocal}@colegiofuturo.edu`;
-
       if (editingId) {
         await profesoresService.update(editingId, payload);
         setSuccess('Profesor actualizado correctamente');
@@ -162,111 +125,145 @@ const Profesores: React.FC = () => {
         await profesoresService.create(payload);
         setSuccess('Profesor creado correctamente');
       }
-      handleCloseModal();
-      fetchProfesores();
-      setTimeout(() => setSuccess(''), 3000);
+      handleCloseModal(); fetchProfesores(); setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
-      console.error('Save error:', err);
       setError(err.response?.data?.mensaje || 'Error al guardar profesor');
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('¿Estás seguro de que deseas eliminar este profesor?')) {
-      try {
-        await profesoresService.delete(id);
-        setSuccess('Profesor eliminado correctamente');
-        fetchProfesores();
-        setTimeout(() => setSuccess(''), 3000);
-      } catch (err: any) {
-        console.error('Delete error:', err);
-        setError(err.response?.data?.mensaje || 'Error al eliminar profesor');
-      }
+  const handleDeleteConfirm = async () => {
+    try {
+      await profesoresService.delete(confirmDelete.id);
+      setConfirmDelete({ show: false, id: '', nombre: '' });
+      setSuccess('Profesor eliminado correctamente');
+      fetchProfesores(); setTimeout(() => setSuccess(''), 3000);
+    } catch (err: any) {
+      setConfirmDelete({ show: false, id: '', nombre: '' });
+      setError(err.response?.data?.mensaje || 'Error al eliminar profesor');
     }
   };
+
+  const filtrados = profesoresOrdenados.filter(p => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (p.primer_nombre || '').toLowerCase().includes(q) ||
+      (p.apellido_paterno || '').toLowerCase().includes(q) ||
+      (p.especialidad || '').toLowerCase().includes(q) ||
+      (p.numero_documento || '').toLowerCase().includes(q);
+  });
+
+  const SortIcon = ({ col }: { col: string }) =>
+    sortConfig.key === col
+      ? <i className={`bi bi-caret-${sortConfig.direction === 'asc' ? 'up' : 'down'}-fill ms-1`} style={{ fontSize: '0.7rem' }}></i>
+      : <i className="bi bi-chevron-expand ms-1 text-muted" style={{ fontSize: '0.65rem' }}></i>;
 
   return (
     <div className="screen-page page-shell container-fluid p-2 p-md-4">
       <div className="page-hero mb-4">
         <div className="d-flex flex-wrap gap-2 mb-3">
-          <span className="badge rounded-pill bg-light text-primary px-3 py-2">Gestión académica</span>
-          <span className="badge rounded-pill bg-white text-dark px-3 py-2">Responsive</span>
+          <span className="hero-pill">
+            <i className="bi bi-person-badge me-1"></i> Planta docente
+          </span>
+          <span className="hero-pill-count">
+            {profesores.length} registros
+          </span>
         </div>
-        <h1 className="page-hero-title">
-          <i className="bi bi-person-badge me-2"></i>
-          Gestión de Profesores
-        </h1>
-        <p className="page-hero-subtitle">Administra la planta docente con una experiencia más limpia, consistente y fácil de usar en móvil o escritorio.</p>
+        <h1 className="page-hero-title"><i className="bi bi-person-badge me-2"></i>Gestión de Profesores</h1>
+        <p className="page-hero-subtitle">Administra la planta docente: registra, edita y organiza la información de cada profesor.</p>
       </div>
 
-      {loading ? (
-        <div className="loading">
-          <div className="spinner-border" role="status" />
+      {success && (
+        <div className="alert alert-success d-flex align-items-center gap-2 mb-3" role="alert">
+          <i className="bi bi-check-circle-fill"></i><span>{success}</span>
         </div>
+      )}
+      {error && !showModal && (
+        <div className="alert alert-danger d-flex align-items-center gap-2 mb-3" role="alert">
+          <i className="bi bi-x-circle-fill"></i><span>{error}</span>
+          <button className="btn-close ms-auto" onClick={() => setError('')} />
+        </div>
+      )}
+
+      {loading ? (
+        <div className="loading"><div className="spinner-border text-primary" role="status" /></div>
       ) : (
         <div className="card dashboard-card table-shell">
-          <div className="card-header bg-primary text-white">
-            <div className="d-flex justify-content-between align-items-center">
-              <h5 className="mb-0">Listado de Profesores ({profesores.length})</h5>
-              <button className="btn btn-sm btn-light" onClick={() => handleOpenModal()}>
-                <i className="bi bi-plus-circle me-2"></i>
-                Nuevo Profesor
-              </button>
+          <div className="card-header app-card-header">
+            <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
+              <h5 className="mb-0 fw-bold">
+                <i className="bi bi-person-badge me-2"></i>Profesores
+                <span className="badge bg-white text-primary ms-2 fw-semibold" style={{ fontSize: '0.78rem' }}>{filtrados.length}</span>
+              </h5>
+              <div className="d-flex gap-2 align-items-center flex-wrap">
+                <div className="input-group input-group-sm" style={{ width: 220 }}>
+                  <span className="input-group-text bg-white border-end-0"><i className="bi bi-search text-muted"></i></span>
+                  <input type="text" className="form-control border-start-0 ps-0" placeholder="Buscar profesor..."
+                    value={search} onChange={e => setSearch(e.target.value)} style={{ borderRadius: '0 8px 8px 0' }} />
+                  {search && <button className="btn btn-outline-secondary btn-sm" onClick={() => setSearch('')}><i className="bi bi-x"></i></button>}
+                </div>
+                {allowCreate && (
+                  <button className="btn btn-light btn-sm px-3 fw-semibold" onClick={() => handleOpenModal()} style={{ borderRadius: 10 }}>
+                    <i className="bi bi-plus-circle me-1"></i>Nuevo
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-          <div className="card-body">
+
+          <div className="card-body p-0">
             <div className="table-responsive">
-              <table className="table table-hover">
-                <thead className="table-light">
+              <table className="table table-hover align-middle mb-0 app-table">
+                <thead>
                   <tr>
-                    <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('numero_documento')}>
-                      Documento {sortConfig.key === 'numero_documento' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
-                    </th>
-                    <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('primer_nombre')}>
-                      Nombre {sortConfig.key === 'primer_nombre' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
-                    </th>
-                    <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('apellido_paterno')}>
-                      Apellido {sortConfig.key === 'apellido_paterno' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
-                    </th>
-                    <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('email_contacto')}>
-                      Email {sortConfig.key === 'email_contacto' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
-                    </th>
-                    <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('especialidad')}>
-                      Especialidad {sortConfig.key === 'especialidad' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
-                    </th>
-                    <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('telefono')}>
-                      Teléfono {sortConfig.key === 'telefono' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
-                    </th>
-                    <th>Acciones</th>
+                    <th onClick={() => requestSort('apellido_paterno')} style={{ cursor: 'pointer' }}>Apellido <SortIcon col="apellido_paterno" /></th>
+                    <th onClick={() => requestSort('primer_nombre')} style={{ cursor: 'pointer' }}>Nombre <SortIcon col="primer_nombre" /></th>
+                    <th onClick={() => requestSort('especialidad')} style={{ cursor: 'pointer' }}>Especialidad <SortIcon col="especialidad" /></th>
+                    <th onClick={() => requestSort('email_contacto')} style={{ cursor: 'pointer' }} className="d-none d-md-table-cell">Email <SortIcon col="email_contacto" /></th>
+                    <th onClick={() => requestSort('numero_documento')} style={{ cursor: 'pointer' }} className="d-none d-lg-table-cell">Documento <SortIcon col="numero_documento" /></th>
+                    {(allowEdit || allowDelete) && <th className="text-end" style={{ width: 110 }}>Acciones</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {profesoresOrdenados.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="text-center py-4 text-muted">
-                        No hay profesores registrados
+                  {filtrados.length === 0 ? (
+                    <tr><td colSpan={6} className="text-center py-5 text-muted">
+                      <i className="bi bi-person-badge" style={{ fontSize: '2.5rem', opacity: 0.25 }}></i>
+                      <p className="mt-2 mb-0">{search ? 'Sin resultados' : 'No hay profesores registrados'}</p>
+                    </td></tr>
+                  ) : filtrados.map(p => (
+                    <tr key={p.id}>
+                      <td className="fw-semibold">{p.apellido_paterno}</td>
+                      <td>{p.primer_nombre}</td>
+                      <td>
+                        {p.especialidad
+                          ? <span className="badge rounded-pill" style={{ background: 'rgba(8,145,178,0.1)', color: '#0891b2', fontWeight: 600 }}>{p.especialidad}</span>
+                          : <span className="text-muted">—</span>}
                       </td>
-                    </tr>
-                  ) : (
-                    profesoresOrdenados.map((profesor) => (
-                      <tr key={profesor.id}>
-                        <td><small className="text-muted">{profesor.numero_documento || '-'}</small></td>
-                        <td>{profesor.primer_nombre}</td>
-                        <td>{profesor.apellido_paterno}</td>
-                        <td>{profesor.email || profesor.email_contacto || '-'}</td>
-                        <td>{profesor.especialidad || '-'}</td>
-                        <td>{profesor.telefono || '-'}</td>
-                        <td>
-                          <button className="btn btn-sm btn-primary me-2" onClick={() => handleOpenModal(profesor)} title="Editar">
-                            <i className="bi bi-pencil"></i>
-                          </button>
-                          <button className="btn btn-sm btn-danger" onClick={() => handleDelete(profesor.id)} title="Eliminar">
-                            <i className="bi bi-trash"></i>
-                          </button>
+                      <td className="d-none d-md-table-cell text-muted small">
+                        {p.email || p.email_contacto ? <><i className="bi bi-envelope me-1"></i>{p.email || p.email_contacto}</> : '—'}
+                      </td>
+                      <td className="d-none d-lg-table-cell">
+                        {p.numero_documento ? <span className="badge-matricula">{p.numero_documento}</span> : '—'}
+                      </td>
+                      {(allowEdit || allowDelete) && (
+                        <td className="text-end">
+                          <div className="d-flex gap-1 justify-content-end">
+                            {allowEdit && (
+                              <button className="btn btn-sm app-btn-edit" onClick={() => handleOpenModal(p)} title="Editar">
+                                <i className="bi bi-pencil"></i>
+                              </button>
+                            )}
+                            {allowDelete && (
+                              <button className="btn btn-sm app-btn-delete"
+                                onClick={() => setConfirmDelete({ show: true, id: p.id, nombre: `${p.primer_nombre} ${p.apellido_paterno}` })}
+                                title="Eliminar">
+                                <i className="bi bi-trash3"></i>
+                              </button>
+                            )}
+                          </div>
                         </td>
-                      </tr>
-                    ))
-                  )}
+                      )}
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -274,131 +271,64 @@ const Profesores: React.FC = () => {
         </div>
       )}
 
-      <Modal
-        show={showModal}
-        title={editingId ? 'Editar Profesor' : 'Nuevo Profesor'}
-        onClose={handleCloseModal}
-        onSave={handleSave}
-        saveButtonText={editingId ? 'Actualizar' : 'Crear'}
-        error={error}
-        success={success}
-      >
-        <form>
+      <Modal show={showModal} title={editingId ? 'Editar Profesor' : 'Nuevo Profesor'}
+        onClose={handleCloseModal} onSave={handleSave}
+        saveButtonText={editingId ? 'Actualizar' : 'Crear profesor'}
+        error={error} success={success}>
+        <form onSubmit={e => e.preventDefault()}>
           <div className="mb-3">
-            <label htmlFor="numero_documento" className="form-label">
-              Número de Documento *
-            </label>
-            <input
-              type="text"
-              className={`form-control ${fieldErrors.numero_documento ? 'is-invalid' : ''}`}
-              id="numero_documento"
-              name="numero_documento"
-              value={formData.numero_documento}
-              onChange={handleInputChange}
-              inputMode="numeric"
-              maxLength={8}
-              placeholder="12345678"
-              required
-            />
-            {fieldErrors.numero_documento && (
-              <div className="invalid-feedback d-block">{fieldErrors.numero_documento}</div>
-            )}
-          </div>
-          <div className="row">
-            <div className="col-md-6">
-              <div className="mb-3">
-                <label htmlFor="apellido_paterno" className="form-label">
-                  Apellido Paterno *
-                </label>
-                <input
-                  type="text"
-                  className={`form-control ${fieldErrors.apellido_paterno ? 'is-invalid' : ''}`}
-                  id="apellido_paterno"
-                  name="apellido_paterno"
-                  value={formData.apellido_paterno}
-                  onChange={handleInputChange}
-                  maxLength={50}
-                  required
-                />
-                {fieldErrors.apellido_paterno && (
-                  <div className="invalid-feedback d-block">{fieldErrors.apellido_paterno}</div>
-                )}
-              </div>
-            </div>
-            <div className="col-md-6">
-              <div className="mb-3">
-                <label htmlFor="primer_nombre" className="form-label">
-                  Nombre *
-                </label>
-                <input
-                  type="text"
-                  className={`form-control ${fieldErrors.primer_nombre ? 'is-invalid' : ''}`}
-                  id="primer_nombre"
-                  name="primer_nombre"
-                  value={formData.primer_nombre}
-                  onChange={handleInputChange}
-                  maxLength={50}
-                  required
-                />
-                {fieldErrors.primer_nombre && (
-                  <div className="invalid-feedback d-block">{fieldErrors.primer_nombre}</div>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="mb-3">
-            <label htmlFor="especialidad" className="form-label">
-              Especialidad *
-            </label>
-            <input
-              type="text"
-              className="form-control"
-              id="especialidad"
-              name="especialidad"
-              value={formData.especialidad}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-          <div className="mb-3">
-            <label htmlFor="email_local" className="form-label">
-              Email de Contacto
-            </label>
+            <label className="form-label fw-semibold">Número de Documento <span className="text-danger">*</span></label>
             <div className="input-group">
-              <input
-                type="text"
-                className="form-control"
-                id="email_local"
-                name="email_local"
-                value={emailLocal}
-                onChange={(e) => setEmailLocal(e.target.value)}
-                placeholder="nombre.usuario"
-              />
-              <span className="input-group-text">@colegiofuturo.edu</span>
+              <span className="input-group-text"><i className="bi bi-card-text"></i></span>
+              <input type="text" className={`form-control ${fieldErrors.numero_documento ? 'is-invalid' : ''}`}
+                name="numero_documento" value={formData.numero_documento} onChange={handleInputChange}
+                inputMode="numeric" maxLength={8} placeholder="12345678" />
+              {fieldErrors.numero_documento && <div className="invalid-feedback">{fieldErrors.numero_documento}</div>}
             </div>
-            <div className="form-text">Solo escribe la parte antes de @colegiofuturo.edu</div>
           </div>
-          <div className="mb-3">
-            <label htmlFor="telefono" className="form-label">
-              Teléfono
-            </label>
-            <input
-              type="tel"
-              className={`form-control ${fieldErrors.telefono ? 'is-invalid' : ''}`}
-              id="telefono"
-              name="telefono"
-              value={formData.telefono}
-              onChange={handleInputChange}
-              inputMode="numeric"
-              maxLength={9}
-              placeholder="987654321"
-            />
-            {fieldErrors.telefono && (
-              <div className="invalid-feedback d-block">{fieldErrors.telefono}</div>
-            )}
+          <div className="row g-3">
+            <div className="col-md-6">
+              <label className="form-label fw-semibold">Apellido Paterno <span className="text-danger">*</span></label>
+              <input type="text" className={`form-control ${fieldErrors.apellido_paterno ? 'is-invalid' : ''}`}
+                name="apellido_paterno" value={formData.apellido_paterno} onChange={handleInputChange} maxLength={50} />
+              {fieldErrors.apellido_paterno && <div className="invalid-feedback">{fieldErrors.apellido_paterno}</div>}
+            </div>
+            <div className="col-md-6">
+              <label className="form-label fw-semibold">Nombre <span className="text-danger">*</span></label>
+              <input type="text" className={`form-control ${fieldErrors.primer_nombre ? 'is-invalid' : ''}`}
+                name="primer_nombre" value={formData.primer_nombre} onChange={handleInputChange} maxLength={50} />
+              {fieldErrors.primer_nombre && <div className="invalid-feedback">{fieldErrors.primer_nombre}</div>}
+            </div>
+          </div>
+          <div className="mt-3">
+            <label className="form-label fw-semibold">Especialidad <span className="text-danger">*</span></label>
+            <input type="text" className="form-control" name="especialidad" value={formData.especialidad} onChange={handleInputChange} placeholder="Ej: Matemáticas" />
+          </div>
+          <div className="mt-3">
+            <label className="form-label fw-semibold">Email de Contacto</label>
+            <div className="input-group">
+              <span className="input-group-text"><i className="bi bi-envelope"></i></span>
+              <input type="text" className="form-control" value={emailLocal} onChange={e => setEmailLocal(e.target.value)} placeholder="nombre.usuario" />
+              <span className="input-group-text text-muted" style={{ fontSize: '0.85rem' }}>@colegiofuturo.edu</span>
+            </div>
+          </div>
+          <div className="mt-3">
+            <label className="form-label fw-semibold">Teléfono</label>
+            <div className="input-group">
+              <span className="input-group-text"><i className="bi bi-telephone"></i></span>
+              <input type="tel" className={`form-control ${fieldErrors.telefono ? 'is-invalid' : ''}`}
+                name="telefono" value={formData.telefono} onChange={handleInputChange} inputMode="numeric" maxLength={9} placeholder="987654321" />
+              {fieldErrors.telefono && <div className="invalid-feedback">{fieldErrors.telefono}</div>}
+            </div>
           </div>
         </form>
       </Modal>
+
+      <ConfirmModal show={confirmDelete.show} title="Eliminar profesor"
+        message={`¿Seguro que deseas eliminar a ${confirmDelete.nombre}? Se eliminarán también sus cursos y registros asociados.`}
+        confirmText="Sí, eliminar" variant="danger"
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setConfirmDelete({ show: false, id: '', nombre: '' })} />
     </div>
   );
 };

@@ -260,6 +260,11 @@ a {
   color: #fff;
 }
 
+.metric-card.metric-danger {
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+  color: #fff;
+}
+
 .table-responsive {
   border-radius: 10px;
   overflow: hidden;
@@ -334,6 +339,36 @@ a {
   background:
     radial-gradient(circle at top left, rgba(255, 255, 255, 0.15), transparent 26%),
     linear-gradient(135deg, #091b33 0%, #0c2a4f 50%, #113c6d 100%);
+}
+
+/* ── Home CTA button ──────────────────────────────────────────────── */
+.home-btn-primary {
+  background: linear-gradient(135deg, #0f62fe 0%, #3b82f6 100%);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  box-shadow: 0 12px 28px rgba(15, 98, 254, 0.38);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.home-btn-primary:hover {
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 18px 36px rgba(15, 98, 254, 0.48);
+}
+
+/* ── Pulse dot animation ──────────────────────────────────────────── */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(1.4); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-6px); }
+  40%       { transform: translateX(6px); }
+  60%       { transform: translateX(-4px); }
+  80%       { transform: translateX(4px); }
 }
 
 .landing-orb {
@@ -806,4 +841,235 @@ a {
   .login-hero-content {
     padding: 3.5rem 1.5rem;
   }
+}
+
+/* ── Hero badge pills ─────────────────────────────────────────────── */
+.hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.35);
+  backdrop-filter: blur(4px);
+}
+
+.hero-pill-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.hero-pill-warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: rgba(245, 158, 11, 0.9);
+  border: 1px solid rgba(245, 158, 11, 0.6);
+  color: #1c1300;
+}
+
+/* ── App Modal ────────────────────────────────────────────────────── */
+.app-modal-content {
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+  overflow: hidden;
+}
+
+.app-modal-header {
+  background: linear-gradient(135deg, #0f47a1 0%, #1565c0 60%, #1976d2 100%);
+  color: #fff;
+  border-bottom: none;
+  padding: 1.1rem 1.5rem;
+}
+
+.app-modal-footer {
+  background: #f8fafc;
+  border-top: 1px solid rgba(148, 163, 184, 0.16);
+  padding: 0.85rem 1.5rem;
+}
+
+/* ── Confirm Modal ────────────────────────────────────────────────── */
+.confirm-modal-content {
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+}
+
+/* ── App Card Header ──────────────────────────────────────────────── */
+.app-card-header {
+  background: linear-gradient(135deg, #0f47a1 0%, #1565c0 60%, #1976d2 100%);
+  color: #fff;
+  padding: 1rem 1.5rem;
+  border-bottom: none;
+}
+
+.app-card-header .form-control,
+.app-card-header .input-group-text {
+  border-radius: 10px;
+  font-size: 0.875rem;
+}
+
+/* ── App Table ────────────────────────────────────────────────────── */
+.app-table thead tr {
+  background: #f1f5f9;
+}
+
+.app-table thead th {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #475569;
+  border-bottom: 2px solid #e2e8f0;
+  padding: 0.85rem 1rem;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.app-table thead th:hover {
+  color: #0f172a;
+  background: #e8eef6;
+}
+
+.app-table tbody td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+  font-size: 0.9rem;
+}
+
+.app-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.app-table tbody tr:hover {
+  background: rgba(15, 98, 254, 0.04);
+}
+
+/* ── Badge Matrícula ──────────────────────────────────────────────── */
+.badge-matricula {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.7rem;
+  border-radius: 8px;
+  background: rgba(15, 98, 254, 0.08);
+  color: #1565c0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  font-family: 'Courier New', monospace;
+}
+
+/* ── Action Buttons ───────────────────────────────────────────────── */
+.app-btn-edit {
+  background: rgba(15, 98, 254, 0.08);
+  color: #1565c0;
+  border: 1px solid rgba(15, 98, 254, 0.2);
+  border-radius: 8px;
+  padding: 0.3rem 0.55rem;
+  transition: all 0.18s ease;
+}
+
+.app-btn-edit:hover {
+  background: #0f62fe;
+  color: #fff;
+  border-color: #0f62fe;
+  transform: translateY(-1px);
+}
+
+.app-btn-delete {
+  background: rgba(220, 38, 38, 0.07);
+  color: #dc2626;
+  border: 1px solid rgba(220, 38, 38, 0.18);
+  border-radius: 8px;
+  padding: 0.3rem 0.55rem;
+  transition: all 0.18s ease;
+}
+
+.app-btn-delete:hover {
+  background: #dc2626;
+  color: #fff;
+  border-color: #dc2626;
+  transform: translateY(-1px);
+}
+
+/* ── Sidebar mobile toggle ────────────────────────────────────────── */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1030;
+}
+
+/* ── Screen transition ────────────────────────────────────────────── */
+.screen-page {
+  animation: pageFadeIn 0.22s ease both;
+}
+
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Responsive table fix ─────────────────────────────────────────── */
+@media (max-width: 576px) {
+  .app-card-header {
+    padding: 0.85rem 1rem;
+  }
+
+  .app-table thead th,
+  .app-table tbody td {
+    padding: 0.7rem 0.75rem;
+  }
+}
+
+/* ── Form labels ──────────────────────────────────────────────────── */
+.form-label.fw-semibold {
+  font-size: 0.88rem;
+  color: #374151;
+  margin-bottom: 0.35rem;
+}
+
+/* ── Input focus ring ─────────────────────────────────────────────── */
+.form-control:focus,
+.form-select:focus {
+  border-color: #0f62fe;
+  box-shadow: 0 0 0 0.18rem rgba(15, 98, 254, 0.15);
+}
+
+/* ── Alert improvements ───────────────────────────────────────────── */
+.alert {
+  border-radius: 14px;
+  border: none;
+  font-size: 0.9rem;
+}
+
+.alert-danger {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.alert-success {
+  background: #f0fdf4;
+  color: #166534;
 }

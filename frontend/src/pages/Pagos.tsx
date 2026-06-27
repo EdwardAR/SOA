@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { pagosService, alumnosService } from '../api/services';
 import Modal from '../components/Modal';
+import ConfirmModal from '../components/ConfirmModal';
 import { useAuth } from '../context/AuthContext';
 import { can } from '../utils/permissions';
 import { useSortableData } from '../utils/tableSort';
@@ -21,492 +22,253 @@ interface Pago {
 }
 
 const CONCEPTOS_PAGO = [
-  'Matrícula',
-  'Cuota mensual - Mayo',
-  'Cuota mensual - Junio',
-  'Cuota mensual - Julio',
-  'Cuota mensual - Agosto',
-  'Cuota mensual - Setiembre',
-  'Cuota mensual - Octubre',
-  'Cuota mensual - Noviembre',
-  'Cuota mensual - Diciembre',
-  'Uniforme',
-  'Carnet estudiantil',
-  'Material educativo',
-  'Examen extraordinario'
+  'Matrícula','Cuota mensual - Mayo','Cuota mensual - Junio','Cuota mensual - Julio',
+  'Cuota mensual - Agosto','Cuota mensual - Setiembre','Cuota mensual - Octubre',
+  'Cuota mensual - Noviembre','Cuota mensual - Diciembre','Uniforme',
+  'Carnet estudiantil','Material educativo','Examen extraordinario',
 ];
-
-// Montos fijos por concepto en Soles — ajusta según política del colegio
 const CONCEPTOS_MONTO: Record<string, number> = {
-  'Matrícula': 850.00,
-  'Cuota mensual - Mayo': 1550.00,
-  'Cuota mensual - Junio': 1550.00,
-  'Cuota mensual - Julio': 1550.00,
-  'Cuota mensual - Agosto': 1550.00,
-  'Cuota mensual - Setiembre': 1550.00,
-  'Cuota mensual - Octubre': 1550.00,
-  'Cuota mensual - Noviembre': 1550.00,
-  'Cuota mensual - Diciembre': 1550.00,
-  'Uniforme': 740.00,
-  'Carnet estudiantil': 555.00,
-  'Material educativo': 444.00,
-  'Examen extraordinario': 185.00
+  'Matrícula':850,'Cuota mensual - Mayo':1550,'Cuota mensual - Junio':1550,
+  'Cuota mensual - Julio':1550,'Cuota mensual - Agosto':1550,'Cuota mensual - Setiembre':1550,
+  'Cuota mensual - Octubre':1550,'Cuota mensual - Noviembre':1550,'Cuota mensual - Diciembre':1550,
+  'Uniforme':740,'Carnet estudiantil':555,'Material educativo':444,'Examen extraordinario':185,
 };
-
-const esConceptoFijo = (concepto: string) => Object.prototype.hasOwnProperty.call(CONCEPTOS_MONTO, concepto);
-
-const formatDateForInput = (value?: string | null) => {
-  if (!value) return new Date().toISOString().split('T')[0];
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return new Date().toISOString().split('T')[0];
-  return parsed.toISOString().split('T')[0];
-};
-
-const normalizeEstadoPago = (value?: string | null) => {
-  const estado = (value || 'pendiente').toString().toLowerCase();
-  if (['pendiente', 'pagado', 'vencido', 'cancelado', 'rechazado'].includes(estado)) return estado;
-  return 'pendiente';
-};
-
-const normalizeMetodoPago = (value?: string | null) => (value || 'transferencia').toString().toLowerCase();
+const esConceptoFijo = (c: string) => Object.prototype.hasOwnProperty.call(CONCEPTOS_MONTO, c);
+const toDate = (v?: string | null) => { if (!v) return new Date().toISOString().split('T')[0]; const p = new Date(v); return isNaN(p.getTime()) ? new Date().toISOString().split('T')[0] : p.toISOString().split('T')[0]; };
+const normEstado = (v?: string | null) => { const s = (v||'pendiente').toLowerCase(); return ['pendiente','pagado','vencido','cancelado','rechazado'].includes(s) ? s : 'pendiente'; };
+const normMetodo = (v?: string | null) => (v||'transferencia').toLowerCase();
+const estadoBadge = (e: string) => e==='pagado' ? 'success' : e==='pendiente' ? 'warning' : 'danger';
 
 const Pagos: React.FC = () => {
   const [pagos, setPagos] = useState<Pago[]>([]);
+  const [alumnos, setAlumnos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [alumnos, setAlumnos] = useState<any[]>([]);
-  const [formData, setFormData] = useState<Pago>({
-    alumno_id: '',
-    monto: 0,
-    concepto: '',
-    estado: 'pendiente',
-    fecha_pago: new Date().toISOString().split('T')[0],
-    metodo_pago: 'transferencia'
-  });
+  const [search, setSearch] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; id: string; label: string }>({ show: false, id: '', label: '' });
+  const [formData, setFormData] = useState<Pago>({ alumno_id:'', monto:0, concepto:'', estado:'pendiente', fecha_pago: toDate(null), metodo_pago:'transferencia' });
+
   const { sortConfig, requestSort, sortedRows: pagosOrdenados } = useSortableData(pagos, 'fecha_pago');
-
-  useEffect(() => {
-    fetchPagos();
-    fetchAlumnos();
-  }, []);
-
   const { user } = useAuth();
   const role = user?.tipo_usuario;
   const allowCreate = can(role, 'pagos', 'create');
   const allowEdit = can(role, 'pagos', 'edit');
   const allowDelete = can(role, 'pagos', 'delete');
 
-  const fetchAlumnos = async () => {
-    try {
-      const response = await alumnosService.getAll();
-      setAlumnos(response.data?.datos || []);
-    } catch (err) {
-      console.error('Error al cargar alumnos para pagos:', err);
-    }
-  };
+  useEffect(() => { fetchPagos(); fetchAlumnos(); }, []);
 
+  const fetchAlumnos = async () => { try { setAlumnos((await alumnosService.getAll()).data?.datos || []); } catch {} };
   const fetchPagos = async () => {
-    try {
-      setLoading(true);
-      const response = await pagosService.getAll();
-      setPagos(response.data?.datos || []);
-      setError('');
-    } catch (err: any) {
-      setError('Error al cargar pagos');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    try { setLoading(true); setPagos((await pagosService.getAll()).data?.datos || []); setError(''); }
+    catch { setError('Error al cargar pagos'); } finally { setLoading(false); }
   };
 
   const handleOpenModal = (pago?: Pago) => {
+    setError(''); setSuccess('');
     if (pago) {
-      if (!allowEdit) return alert('No autorizado para editar pagos');
       setEditingId(pago.id || null);
-      setFormData({
-        id: pago.id,
-        alumno_id: pago.alumno_id,
-        monto: Number(pago.monto) || 0,
-        concepto: pago.concepto || '',
-        estado: normalizeEstadoPago(pago.estado || pago.estado_pago),
-        fecha_pago: formatDateForInput(pago.fecha_pago),
-        metodo_pago: normalizeMetodoPago(pago.metodo_pago),
-        estado_pago: pago.estado_pago,
-        observaciones: pago.observaciones || null
-      });
+      setFormData({ id: pago.id, alumno_id: pago.alumno_id, monto: Number(pago.monto)||0,
+        concepto: pago.concepto||'', estado: normEstado(pago.estado||pago.estado_pago),
+        fecha_pago: toDate(pago.fecha_pago), metodo_pago: normMetodo(pago.metodo_pago),
+        observaciones: pago.observaciones||null });
     } else {
-      if (!allowCreate) return alert('No autorizado para crear pagos');
       setEditingId(null);
-      setFormData({
-        alumno_id: '',
-        monto: 0,
-        concepto: '',
-        estado: 'pendiente',
-        fecha_pago: formatDateForInput(null),
-        metodo_pago: 'transferencia'
-      });
+      setFormData({ alumno_id:'', monto:0, concepto:'', estado:'pendiente', fecha_pago: toDate(null), metodo_pago:'transferencia' });
     }
     setShowModal(true);
   };
 
-  const handleCloseModal = () => {
-    setShowModal(false);
-    setEditingId(null);
-  };
-
   const handleSave = async () => {
-    if (!formData.alumno_id || !formData.monto || !formData.concepto) {
-      setError('Por favor completa todos los campos');
-      return;
-    }
+    if (!formData.alumno_id || !formData.monto || !formData.concepto) { setError('Completa todos los campos'); return; }
     const errores = validarPago(formData);
-    if (errores.length > 0) {
-      setError(errores.join('. '));
-      return;
-    }
-
+    if (errores.length > 0) { setError(errores.join('. ')); return; }
     try {
-      const payload = {
-        alumno_id: formData.alumno_id,
-        monto: formData.monto,
-        concepto: formData.concepto,
-        estado: normalizeEstadoPago(formData.estado),
-        fecha_pago: formatDateForInput(formData.fecha_pago),
-        metodo_pago: normalizeMetodoPago(formData.metodo_pago),
-        estado_pago: formData.estado_pago,
-        observaciones: formData.observaciones
-      };
-
-      if (editingId) {
-        await pagosService.update(editingId, payload);
-        setSuccess('Pago actualizado correctamente');
-      } else {
-        await pagosService.create(payload);
-        setSuccess('Pago registrado correctamente');
-      }
-      handleCloseModal();
-      fetchPagos();
-      setTimeout(() => setSuccess(''), 3000);
-    } catch (err: any) {
-      setError('Error al guardar pago');
-      console.error(err);
-      setTimeout(() => setError(''), 3000);
-    }
+      const payload = { alumno_id: formData.alumno_id, monto: formData.monto, concepto: formData.concepto,
+        estado: normEstado(formData.estado), fecha_pago: toDate(formData.fecha_pago),
+        metodo_pago: normMetodo(formData.metodo_pago), observaciones: formData.observaciones };
+      if (editingId) { await pagosService.update(editingId, payload); setSuccess('Pago actualizado'); }
+      else { await pagosService.create(payload); setSuccess('Pago registrado'); }
+      setShowModal(false); setEditingId(null); fetchPagos(); setTimeout(() => setSuccess(''), 3000);
+    } catch (err: any) { setError(err.response?.data?.mensaje || 'Error al guardar'); }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('¿Estás seguro de eliminar este pago?')) return;
-
-    try {
-      await pagosService.delete(id);
-      setSuccess('Pago eliminado correctamente');
-      fetchPagos();
-      setTimeout(() => setSuccess(''), 3000);
-    } catch (err: any) {
-      setError('Error al eliminar pago');
-      console.error(err);
-      setTimeout(() => setError(''), 3000);
-    }
+  const handleDeleteConfirm = async () => {
+    try { await pagosService.delete(confirmDelete.id); setConfirmDelete({ show:false,id:'',label:'' });
+      setSuccess('Pago eliminado'); fetchPagos(); setTimeout(() => setSuccess(''), 3000);
+    } catch (err: any) { setConfirmDelete({ show:false,id:'',label:'' }); setError(err.response?.data?.mensaje || 'Error al eliminar'); }
   };
 
-  const calculateTotals = () => {
-    return {
-      totalPagado: pagos.filter(p => p.estado === 'pagado').reduce((sum, p) => sum + p.monto, 0),
-      totalPendiente: pagos.filter(p => p.estado === 'pendiente').reduce((sum, p) => sum + p.monto, 0),
-      total: pagos.reduce((sum, p) => sum + p.monto, 0),
-      transacciones: pagos.length
-    };
-  };
+  const filtrados = pagosOrdenados.filter(p => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (p.alumno_nombre||'').toLowerCase().includes(q) || (p.concepto||'').toLowerCase().includes(q) || (p.estado||'').toLowerCase().includes(q);
+  });
 
-  const totals = calculateTotals();
+  const totalPagado = pagos.filter(p=>p.estado==='pagado').reduce((s,p)=>s+Number(p.monto),0);
+  const totalPendiente = pagos.filter(p=>p.estado==='pendiente').reduce((s,p)=>s+Number(p.monto),0);
+  const total = pagos.reduce((s,p)=>s+Number(p.monto),0);
 
-  const getAlumnoNombre = (id: string) => {
-    const alumno = alumnos.find(a => a.id === id);
-    return alumno ? `${alumno.primer_nombre} ${alumno.apellido_paterno}` : id;
-  };
-
-  const getPagoBadge = (estado: string) => {
-    if (estado === 'pagado') return 'success';
-    if (estado === 'pendiente') return 'warning';
-    return 'danger';
-  };
+  const SortIcon = ({ col }: { col: string }) =>
+    sortConfig.key === col ? <i className={`bi bi-caret-${sortConfig.direction==='asc'?'up':'down'}-fill ms-1`} style={{fontSize:'0.7rem'}}></i>
+      : <i className="bi bi-chevron-expand ms-1 text-muted" style={{fontSize:'0.65rem'}}></i>;
 
   return (
     <div className="screen-page page-shell container-fluid p-2 p-md-4">
       <div className="page-hero mb-4">
         <div className="d-flex flex-wrap gap-2 mb-3">
-          <span className="badge rounded-pill bg-light text-primary px-3 py-2">Gestión financiera</span>
-          <span className="badge rounded-pill bg-white text-dark px-3 py-2">Responsive</span>
+          <span className="hero-pill"><i className="bi bi-credit-card me-1"></i> Finanzas</span>
+          <span className="hero-pill-count">{pagos.length} registros</span>
         </div>
-        <h1 className="page-hero-title">
-          <i className="bi bi-credit-card me-2"></i>
-          Gestión de Pagos
-        </h1>
-        <p className="page-hero-subtitle">Consulta y administra pagos con un diseño más claro, ordenado y preparado para pantallas móviles.</p>
+        <h1 className="page-hero-title"><i className="bi bi-credit-card me-2"></i>Gestión de Pagos</h1>
+        <p className="page-hero-subtitle">Consulta y administra pagos de matrículas y cuotas mensuales.</p>
       </div>
 
-      {/* Summary Cards */}
-      <div className="row summary-grid g-3 mb-4">
-        <div className="col-12 col-md-3">
-          <div className="summary-mini-card border-success">
-            <div className="summary-label">Pagado</div>
-            <div className="summary-value text-success">S/. {totals.totalPagado.toFixed(2)}</div>
-            <div className="summary-note">Ingresos confirmados</div>
+      {success && <div className="alert alert-success d-flex align-items-center gap-2 mb-3"><i className="bi bi-check-circle-fill"></i><span>{success}</span></div>}
+      {error && !showModal && <div className="alert alert-danger d-flex align-items-center gap-2 mb-3"><i className="bi bi-x-circle-fill"></i><span>{error}</span><button className="btn-close ms-auto" onClick={()=>setError('')}/></div>}
+
+      {/* Stats */}
+      <div className="row g-3 mb-4">
+        {[
+          { label:'Total pagado', val:`S/. ${totalPagado.toFixed(2)}`, icon:'bi-check-circle', color:'metric-success' },
+          { label:'Total pendiente', val:`S/. ${totalPendiente.toFixed(2)}`, icon:'bi-clock', color:'metric-warning' },
+          { label:'Monto total', val:`S/. ${total.toFixed(2)}`, icon:'bi-wallet2', color:'metric-primary' },
+          { label:'Transacciones', val:pagos.length, icon:'bi-receipt', color:'metric-info' },
+        ].map(s => (
+          <div className="col-6 col-md-3" key={s.label}>
+            <div className={`card metric-card ${s.color}`}>
+              <div className="card-body stat-card text-center">
+                <i className={`bi ${s.icon} metric-icon`}></i>
+                <div className="metric-value" style={{fontSize:'1.5rem'}}>{loading?'…':s.val}</div>
+                <p className="mb-0 metric-label">{s.label}</p>
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="col-12 col-md-3">
-          <div className="summary-mini-card border-danger">
-            <div className="summary-label">Pendiente</div>
-            <div className="summary-value text-danger">S/. {totals.totalPendiente.toFixed(2)}</div>
-            <div className="summary-note">Cuentas por regularizar</div>
-          </div>
-        </div>
-        <div className="col-12 col-md-3">
-          <div className="summary-mini-card border-primary">
-            <div className="summary-label">Total</div>
-            <div className="summary-value text-primary">S/. {totals.total.toFixed(2)}</div>
-            <div className="summary-note">Monto acumulado</div>
-          </div>
-        </div>
-        <div className="col-12 col-md-3">
-          <div className="summary-mini-card border-info">
-            <div className="summary-label">Transacciones</div>
-            <div className="summary-value text-info">{totals.transacciones}</div>
-            <div className="summary-note">Operaciones registradas</div>
-          </div>
-        </div>
+        ))}
       </div>
 
-      {loading ? (
-        <div className="loading">
-          <div className="spinner-border" role="status" />
-        </div>
-      ) : (
+      {loading ? <div className="loading"><div className="spinner-border text-primary" role="status"/></div> : (
         <div className="card dashboard-card table-shell">
-          <div className="card-header bg-warning text-white">
-            <div className="d-flex justify-content-between align-items-center">
-              <h5 className="mb-0">Listado de Pagos</h5>
-              {allowCreate && (
-                <button 
-                  className="btn btn-sm btn-light"
-                  onClick={() => handleOpenModal()}
-                >
-                  <i className="bi bi-plus-circle me-2"></i>
-                  Registrar Pago
-                </button>
-              )}
+          <div className="card-header app-card-header">
+            <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
+              <h5 className="mb-0 fw-bold"><i className="bi bi-credit-card me-2"></i>Pagos
+                <span className="badge bg-white text-primary ms-2 fw-semibold" style={{fontSize:'0.78rem'}}>{filtrados.length}</span>
+              </h5>
+              <div className="d-flex gap-2 align-items-center flex-wrap">
+                <div className="input-group input-group-sm" style={{width:220}}>
+                  <span className="input-group-text bg-white border-end-0"><i className="bi bi-search text-muted"></i></span>
+                  <input type="text" className="form-control border-start-0 ps-0" placeholder="Buscar..." value={search} onChange={e=>setSearch(e.target.value)} style={{borderRadius:'0 8px 8px 0'}}/>
+                  {search && <button className="btn btn-outline-secondary btn-sm" onClick={()=>setSearch('')}><i className="bi bi-x"></i></button>}
+                </div>
+                {allowCreate && <button className="btn btn-light btn-sm px-3 fw-semibold" onClick={()=>handleOpenModal()} style={{borderRadius:10}}><i className="bi bi-plus-circle me-1"></i>Registrar</button>}
+              </div>
             </div>
           </div>
-          <div className="card-body">
-            <div className="row summary-grid g-3 mb-3">
-              <div className="col-12 col-md-4">
-                <div className="summary-mini-card">
-                  <div className="summary-label">Pagos cargados</div>
-                  <div className="summary-value">{pagos.length}</div>
-                  <div className="summary-note">Movimientos visibles para gestión</div>
-                </div>
-              </div>
-              <div className="col-12 col-md-4">
-                <div className="summary-mini-card">
-                  <div className="summary-label">Alumnos disponibles</div>
-                  <div className="summary-value">{alumnos.length}</div>
-                  <div className="summary-note">Base de referencia para cobros</div>
-                </div>
-              </div>
-              <div className="col-12 col-md-4">
-                <div className="summary-mini-card">
-                  <div className="summary-label">Monto total</div>
-                  <div className="summary-value">S/. {totals.total.toFixed(2)}</div>
-                  <div className="summary-note">Consolidado general del periodo</div>
-                </div>
-              </div>
-            </div>
+          <div className="card-body p-0">
             <div className="table-responsive">
-              {pagos.length === 0 ? (
-                <div className="alert alert-info">No hay pagos registrados</div>
-              ) : (
-                <table className="table table-hover">
-                  <thead className="table-light">
-                    <tr>
-                        <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('id')}>
-                          ID {sortConfig.key === 'id' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
-                        </th>
-                        <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('alumno_nombre')}>
-                          Alumno {sortConfig.key === 'alumno_nombre' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
-                        </th>
-                        <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('concepto')}>
-                          Concepto {sortConfig.key === 'concepto' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
-                        </th>
-                        <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('monto')}>
-                          Monto {sortConfig.key === 'monto' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
-                        </th>
-                        <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('estado')}>
-                          Estado {sortConfig.key === 'estado' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
-                        </th>
-                        <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('fecha_pago')}>
-                          Fecha Pago {sortConfig.key === 'fecha_pago' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
-                        </th>
-                        <th role="button" style={{ cursor: 'pointer' }} onClick={() => requestSort('metodo_pago')}>
-                          Método {sortConfig.key === 'metodo_pago' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
-                        </th>
-                        <th>Acciones</th>
-                      </tr>
-                  </thead>
-                  <tbody>
-                      {pagosOrdenados.map((pago) => (
-                      <tr key={pago.id}>
-                        <td><code title={pago.id}>{pago.id.substring(0, 8)}…</code></td>
-                        <td>
-                          <div className="fw-semibold">
-                            {pago.alumno_nombre || getAlumnoNombre(String(pago.alumno_id))}
+              <table className="table table-hover align-middle mb-0 app-table">
+                <thead>
+                  <tr>
+                    <th onClick={()=>requestSort('alumno_nombre')} style={{cursor:'pointer'}}>Alumno <SortIcon col="alumno_nombre"/></th>
+                    <th onClick={()=>requestSort('concepto')} style={{cursor:'pointer'}}>Concepto <SortIcon col="concepto"/></th>
+                    <th onClick={()=>requestSort('monto')} style={{cursor:'pointer'}}>Monto <SortIcon col="monto"/></th>
+                    <th onClick={()=>requestSort('estado')} style={{cursor:'pointer'}}>Estado <SortIcon col="estado"/></th>
+                    <th onClick={()=>requestSort('fecha_pago')} style={{cursor:'pointer'}} className="d-none d-md-table-cell">Fecha <SortIcon col="fecha_pago"/></th>
+                    <th onClick={()=>requestSort('metodo_pago')} style={{cursor:'pointer'}} className="d-none d-lg-table-cell">Método <SortIcon col="metodo_pago"/></th>
+                    {(allowEdit||allowDelete) && <th className="text-end" style={{width:110}}>Acciones</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtrados.length===0 ? (
+                    <tr><td colSpan={7} className="text-center py-5 text-muted">
+                      <i className="bi bi-credit-card" style={{fontSize:'2.5rem',opacity:0.25}}></i>
+                      <p className="mt-2 mb-0">{search?'Sin resultados':'No hay pagos registrados'}</p>
+                    </td></tr>
+                  ) : filtrados.map(p => (
+                    <tr key={p.id}>
+                      <td>
+                        <div className="fw-semibold" style={{fontSize:'0.9rem'}}>{p.alumno_nombre||'—'}</div>
+                        <small className="text-muted">{p.alumno_numero_matricula||''}</small>
+                      </td>
+                      <td style={{fontSize:'0.88rem'}}>{p.concepto}</td>
+                      <td className="fw-bold" style={{color:'#0f172a'}}>S/. {Number(p.monto).toFixed(2)}</td>
+                      <td><span className={`badge bg-${estadoBadge(p.estado)}`}>{p.estado}</span></td>
+                      <td className="d-none d-md-table-cell text-muted small">{p.fecha_pago ? new Date(p.fecha_pago).toLocaleDateString('es-PE') : '—'}</td>
+                      <td className="d-none d-lg-table-cell text-muted small">{p.metodo_pago||'—'}</td>
+                      {(allowEdit||allowDelete) && (
+                        <td className="text-end">
+                          <div className="d-flex gap-1 justify-content-end">
+                            {allowEdit && <button className="btn btn-sm app-btn-edit" onClick={()=>handleOpenModal(p as Pago)} title="Editar"><i className="bi bi-pencil"></i></button>}
+                            {allowDelete && <button className="btn btn-sm app-btn-delete" onClick={()=>setConfirmDelete({show:true,id:p.id!,label:`${p.alumno_nombre} — ${p.concepto}`})} title="Eliminar"><i className="bi bi-trash3"></i></button>}
                           </div>
-                          <small className="text-muted">
-                            {pago.alumno_numero_matricula || pago.alumno_id}
-                          </small>
                         </td>
-                        <td>
-                          <div className="fw-semibold">{pago.concepto}</div>
-                          <small className="text-muted">{pago.observaciones || pago.estado_pago || 'Registro de pago'}</small>
-                        </td>
-                        <td>S/. {pago.monto.toFixed(2)}</td>
-                        <td>
-                          <span className={`badge bg-${getPagoBadge(pago.estado)}`}>
-                            {pago.estado}
-                          </span>
-                        </td>
-                        <td>{pago.fecha_pago ? new Date(pago.fecha_pago).toLocaleDateString() : '-'}</td>
-                        <td>{pago.metodo_pago || '-'}</td>
-                        <td>
-                          {allowEdit && (
-                            <button 
-                              className="btn btn-sm btn-primary me-2"
-                              onClick={() => handleOpenModal(pago)}
-                            >
-                              <i className="bi bi-pencil"></i>
-                            </button>
-                          )}
-                          {allowDelete && (
-                            <button 
-                              className="btn btn-sm btn-danger"
-                              onClick={() => handleDelete(pago.id!)}
-                            >
-                              <i className="bi bi-trash"></i>
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
       )}
 
-      <Modal
-        show={showModal}
-        title={editingId ? 'Editar Pago' : 'Registrar Pago'}
-        onClose={handleCloseModal}
-        onSave={handleSave}
-        error={error}
-        success={success}
-      >
-        <div className="mb-3">
-          <label className="form-label">Alumno *</label>
-          <select
-            className="form-select"
-            value={formData.alumno_id}
-            onChange={(e) => setFormData({ ...formData, alumno_id: e.target.value })}
-          >
-            <option value="">Seleccionar alumno</option>
-            {alumnos.map(a => (
-              <option key={a.id} value={a.id}>{a.primer_nombre} {a.apellido_paterno} ({a.numero_matricula})</option>
-            ))}
-          </select>
-        </div>
-        <div className="mb-3">
-          <label className="form-label">Concepto</label>
-          <select
-            className="form-select"
-            value={formData.concepto}
-            onChange={(e) => {
-              const concepto = e.target.value;
-              const monto = CONCEPTOS_MONTO[concepto];
-              setFormData({ ...formData, concepto, monto: monto !== undefined ? monto : formData.monto });
-            }}
-          >
-            <option value="">Seleccionar concepto</option>
-            {CONCEPTOS_PAGO.map((concepto) => (
-              <option key={concepto} value={concepto}>{concepto}</option>
-            ))}
-            <option value="Otro">Otro</option>
-          </select>
-          {formData.concepto === 'Otro' && (
-            <input
-              type="text"
-              className="form-control mt-2"
-              value={formData.observaciones || ''}
-              onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
-              placeholder="Especifica el concepto"
-            />
-          )}
-        </div>
-        <div className="mb-3">
-          <label className="form-label">Monto</label>
-          <input
-            type="number"
-            className="form-control"
-            value={formData.monto}
-            onChange={(e) => setFormData({ ...formData, monto: parseFloat(e.target.value) })}
-            placeholder="0.00"
-            step="0.01"
-            readOnly={esConceptoFijo(formData.concepto) && formData.concepto !== 'Otro'}
-          />
-          {esConceptoFijo(formData.concepto) && formData.concepto !== 'Otro' && (
-            <div className="form-text">El monto se carga automáticamente según el concepto seleccionado.</div>
-          )}
-        </div>
-        <div className="mb-3">
-          <label className="form-label">Estado</label>
-          <select
-            className="form-select"
-            value={normalizeEstadoPago(formData.estado)}
-            onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
-          >
-            <option value="pendiente">Pendiente</option>
-            <option value="pagado">Pagado</option>
-            <option value="vencido">Vencido</option>
-            <option value="cancelado">Cancelado</option>
-            <option value="rechazado">Rechazado</option>
-          </select>
-        </div>
-        <div className="mb-3">
-          <label className="form-label">Fecha de Pago</label>
-          <input
-            type="date"
-            className="form-control"
-            value={formatDateForInput(formData.fecha_pago)}
-            onChange={(e) => setFormData({ ...formData, fecha_pago: e.target.value })}
-          />
-        </div>
-        <div className="mb-3">
-          <label className="form-label">Método de Pago</label>
-          <select
-            className="form-select"
-            value={normalizeMetodoPago(formData.metodo_pago)}
-            onChange={(e) => setFormData({ ...formData, metodo_pago: e.target.value })}
-          >
-            <option value="transferencia">Transferencia</option>
-            <option value="efectivo">Efectivo</option>
-            <option value="tarjeta">Tarjeta</option>
-            <option value="cheque">Cheque</option>
-          </select>
-        </div>
+      <Modal show={showModal} title={editingId?'Editar Pago':'Registrar Pago'} onClose={()=>{setShowModal(false);setEditingId(null);}} onSave={handleSave} error={error} success={success}>
+        <form onSubmit={e=>e.preventDefault()}>
+          <div className="mb-3">
+            <label className="form-label fw-semibold">Alumno <span className="text-danger">*</span></label>
+            <select className="form-select" value={formData.alumno_id} onChange={e=>setFormData({...formData,alumno_id:e.target.value})}>
+              <option value="">Seleccionar alumno</option>
+              {alumnos.map(a=><option key={a.id} value={a.id}>{a.primer_nombre} {a.apellido_paterno} ({a.numero_matricula})</option>)}
+            </select>
+          </div>
+          <div className="mb-3">
+            <label className="form-label fw-semibold">Concepto</label>
+            <select className="form-select" value={formData.concepto} onChange={e=>{const c=e.target.value;setFormData({...formData,concepto:c,monto:CONCEPTOS_MONTO[c]??formData.monto});}}>
+              <option value="">Seleccionar concepto</option>
+              {CONCEPTOS_PAGO.map(c=><option key={c} value={c}>{c}</option>)}
+              <option value="Otro">Otro</option>
+            </select>
+            {formData.concepto==='Otro' && <input type="text" className="form-control mt-2" value={formData.observaciones||''} onChange={e=>setFormData({...formData,observaciones:e.target.value})} placeholder="Especifica el concepto"/>}
+          </div>
+          <div className="mb-3">
+            <label className="form-label fw-semibold">Monto (S/.)</label>
+            <input type="number" className="form-control" value={formData.monto} onChange={e=>setFormData({...formData,monto:parseFloat(e.target.value)})} step="0.01" readOnly={esConceptoFijo(formData.concepto)&&formData.concepto!=='Otro'}/>
+            {esConceptoFijo(formData.concepto)&&formData.concepto!=='Otro' && <div className="form-text">Monto fijo según concepto.</div>}
+          </div>
+          <div className="row g-3">
+            <div className="col-md-6">
+              <label className="form-label fw-semibold">Estado</label>
+              <select className="form-select" value={normEstado(formData.estado)} onChange={e=>setFormData({...formData,estado:e.target.value})}>
+                <option value="pendiente">Pendiente</option>
+                <option value="pagado">Pagado</option>
+                <option value="vencido">Vencido</option>
+                <option value="cancelado">Cancelado</option>
+              </select>
+            </div>
+            <div className="col-md-6">
+              <label className="form-label fw-semibold">Método de pago</label>
+              <select className="form-select" value={normMetodo(formData.metodo_pago)} onChange={e=>setFormData({...formData,metodo_pago:e.target.value})}>
+                <option value="transferencia">Transferencia</option>
+                <option value="efectivo">Efectivo</option>
+                <option value="tarjeta">Tarjeta</option>
+                <option value="cheque">Cheque</option>
+              </select>
+            </div>
+          </div>
+          <div className="mt-3">
+            <label className="form-label fw-semibold">Fecha de pago</label>
+            <input type="date" className="form-control" value={toDate(formData.fecha_pago)} onChange={e=>setFormData({...formData,fecha_pago:e.target.value})}/>
+          </div>
+        </form>
       </Modal>
+
+      <ConfirmModal show={confirmDelete.show} title="Eliminar pago"
+        message={`¿Seguro que deseas eliminar el pago de ${confirmDelete.label}?`}
+        confirmText="Sí, eliminar" variant="danger"
+        onConfirm={handleDeleteConfirm}
+        onCancel={()=>setConfirmDelete({show:false,id:'',label:''})}/>
     </div>
   );
 };
