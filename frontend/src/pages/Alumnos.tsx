@@ -192,7 +192,7 @@ const Alumnos: React.FC = () => {
       fetchAlumnos();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
-      setError(err.response?.data?.mensaje || 'Error al guardar alumno');
+      setError(err.response?.data?.mensaje || err.response?.data?.error || 'Error al guardar alumno');
     }
   };
 
@@ -213,7 +213,7 @@ const Alumnos: React.FC = () => {
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
       setConfirmDelete({ show: false, id: '', nombre: '' });
-      setError(err.response?.data?.mensaje || 'Error al eliminar alumno');
+      setError(err.response?.data?.mensaje || err.response?.data?.error || 'Error al eliminar alumno');
     }
   };
 

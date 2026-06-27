@@ -127,7 +127,7 @@ const Profesores: React.FC = () => {
       }
       handleCloseModal(); fetchProfesores(); setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
-      setError(err.response?.data?.mensaje || 'Error al guardar profesor');
+      setError(err.response?.data?.mensaje || err.response?.data?.error || 'Error al guardar profesor');
     }
   };
 
@@ -139,7 +139,7 @@ const Profesores: React.FC = () => {
       fetchProfesores(); setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
       setConfirmDelete({ show: false, id: '', nombre: '' });
-      setError(err.response?.data?.mensaje || 'Error al eliminar profesor');
+      setError(err.response?.data?.mensaje || err.response?.data?.error || 'Error al eliminar profesor');
     }
   };
 

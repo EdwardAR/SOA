@@ -238,7 +238,7 @@ const Notificaciones: React.FC = () => {
                 {usuarios.map(u=><option key={u.id} value={u.id}>{u.nombre} ({u.tipo_usuario})</option>)}
               </optgroup>
               <optgroup label="Alumnos">
-                {alumnos.map(a=><option key={a.id} value={a.id}>{a.primer_nombre} {a.apellido_paterno} ({a.numero_matricula})</option>)}
+                {alumnos.map(a=><option key={a.id} value={a.usuario_id}>{a.primer_nombre} {a.apellido_paterno} ({a.numero_matricula})</option>)}
               </optgroup>
             </select>
           </div>

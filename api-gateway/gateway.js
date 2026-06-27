@@ -8,7 +8,7 @@ const path = require('path');
 const { initDatabase, getDatabase, getOne, getAll, runQuery } = require('../config/database');
 const { authMiddleware, requireRole, generarToken } = require('./middleware/auth');
 const { errorHandler, asyncHandler } = require('./middleware/errorHandler');
-const { respuestaExito, respuestaError, generarId } = require('../shared/utils');
+const { respuestaExito, respuestaError, generarId, auditar } = require('../shared/utils');
 const { validadores } = require('../shared/validators');
 
 const app = express();
@@ -179,6 +179,27 @@ app.post('/api/auth/registro', asyncHandler(async (req, res) => {
 // ============================================
 /*
 const proxyServicio = (servicio) => asyncHandler(async (req, res) => {
+  const TABLAS = {
+    alumnos: 'alumnos',
+    matricula: 'matriculas',
+    profesores: 'profesores',
+    cursos: 'cursos',
+    pagos: 'pagos',
+    notificaciones: 'notificaciones',
+    asistencia: 'asistencias',
+    calificaciones: 'calificaciones'
+  };
+  const ACCIONES = { POST: 'CREAR', PUT: 'ACTUALIZAR', PATCH: 'ACTUALIZAR', DELETE: 'ELIMINAR' };
+  const esModificacion = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method);
+  const tabla = TABLAS[servicio];
+  let datosAntes = null;
+
+  if (esModificacion && tabla && req.params.id) {
+    try {
+      datosAntes = await getOne(`SELECT * FROM ${tabla} WHERE id = ?`, [req.params.id]);
+    } catch (e) {} // eslint-disable-line
+  }
+
   try {
     const url = `${SERVICIOS[servicio]}${req.originalUrl.replace(`/api/${servicio}`, '')}`;
     const config = {
@@ -196,6 +217,16 @@ const proxyServicio = (servicio) => asyncHandler(async (req, res) => {
 
     const respuesta = await axios(config);
     res.status(respuesta.status).json(respuesta.data);
+
+    // Auditar después de responder (solo operaciones exitosas)
+    if (esModificacion && tabla && respuesta.data?.exito) {
+      const accion = ACCIONES[req.method] || req.method;
+      const registroId = req.params.id || respuesta.data?.datos?.id || null;
+      const datosDespues = req.method === 'DELETE' ? null : req.body;
+      if (registroId) {
+        auditar(getDatabase(), req, accion, tabla, registroId, datosAntes, datosDespues);
+      }
+    }
   } catch (error) {
     if (error.response) {
       res.status(error.response.status).json(error.response.data);
@@ -1001,6 +1032,7 @@ app.post('/api/alumnos', authMiddleware, requireRole(['administrativo', 'directo
       ]
     );
     res.status(201).json(respuestaExito({ id }, 'Alumno creado exitosamente'));
+    auditar(getDatabase(), req, 'CREAR', 'alumnos', id, null, req.body);
   } catch (error) {
     console.error('Error creating alumno:', error);
     res.status(500).json(respuestaError('Error al crear alumno: ' + error.message));
@@ -1009,24 +1041,28 @@ app.post('/api/alumnos', authMiddleware, requireRole(['administrativo', 'directo
 
 // PUT ALUMNOS
 app.put('/api/alumnos/:id', authMiddleware, requireRole(['administrativo', 'director']), asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const antes = await getOne('SELECT * FROM alumnos WHERE id = ?', [id]);
+  if (!antes) return res.status(404).json(respuestaError('Alumno no encontrado'));
   const { apellido_paterno, primer_nombre, email_contacto, telefono, estado } = req.body;
   try {
     await runQuery(
       `UPDATE alumnos SET apellido_paterno = ?, primer_nombre = ?, email_contacto = ?, telefono = ?, estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP
        WHERE id = ?`,
-      [apellido_paterno, primer_nombre, email_contacto, telefono, estado, req.params.id]
+      [apellido_paterno, primer_nombre, email_contacto, telefono, estado, id]
     );
     res.json(respuestaExito({}, 'Alumno actualizado exitosamente'));
+    auditar(getDatabase(), req, 'ACTUALIZAR', 'alumnos', id, antes, req.body);
   } catch (error) {
     res.status(500).json(respuestaError('Error al actualizar alumno'));
   }
 }));
 
-// DELETE ALUMNOS (marcar como inactivo)
+// DELETE ALUMNOS (eliminación real en cascada)
 app.delete('/api/alumnos/:id', authMiddleware, requireRole(['administrativo', 'director']), asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
-    const alumno = await getOne('SELECT id, usuario_id FROM alumnos WHERE id = ?', [id]);
+    const alumno = await getOne('SELECT * FROM alumnos WHERE id = ?', [id]);
     if (!alumno) {
       return res.status(404).json(respuestaError('Alumno no encontrado'));
     }
@@ -1046,6 +1082,7 @@ app.delete('/api/alumnos/:id', authMiddleware, requireRole(['administrativo', 'd
     }
 
     res.json(respuestaExito({}, 'Alumno eliminado completamente (con datos relacionados)'));
+    auditar(getDatabase(), req, 'ELIMINAR', 'alumnos', id, alumno, null);
   } catch (error) {
     res.status(500).json(respuestaError('Error al eliminar alumno: ' + error.message));
   }
@@ -1066,6 +1103,7 @@ app.post('/api/cursos', authMiddleware, requireRole(['director', 'administrativo
       [id, nombreCurso, codigo, grado, seccion || 'A', profesor_id, salon || null, capacidad || 40, horario_inicio || null, horario_fin || null, estado || 'activo']
     );
     res.status(201).json(respuestaExito({ id }, 'Curso creado exitosamente'));
+    auditar(getDatabase(), req, 'CREAR', 'cursos', id, null, req.body);
   } catch (error) {
     res.status(500).json(respuestaError('Error al crear curso'));
   }
@@ -1073,21 +1111,25 @@ app.post('/api/cursos', authMiddleware, requireRole(['director', 'administrativo
 
 // PUT CURSOS
 app.put('/api/cursos/:id', authMiddleware, requireRole(['director', 'administrativo']), asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const antes = await getOne('SELECT * FROM cursos WHERE id = ?', [id]);
+  if (!antes) return res.status(404).json(respuestaError('Curso no encontrado'));
   const { nombre, codigo, grado, capacidad, profesor_id, seccion, salon, horario_inicio, horario_fin, estado } = req.body;
   try {
     const nombreCurso = profesor_id ? await getNombreCursoDesdeProfesor(profesor_id, nombre) : nombre;
     await runQuery(
       `UPDATE cursos SET nombre = ?, codigo = ?, grado = ?, seccion = ?, profesor_id = ?, salon = ?, capacidad = ?, horario_inicio = ?, horario_fin = ?, estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id = ?`,
-      [nombreCurso, codigo, grado, seccion || 'A', profesor_id, salon || null, capacidad, horario_inicio || null, horario_fin || null, estado || 'activo', req.params.id]
+      [nombreCurso, codigo, grado, seccion || 'A', profesor_id, salon || null, capacidad, horario_inicio || null, horario_fin || null, estado || 'activo', id]
     );
     res.json(respuestaExito({}, 'Curso actualizado exitosamente'));
+    auditar(getDatabase(), req, 'ACTUALIZAR', 'cursos', id, antes, req.body);
   } catch (error) {
     res.status(500).json(respuestaError('Error al actualizar curso'));
   }
 }));
 
 // POST PROFESORES
-app.post('/api/profesores', authMiddleware, requireRole(['director']), asyncHandler(async (req, res) => {
+app.post('/api/profesores', authMiddleware, requireRole(['director', 'administrativo']), asyncHandler(async (req, res) => {
   const { usuario_id, numero_empleado, apellido_paterno, primer_nombre, especialidad, email_contacto, telefono, numero_documento, estado } = req.body;
   const id = generarId();
   if (!apellido_paterno || !primer_nombre) {
@@ -1133,6 +1175,7 @@ app.post('/api/profesores', authMiddleware, requireRole(['director']), asyncHand
 
     await runQuery('COMMIT');
     res.status(201).json(respuestaExito({ id }, 'Profesor creado exitosamente'));
+    auditar(getDatabase(), req, 'CREAR', 'profesores', id, null, req.body);
   } catch (error) {
     await runQuery('ROLLBACK').catch(() => {});
     res.status(500).json(respuestaError('Error al crear profesor'));
@@ -1140,7 +1183,10 @@ app.post('/api/profesores', authMiddleware, requireRole(['director']), asyncHand
 }));
 
 // PUT PROFESORES
-app.put('/api/profesores/:id', authMiddleware, requireRole(['director']), asyncHandler(async (req, res) => {
+app.put('/api/profesores/:id', authMiddleware, requireRole(['director', 'administrativo']), asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const antes = await getOne('SELECT * FROM profesores WHERE id = ?', [id]);
+  if (!antes) return res.status(404).json(respuestaError('Profesor no encontrado'));
   const { apellido_paterno, primer_nombre, especialidad, email_contacto, telefono, numero_empleado, numero_documento, estado } = req.body;
   try {
     await runQuery(
@@ -1157,10 +1203,11 @@ app.put('/api/profesores/:id', authMiddleware, requireRole(['director']), asyncH
         telefono || null,
         numero_documento || null,
         estado || 'activo',
-        req.params.id
+        id
       ]
     );
     res.json(respuestaExito({}, 'Profesor actualizado exitosamente'));
+    auditar(getDatabase(), req, 'ACTUALIZAR', 'profesores', id, antes, req.body);
   } catch (error) {
     res.status(500).json(respuestaError('Error al actualizar profesor'));
   }
@@ -1192,6 +1239,7 @@ app.post('/api/pagos', authMiddleware, asyncHandler(async (req, res) => {
       ]
     );
     res.status(201).json(respuestaExito({ id }, 'Pago registrado exitosamente'));
+    auditar(getDatabase(), req, 'CREAR', 'pagos', id, null, req.body);
   } catch (error) {
     res.status(500).json(respuestaError('Error al registrar pago: ' + error.message));
   }
@@ -1200,9 +1248,9 @@ app.post('/api/pagos', authMiddleware, asyncHandler(async (req, res) => {
 // PUT PAGOS
 app.put('/api/pagos/:id', authMiddleware, asyncHandler(async (req, res) => {
   const { id } = req.params;
+  const antes = await getOne('SELECT * FROM pagos WHERE id = ?', [id]);
+  if (!antes) return res.status(404).json(respuestaError('Pago no encontrado'));
   const { alumno_id, monto, concepto, estado_pago, estado, fecha_pago, metodo_pago, observaciones, numero_comprobante } = req.body;
-  const pago = await getOne('SELECT id FROM pagos WHERE id = ?', [id]);
-  if (!pago) return res.status(404).json(respuestaError('Pago no encontrado'));
   const estadoFinal = estado || estado_pago;
   const campos = [];
   const valores = [];
@@ -1219,6 +1267,7 @@ app.put('/api/pagos/:id', authMiddleware, asyncHandler(async (req, res) => {
   try {
     await runQuery(`UPDATE pagos SET ${campos.join(', ')}, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id = ?`, valores);
     res.json(respuestaExito({ id }, 'Pago actualizado exitosamente'));
+    auditar(getDatabase(), req, 'ACTUALIZAR', 'pagos', id, antes, req.body);
   } catch (error) {
     res.status(500).json(respuestaError('Error al actualizar pago: ' + error.message));
   }
@@ -1227,11 +1276,12 @@ app.put('/api/pagos/:id', authMiddleware, asyncHandler(async (req, res) => {
 // DELETE PAGOS
 app.delete('/api/pagos/:id', authMiddleware, requireRole(['administrativo', 'director']), asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const pago = await getOne('SELECT id FROM pagos WHERE id = ?', [id]);
+  const pago = await getOne('SELECT * FROM pagos WHERE id = ?', [id]);
   if (!pago) return res.status(404).json(respuestaError('Pago no encontrado'));
   try {
     await runQuery('DELETE FROM pagos WHERE id = ?', [id]);
     res.json(respuestaExito({}, 'Pago eliminado correctamente'));
+    auditar(getDatabase(), req, 'ELIMINAR', 'pagos', id, pago, null);
   } catch (error) {
     res.status(500).json(respuestaError('Error al eliminar pago: ' + error.message));
   }
@@ -1253,6 +1303,7 @@ app.post('/api/matriculas', authMiddleware, requireRole(['administrativo', 'dire
       [id, alumno_id, curso_id, periodo_academico || PERIODO_ACADEMICO_DEFECTO, fecha_matricula || new Date().toISOString().split('T')[0], estado || 'activa', observaciones || null]
     );
     res.status(201).json(respuestaExito({ id }, 'Matrícula creada exitosamente'));
+    auditar(getDatabase(), req, 'CREAR', 'matriculas', id, null, req.body);
   } catch (error) {
     res.status(500).json(respuestaError('Error al crear matrícula: ' + error.message));
   }
@@ -1274,6 +1325,7 @@ app.post('/api/asistencia', authMiddleware, requireRole(['docente', 'director', 
       [id, alumno_id, curso_id, fecha, estado || 'PRESENTE', registrada ? 1 : 0, motivo_falta || null]
     );
     res.status(201).json(respuestaExito({ id }, 'Asistencia registrada exitosamente'));
+    auditar(getDatabase(), req, 'CREAR', 'asistencias', id, null, req.body);
   } catch (error) {
     res.status(500).json(respuestaError('Error al registrar asistencia: ' + error.message));
   }
@@ -1295,6 +1347,7 @@ app.post('/api/calificaciones', authMiddleware, requireRole(['docente', 'directo
       [id, alumno_id, curso_id, nota, periodo || '1', observaciones || null]
     );
     res.status(201).json(respuestaExito({ id }, 'Calificación registrada exitosamente'));
+    auditar(getDatabase(), req, 'CREAR', 'calificaciones', id, null, req.body);
   } catch (error) {
     res.status(500).json(respuestaError('Error al registrar calificación: ' + error.message));
   }
@@ -1316,6 +1369,7 @@ app.post('/api/notificaciones', authMiddleware, requireRole(['administrativo', '
       [id, destinatario_id, tipo || 'informacion', mensaje, leida ? 1 : 0, fecha_lectura || null]
     );
     res.status(201).json(respuestaExito({ id }, 'Notificación creada exitosamente'));
+    auditar(getDatabase(), req, 'CREAR', 'notificaciones', id, null, req.body);
   } catch (error) {
     res.status(500).json(respuestaError('Error al crear notificación: ' + error.message));
   }
@@ -1323,15 +1377,19 @@ app.post('/api/notificaciones', authMiddleware, requireRole(['administrativo', '
 
 // PUT ASISTENCIAS
 app.put('/api/asistencia/:id', authMiddleware, requireRole(['docente', 'director', 'administrativo']), asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const antes = await getOne('SELECT * FROM asistencias WHERE id = ?', [id]);
+  if (!antes) return res.status(404).json(respuestaError('Asistencia no encontrada'));
   const { alumno_id, curso_id, fecha, estado, registrada, motivo_falta } = req.body;
   try {
     await runQuery(
       `UPDATE asistencias
        SET alumno_id = ?, curso_id = ?, fecha = ?, estado = ?, registrada = ?, motivo_falta = ?, fecha_actualizacion = CURRENT_TIMESTAMP
        WHERE id = ?`,
-      [alumno_id, curso_id, fecha, estado || 'PRESENTE', registrada ? 1 : 0, motivo_falta || null, req.params.id]
+      [alumno_id, curso_id, fecha, estado || 'PRESENTE', registrada ? 1 : 0, motivo_falta || null, id]
     );
     res.json(respuestaExito({}, 'Asistencia actualizada exitosamente'));
+    auditar(getDatabase(), req, 'ACTUALIZAR', 'asistencias', id, antes, req.body);
   } catch (error) {
     res.status(500).json(respuestaError('Error al actualizar asistencia: ' + error.message));
   }
@@ -1340,8 +1398,12 @@ app.put('/api/asistencia/:id', authMiddleware, requireRole(['docente', 'director
 // DELETE ASISTENCIAS
 app.delete('/api/asistencia/:id', authMiddleware, requireRole(['docente', 'director', 'administrativo']), asyncHandler(async (req, res) => {
   try {
-    await runQuery('DELETE FROM asistencias WHERE id = ?', [req.params.id]);
+    const { id } = req.params;
+    const antes = await getOne('SELECT * FROM asistencias WHERE id = ?', [id]);
+    if (!antes) return res.status(404).json(respuestaError('Asistencia no encontrada'));
+    await runQuery('DELETE FROM asistencias WHERE id = ?', [id]);
     res.json(respuestaExito({}, 'Asistencia eliminada exitosamente'));
+    auditar(getDatabase(), req, 'ELIMINAR', 'asistencias', id, antes, null);
   } catch (error) {
     res.status(500).json(respuestaError('Error al eliminar asistencia: ' + error.message));
   }
@@ -1349,15 +1411,19 @@ app.delete('/api/asistencia/:id', authMiddleware, requireRole(['docente', 'direc
 
 // PUT CALIFICACIONES
 app.put('/api/calificaciones/:id', authMiddleware, requireRole(['docente', 'director', 'administrativo']), asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const antes = await getOne('SELECT * FROM calificaciones WHERE id = ?', [id]);
+  if (!antes) return res.status(404).json(respuestaError('Calificación no encontrada'));
   const { alumno_id, curso_id, nota, periodo, observaciones } = req.body;
   try {
     await runQuery(
       `UPDATE calificaciones
        SET alumno_id = ?, curso_id = ?, nota = ?, periodo = ?, observaciones = ?, fecha_actualizacion = CURRENT_TIMESTAMP
        WHERE id = ?`,
-      [alumno_id, curso_id, nota, periodo || '1', observaciones || null, req.params.id]
+      [alumno_id, curso_id, nota, periodo || '1', observaciones || null, id]
     );
     res.json(respuestaExito({}, 'Calificación actualizada exitosamente'));
+    auditar(getDatabase(), req, 'ACTUALIZAR', 'calificaciones', id, antes, req.body);
   } catch (error) {
     res.status(500).json(respuestaError('Error al actualizar calificación: ' + error.message));
   }
@@ -1366,8 +1432,12 @@ app.put('/api/calificaciones/:id', authMiddleware, requireRole(['docente', 'dire
 // DELETE CALIFICACIONES
 app.delete('/api/calificaciones/:id', authMiddleware, requireRole(['docente', 'director', 'administrativo']), asyncHandler(async (req, res) => {
   try {
-    await runQuery('DELETE FROM calificaciones WHERE id = ?', [req.params.id]);
+    const { id } = req.params;
+    const antes = await getOne('SELECT * FROM calificaciones WHERE id = ?', [id]);
+    if (!antes) return res.status(404).json(respuestaError('Calificación no encontrada'));
+    await runQuery('DELETE FROM calificaciones WHERE id = ?', [id]);
     res.json(respuestaExito({}, 'Calificación eliminada exitosamente'));
+    auditar(getDatabase(), req, 'ELIMINAR', 'calificaciones', id, antes, null);
   } catch (error) {
     res.status(500).json(respuestaError('Error al eliminar calificación: ' + error.message));
   }
@@ -1375,6 +1445,9 @@ app.delete('/api/calificaciones/:id', authMiddleware, requireRole(['docente', 'd
 
 // PUT NOTIFICACIONES
 app.put('/api/notificaciones/:id', authMiddleware, requireRole(['administrativo', 'director', 'docente', 'padre', 'alumno']), asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const antes = await getOne('SELECT * FROM notificaciones WHERE id = ?', [id]);
+  if (!antes) return res.status(404).json(respuestaError('Notificación no encontrada'));
   const { destinatario_id, tipo, mensaje, leida, fecha_lectura } = req.body;
   try {
     await runQuery(
@@ -1382,9 +1455,10 @@ app.put('/api/notificaciones/:id', authMiddleware, requireRole(['administrativo'
        SET destinatario_id = ?, tipo = ?, mensaje = ?, leida = ?,
            fecha_lectura = CASE WHEN ? THEN CURRENT_TIMESTAMP ELSE ? END
        WHERE id = ?`,
-      [destinatario_id, tipo || 'informacion', mensaje, leida ? 1 : 0, leida ? 1 : 0, fecha_lectura || null, req.params.id]
+      [destinatario_id, tipo || 'informacion', mensaje, leida ? 1 : 0, leida ? 1 : 0, fecha_lectura || null, id]
     );
     res.json(respuestaExito({}, 'Notificación actualizada exitosamente'));
+    auditar(getDatabase(), req, 'ACTUALIZAR', 'notificaciones', id, antes, req.body);
   } catch (error) {
     res.status(500).json(respuestaError('Error al actualizar notificación: ' + error.message));
   }
@@ -1393,18 +1467,22 @@ app.put('/api/notificaciones/:id', authMiddleware, requireRole(['administrativo'
 // DELETE NOTIFICACIONES
 app.delete('/api/notificaciones/:id', authMiddleware, requireRole(['administrativo', 'director', 'docente']), asyncHandler(async (req, res) => {
   try {
-    await runQuery('DELETE FROM notificaciones WHERE id = ?', [req.params.id]);
+    const { id } = req.params;
+    const antes = await getOne('SELECT * FROM notificaciones WHERE id = ?', [id]);
+    if (!antes) return res.status(404).json(respuestaError('Notificación no encontrada'));
+    await runQuery('DELETE FROM notificaciones WHERE id = ?', [id]);
     res.json(respuestaExito({}, 'Notificación eliminada exitosamente'));
+    auditar(getDatabase(), req, 'ELIMINAR', 'notificaciones', id, antes, null);
   } catch (error) {
     res.status(500).json(respuestaError('Error al eliminar notificación: ' + error.message));
   }
 }));
 
 // DELETE PROFESORES
-app.delete('/api/profesores/:id', authMiddleware, requireRole(['administrativo', 'director']), asyncHandler(async (req, res) => {
+app.delete('/api/profesores/:id', authMiddleware, requireRole(['director', 'administrativo']), asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
-    const profesor = await getOne('SELECT id, usuario_id FROM profesores WHERE id = ?', [id]);
+    const profesor = await getOne('SELECT * FROM profesores WHERE id = ?', [id]);
     if (!profesor) {
       return res.status(404).json(respuestaError('Profesor no encontrado'));
     }
@@ -1424,6 +1502,7 @@ app.delete('/api/profesores/:id', authMiddleware, requireRole(['administrativo',
     }
 
     res.json(respuestaExito({}, 'Profesor eliminado completamente (con datos relacionados)'));
+    auditar(getDatabase(), req, 'ELIMINAR', 'profesores', id, profesor, null);
   } catch (error) {
     res.status(500).json(respuestaError('Error al eliminar profesor: ' + error.message));
   }
@@ -1433,7 +1512,7 @@ app.delete('/api/profesores/:id', authMiddleware, requireRole(['administrativo',
 app.delete('/api/cursos/:id', authMiddleware, requireRole(['administrativo', 'director']), asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
-    const curso = await getOne('SELECT id FROM cursos WHERE id = ?', [id]);
+    const curso = await getOne('SELECT * FROM cursos WHERE id = ?', [id]);
     if (!curso) {
       return res.status(404).json(respuestaError('Curso no encontrado'));
     }
@@ -1445,6 +1524,7 @@ app.delete('/api/cursos/:id', authMiddleware, requireRole(['administrativo', 'di
     await runQuery('DELETE FROM cursos WHERE id = ?', [id]);
 
     res.json(respuestaExito({}, 'Curso eliminado completamente (con datos relacionados)'));
+    auditar(getDatabase(), req, 'ELIMINAR', 'cursos', id, curso, null);
   } catch (error) {
     res.status(500).json(respuestaError('Error al eliminar curso: ' + error.message));
   }
@@ -1454,7 +1534,7 @@ app.delete('/api/cursos/:id', authMiddleware, requireRole(['administrativo', 'di
 app.delete('/api/matriculas/:id', authMiddleware, requireRole(['administrativo', 'director']), asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
-    const matricula = await getOne('SELECT id, alumno_id, curso_id FROM matriculas WHERE id = ?', [id]);
+    const matricula = await getOne('SELECT * FROM matriculas WHERE id = ?', [id]);
     if (!matricula) {
       return res.status(404).json(respuestaError('Matrícula no encontrada'));
     }
@@ -1465,6 +1545,7 @@ app.delete('/api/matriculas/:id', authMiddleware, requireRole(['administrativo',
     await runQuery('DELETE FROM matriculas WHERE id = ?', [id]);
 
     res.json(respuestaExito({}, 'Matrícula eliminada (incluyendo asistencias y calificaciones relacionadas)'));
+    auditar(getDatabase(), req, 'ELIMINAR', 'matriculas', id, matricula, null);
   } catch (error) {
     res.status(500).json(respuestaError('Error al eliminar matrícula: ' + error.message));
   }

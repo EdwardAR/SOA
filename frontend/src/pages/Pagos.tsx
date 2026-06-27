@@ -92,13 +92,13 @@ const Pagos: React.FC = () => {
       if (editingId) { await pagosService.update(editingId, payload); setSuccess('Pago actualizado'); }
       else { await pagosService.create(payload); setSuccess('Pago registrado'); }
       setShowModal(false); setEditingId(null); fetchPagos(); setTimeout(() => setSuccess(''), 3000);
-    } catch (err: any) { setError(err.response?.data?.mensaje || 'Error al guardar'); }
+    } catch (err: any) { setError(err.response?.data?.mensaje || err.response?.data?.error || 'Error al guardar'); }
   };
 
   const handleDeleteConfirm = async () => {
     try { await pagosService.delete(confirmDelete.id); setConfirmDelete({ show:false,id:'',label:'' });
       setSuccess('Pago eliminado'); fetchPagos(); setTimeout(() => setSuccess(''), 3000);
-    } catch (err: any) { setConfirmDelete({ show:false,id:'',label:'' }); setError(err.response?.data?.mensaje || 'Error al eliminar'); }
+    } catch (err: any) { setConfirmDelete({ show:false,id:'',label:'' }); setError(err.response?.data?.mensaje || err.response?.data?.error || 'Error al eliminar'); }
   };
 
   const filtrados = pagosOrdenados.filter(p => {

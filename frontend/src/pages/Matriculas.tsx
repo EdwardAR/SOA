@@ -94,7 +94,7 @@ const Matriculas: React.FC = () => {
       if (editingId) { await matriculasService.update(editingId, payload); setSuccess('Matrícula actualizada'); }
       else { await matriculasService.create(payload); setSuccess('Matrícula registrada'); }
       setShowModal(false); setEditingId(null); fetchData(); setTimeout(() => setSuccess(''), 3000);
-    } catch (err: any) { setError(err.response?.data?.mensaje || 'Error al guardar'); }
+    } catch (err: any) { setError(err.response?.data?.mensaje || err.response?.data?.error || 'Error al guardar'); }
   };
 
   const handleDeleteConfirm = async () => {
@@ -104,7 +104,7 @@ const Matriculas: React.FC = () => {
       setSuccess('Matrícula eliminada'); fetchData(); setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
       setConfirmDelete({ show: false, id: '', label: '' });
-      setError(err.response?.data?.mensaje || 'Error al eliminar');
+      setError(err.response?.data?.mensaje || err.response?.data?.error || 'Error al eliminar');
     }
   };
 

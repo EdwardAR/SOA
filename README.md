@@ -107,14 +107,14 @@ sequenceDiagram
     G->>DB: INSERT INTO alumnos (...) VALUES (...)
     DB-->>G: OK
 
-    Note over G: registraAuditoria() pendiente
+    G->>G: auditar(db, req, 'CREAR', 'alumnos', id, null, req.body)
 
     G-->>F: 201 { exito: true, datos: { alumno } }
     F-->>B: Modal success + refresca tabla
 ```
 
 > **Nota sobre la arquitectura actual:**
-> El Gateway (`gateway.js`) contiene **toda la lógica CRUD activa** y consulta la base de datos directamente. Los 8 microservicios en `services/` existen como procesos Express independientes (cada uno con su propio puerto, sus propias rutas y lógica de negocio), pero el Gateway **no** les delega peticiones — el código de proxy está comentado bajo la marca `// DESHABILITADO - Usando BD directa`. Cada microservicio puede ejecutarse de forma autónoma y contiene validación, reglas de negocio y endpoints completos.
+> El Gateway (`gateway.js`) contiene **toda la lógica CRUD activa** y consulta la base de datos directamente. Los 8 microservicios en `services/` existen como procesos Express independientes (cada uno con su propio puerto, sus propias rutas y lógica de negocio), pero el Gateway **no** les delega peticiones — todo el bloque de proxy (función `proxyServicio` + rutas) está deshabilitado dentro de un bloque `/* ... */` bajo la marca `DESHABILITADO - Usando BD directa`. Cada microservicio puede ejecutarse de forma autónoma y contiene validación, reglas de negocio y endpoints completos.
 
 ---
 
@@ -176,13 +176,13 @@ sequenceDiagram
 - Validación: DNI (8 dígitos), teléfono (9 dígitos, empieza con 9), nombres
 - Campos: nombres, apellidos, documento, especialidad, teléfono, fecha de contratación
 - Estados: activo, inactivo, licencia
-- Solo el rol `director` puede crear y actualizar profesores
+- Solo los roles `director` y `administrativo` pueden crear y actualizar profesores
 - Filtrado por rol en consultas GET
 
 #### 3. Gestión de Cursos
 - CRUD completo
 - Generación automática de código (`CUR-2026-0001`)
-- Campos: nombre, código, grado_nivel (1ro-sec a 5to-sec), sección, profesor responsable, capacidad máxima, aula, horario
+- Campos: nombre, código, grado (1ro-sec a 5to-sec), sección, profesor responsable, capacidad, salon, horario
 - Control de capacidad (máximo de estudiantes por sección)
 - Período académico asociado
 - Estados: activo, cancelado, pausado
@@ -253,8 +253,9 @@ sequenceDiagram
 
 #### Auditoría
 - Tabla `logs_auditoria` en la base de datos (con columnas: usuario, acción, tabla, registro_id, datos antes/después, IP, fecha)
-- Función `registrarAuditoria()` en `shared/utils.js` lista para usar
-- Pendiente de integración en los endpoints del Gateway
+- Función `auditar()` en `shared/utils.js` — wrapper seguro que nunca interrumpe la operación principal
+- **Completamente integrada** en todos los endpoints POST, PUT y DELETE del Gateway para las 8 entidades
+- Cada operación registra: usuario que ejecutó, acción (CREAR/ACTUALIZAR/ELIMINAR), tabla afectada, ID del registro, y snapshot de datos antes/después (JSON)
 
 ---
 
@@ -498,8 +499,8 @@ Petición entrante
 | **Alumnos** | Editar | ✅ | ✅ | ❌ | ❌ | ❌ |
 | **Alumnos** | Eliminar | ✅ | ✅ | ❌ | ❌ | ❌ |
 | **Profesores** | Ver | ✅ | ✅ | ✅ (solo sí mismo) | ✅ (solo sus profes) | ✅ (solo profes de hijos) |
-| **Profesores** | Crear | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **Profesores** | Editar | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Profesores** | Crear | ✅ | ✅ | ❌ | ❌ | ❌ |
+| **Profesores** | Editar | ✅ | ✅ | ❌ | ❌ | ❌ |
 | **Profesores** | Eliminar | ✅ | ✅ | ❌ | ❌ | ❌ |
 | **Cursos** | Ver | ✅ | ✅ | ✅ (solo los suyos) | ✅ (solo matriculados) | ✅ (solo de hijos) |
 | **Cursos** | Crear | ✅ | ✅ | ❌ | ❌ | ❌ |
@@ -744,7 +745,7 @@ Lista de profesores con paginación y filtrado por rol.
 
 #### POST /api/profesores
 
-Crea un nuevo profesor. Solo rol **director**.
+Crea un nuevo profesor. Requiere rol **director** o **administrativo**.
 
 **Request:**
 ```json
@@ -762,7 +763,7 @@ Crea un nuevo profesor. Solo rol **director**.
 ```
 
 #### PUT /api/profesores/:id
-Solo director. Actualiza datos del profesor.
+Solo director o administrativo. Actualiza datos del profesor.
 
 #### DELETE /api/profesores/:id
 Solo administrativo o director. Elimina profesor y sus cursos asociados.
@@ -782,15 +783,11 @@ Crea un nuevo curso. Requiere director o administrativo.
 {
   "codigo": "CUR-2026-0010",
   "nombre": "Matematica Avanzada",
-  "descripcion": "Curso de matematica para 5to de secundaria",
-  "grado_nivel": "5to",
+  "grado": "5to-sec",
   "seccion": "A",
   "profesor_id": "uuid-del-profesor",
-  "capacidad_maxima": 35,
-  "aula_asignada": "D-101",
-  "horario_inicio": "08:00",
-  "horario_fin": "09:30",
-  "periodo_academico": "2026-1"
+  "capacidad": 35,
+  "salon": "D-101"
 }
 ```
 
@@ -903,9 +900,8 @@ Crea una notificación para un usuario.
 **Request:**
 ```json
 {
-  "usuario_id": "uuid-del-usuario",
+  "destinatario_id": "uuid-del-usuario",
   "tipo": "informacion",
-  "asunto": "Recordatorio de pago",
   "mensaje": "Estimado padre, recuerde que el pago de pension vence el 15 de julio."
 }
 ```
@@ -1057,27 +1053,16 @@ Datos específicos de los estudiantes. Vinculados a un usuario y opcionalmente a
 | `apellido_paterno` | TEXT | NOT NULL | Apellido paterno |
 | `apellido_materno` | TEXT | — | Apellido materno |
 | `primer_nombre` | TEXT | NOT NULL | Primer nombre |
-| `segundo_nombre` | TEXT | — | Segundo nombre |
-| `fecha_nacimiento` | DATE | — | Fecha de nacimiento |
 | `numero_documento` | TEXT | UNIQUE | DNI (8 dígitos) |
-| `genero` | TEXT | CHECK(`M`,`F`,`Otro`) | Género |
-| `direccion` | TEXT | — | Dirección domiciliaria |
 | `telefono` | TEXT | — | Teléfono de contacto |
 | `email_contacto` | TEXT | — | Email alternativo |
 | `padre_id` | TEXT | FK→usuarios(id) | Tutor padre |
-| `madre_id` | TEXT | FK→usuarios(id) | Tutor madre |
-| `apoderado_id` | TEXT | FK→usuarios(id) | Apoderado legal |
 | `datos_completos` | BOOLEAN | DEFAULT FALSE | Flag de datos completados |
 | `deuda_pendiente` | BOOLEAN | DEFAULT FALSE | Indica si tiene deuda |
-| `monto_deuda` | DECIMAL(10,2) | DEFAULT 0.00 | Monto total de deuda |
-| `aula_asignada` | BOOLEAN | DEFAULT FALSE | Si tiene aula asignada |
-| `aula_id` | TEXT | — | Identificador del aula |
 | `periodo_academico` | TEXT | — | Período actual (ej: 2026-1) |
 | `estado` | TEXT | DEFAULT 'activo' | `activo`, `inactivo`, `egresado` |
-| `fecha_creacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
-| `fecha_actualizacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
 
-**Índices:** `idx_alumnos_usuario_id`, `idx_alumnos_numero_documento`, `idx_alumnos_deuda_pendiente`, `idx_alumnos_aula_asignada`, `idx_alumnos_periodo`
+**Índices:** `idx_alumnos_usuario_id`, `idx_alumnos_numero_documento`
 
 ---
 
@@ -1088,17 +1073,17 @@ Datos específicos de los docentes.
 |-------|------|---------------|-------------|
 | `id` | TEXT | PK | UUID v4 |
 | `usuario_id` | TEXT | UNIQUE, NOT NULL, FK→usuarios(id) | Cuenta de usuario asociada |
+| `numero_empleado` | TEXT | UNIQUE, NOT NULL | Código de empleado (ej: EMP-2041) |
+| `nombre` | TEXT | NOT NULL | Nombre completo |
 | `apellido_paterno` | TEXT | NOT NULL | Apellido paterno |
-| `apellido_materno` | TEXT | — | Apellido materno |
 | `primer_nombre` | TEXT | NOT NULL | Primer nombre |
-| `segundo_nombre` | TEXT | — | Segundo nombre |
 | `numero_documento` | TEXT | UNIQUE | DNI (8 dígitos) |
 | `especialidad` | TEXT | — | Especialidad / área (ej: Matematica, Comunicacion) |
+| `email` | TEXT | UNIQUE, NOT NULL | Email institucional |
+| `email_contacto` | TEXT | — | Email alternativo |
 | `telefono` | TEXT | — | Teléfono de contacto |
 | `estado` | TEXT | DEFAULT 'activo' | `activo`, `inactivo`, `licencia` |
 | `fecha_contratacion` | DATE | — | Fecha de inicio laboral |
-| `fecha_creacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
-| `fecha_actualizacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
 
 **Índices:** `idx_profesores_usuario_id`, `idx_profesores_numero_documento`
 
@@ -1112,19 +1097,12 @@ Catálogo de cursos/secciones ofrecidos.
 | `id` | TEXT | PK | UUID v4 |
 | `codigo` | TEXT | UNIQUE, NOT NULL | Código del curso (ej: SEC-1A) |
 | `nombre` | TEXT | NOT NULL | Nombre del curso |
-| `descripcion` | TEXT | — | Descripción opcional |
-| `grado_nivel` | TEXT | NOT NULL | Grado (ej: 1ro, 2do, ..., 5to) |
+| `grado` | TEXT | NOT NULL | Grado (ej: 1ro-sec, 2do-sec, ..., 5to-sec) |
 | `seccion` | TEXT | — | Sección (A, B, etc.) |
 | `profesor_id` | TEXT | NOT NULL, FK→profesores(id) | Profesor asignado |
-| `capacidad_maxima` | INT | DEFAULT 40 | Cupo máximo de estudiantes |
-| `capacidad_actual` | INT | DEFAULT 0 | Estudiantes inscritos actualmente |
-| `aula_asignada` | TEXT | — | Salón (ej: A-101) |
-| `horario_inicio` | TIME | — | Hora de inicio |
-| `horario_fin` | TIME | — | Hora de fin |
-| `periodo_academico` | TEXT | NOT NULL | Período (ej: 2026-1) |
+| `salon` | TEXT | — | Salón (ej: A-101) |
+| `capacidad` | INT | DEFAULT 40 | Cupo máximo de estudiantes |
 | `estado` | TEXT | DEFAULT 'activo' | `activo`, `cancelado`, `pausado` |
-| `fecha_creacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
-| `fecha_actualizacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
 
 **Índices:** `idx_cursos_profesor_id`, `idx_cursos_periodo`, `idx_cursos_estado`
 
@@ -1138,12 +1116,10 @@ Relación alumno-curso. Un alumno puede estar en múltiples cursos pero solo una
 | `id` | TEXT | PK | UUID v4 |
 | `alumno_id` | TEXT | NOT NULL, FK→alumnos(id) | Estudiante |
 | `curso_id` | TEXT | NOT NULL, FK→cursos(id) | Curso |
-| `aula_asignada` | TEXT | — | Aula asignada |
 | `periodo_academico` | TEXT | NOT NULL | Período (ej: 2026-1) |
 | `fecha_matricula` | DATETIME | DEFAULT CURRENT_TIMESTAMP | Fecha de inscripción |
 | `estado` | TEXT | DEFAULT 'activa' | `activa`, `cancelada`, `suspendida` |
-| `fecha_creacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
-| `fecha_actualizacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
+| `observaciones` | TEXT | — | Notas adicionales |
 
 **Unique:** `UNIQUE(alumno_id, curso_id, periodo_academico)` — evita duplicados
 
@@ -1158,15 +1134,11 @@ Registro de pagos y deudas de estudiantes.
 | `alumno_id` | TEXT | NOT NULL, FK→alumnos(id) | Estudiante |
 | `monto` | DECIMAL(10,2) | NOT NULL | Monto del pago |
 | `concepto` | TEXT | NOT NULL | Concepto (ej: Matricula 2026, Pension Junio) |
-| `periodo_academico` | TEXT | — | Período asociado |
-| `estado` | TEXT | DEFAULT 'pendiente' | `pendiente`, `pagado`, `cancelado`, `rechazado` |
-| `fecha_vencimiento` | DATE | — | Fecha límite de pago |
+| `estado_pago` | TEXT | DEFAULT 'pendiente' | `pendiente`, `pagado`, `cancelado`, `rechazado` |
+| `estado` | TEXT | DEFAULT 'pendiente' | `pendiente`, `pagado`, `cancelado` |
 | `fecha_pago` | DATETIME | — | Fecha en que se pagó |
 | `metodo_pago` | TEXT | CHECK | `tarjeta_credito`, `tarjeta_debito`, `transferencia`, `efectivo`, `cheque` |
-| `referencia_pago` | TEXT | — | Número de referencia/operación |
-| `deuda_pendiente` | BOOLEAN | DEFAULT TRUE | Indica si sigue siendo deuda |
-| `fecha_creacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
-| `fecha_actualizacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
+| `observaciones` | TEXT | — | Notas adicionales |
 
 ---
 
@@ -1182,8 +1154,6 @@ Registro diario de asistencia por alumno y curso.
 | `estado` | TEXT | NOT NULL, CHECK | `PRESENTE`, `FALTA`, `JUSTIFICADO` |
 | `registrada` | BOOLEAN | DEFAULT FALSE | Si fue registrada oficialmente |
 | `motivo_falta` | TEXT | — | Razón de la falta/justificación |
-| `fecha_creacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
-| `fecha_actualizacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
 
 **Unique:** `UNIQUE(alumno_id, curso_id, fecha)` — un registro por alumno/curso/día
 
@@ -1197,17 +1167,9 @@ Notas y evaluaciones de estudiantes.
 | `id` | TEXT | PK | UUID v4 |
 | `alumno_id` | TEXT | NOT NULL, FK→alumnos(id) | Estudiante |
 | `curso_id` | TEXT | NOT NULL, FK→cursos(id) | Curso |
-| `tipo_evaluacion` | TEXT | NOT NULL, CHECK | `parcial`, `final`, `extra` |
-| `puntuacion` | DECIMAL(5,2) | NOT NULL | Nota (0-20) |
-| `peso` | DECIMAL(3,2) | DEFAULT 1.0 | Peso para promedio |
+| `nota` | DECIMAL(5,2) | NOT NULL | Nota (0-20) |
+| `periodo` | TEXT | NOT NULL | Período (ej: 1, 2, 3, 4) |
 | `observaciones` | TEXT | — | Comentarios |
-| `fecha_registro` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
-| `registrada` | BOOLEAN | DEFAULT FALSE | — |
-| `periodo_academico` | TEXT | NOT NULL | Período |
-| `fecha_limite_notas` | DATETIME | — | Fecha tope para registrar |
-| `estado` | TEXT | DEFAULT 'pendiente' | `pendiente`, `registrada`, `revisada` |
-| `fecha_creacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
-| `fecha_actualizacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
 
 ---
 
@@ -1217,17 +1179,11 @@ Mensajes enviados a usuarios (alertas, informativos, recordatorios).
 | Campo | Tipo | Restricciones | Descripción |
 |-------|------|---------------|-------------|
 | `id` | TEXT | PK | UUID v4 |
-| `usuario_id` | TEXT | NOT NULL, FK→usuarios(id) | Destinatario |
-| `tipo` | TEXT | NOT NULL, CHECK | `email`, `sms`, `app` |
-| `asunto` | TEXT | NOT NULL | Título/asunto |
+| `destinatario_id` | TEXT | NOT NULL, FK→usuarios(id) | Destinatario (usuario_id) |
+| `tipo` | TEXT | NOT NULL, CHECK | `informacion`, `alerta`, `recordatorio` |
 | `mensaje` | TEXT | NOT NULL | Contenido del mensaje |
-| `estado` | TEXT | DEFAULT 'pendiente' | `pendiente`, `enviado`, `fallido`, `leido` |
-| `destinatario` | TEXT | — | Dirección destino (email/tel) |
-| `fecha_envio` | DATETIME | — | Cuándo se envió |
-| `fecha_intento_fallo` | DATETIME | — | Último intento fallido |
-| `numero_intentos` | INT | DEFAULT 0 | Reintentos de envío |
-| `razon_fallo` | TEXT | — | Motivo del fallo |
-| `evento_generador` | TEXT | — | Evento que generó la notificación |
+| `leida` | BOOLEAN | DEFAULT FALSE | Indica si fue leída |
+| `fecha_lectura` | DATETIME | — | Cuándo se leyó |
 | `fecha_creacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
 
 ---
@@ -1260,7 +1216,6 @@ Registro de auditoría para transacciones críticas (sin seed data).
 | `registro_id` | TEXT | — | ID del registro afectado |
 | `datos_antes` | TEXT | — | Estado anterior (JSON) |
 | `datos_despues` | TEXT | — | Estado posterior (JSON) |
-| `ip_origen` | TEXT | — | Dirección IP del cliente |
 | `fecha_accion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | Marca de tiempo |
 
 ---
@@ -1488,9 +1443,19 @@ CREATE TABLE logs_auditoria (
 );
 ```
 
-### Función `registrarAuditoria()` en `shared/utils.js`
+### Funciones en `shared/utils.js`
 
 ```javascript
+// Registro de auditoría (envuelve en try/catch para no interrumpir)
+const auditar = async (db, req, accion, tabla, registroId, antes = null, despues = null) => {
+  try {
+    await registrarAuditoria(db, req.userId, accion, tabla, registroId, antes, despues);
+  } catch (err) {
+    console.error(`[Auditoría] Error al registrar ${accion} en ${tabla}:`, err.message);
+  }
+};
+
+// Función base que inserta en logs_auditoria
 const registrarAuditoria = async (db, usuarioId, accion, tabla, registroId, datosAntes, datosDespues) => {
   const id = generarId();
   await db.run(
@@ -1504,25 +1469,32 @@ const registrarAuditoria = async (db, usuarioId, accion, tabla, registroId, dato
 };
 ```
 
-### Estado Actual
+### Estado Actual — Completamente Integrada
 
-La función `registrarAuditoria()` está exportada y disponible en `shared/utils.js`, pero actualmente **no se invoca desde los endpoints del Gateway**. Para habilitar la auditoría completa, se debe agregar una llamada a `registrarAuditoria()` en cada endpoint POST, PUT y DELETE del Gateway, capturando los datos antes y después de la operación.
+La auditoría está **activa en todos los endpoints POST, PUT y DELETE** del Gateway para las 8 entidades (Alumnos, Profesores, Cursos, Matrículas, Pagos, Asistencia, Calificaciones, Notificaciones).
 
-**Ejemplo de implementación pendiente:**
-
+**Ejemplo real en POST /api/alumnos:**
 ```javascript
-// En POST /api/alumnos
-const antes = null;
-const despues = { ...req.body, id: nuevoId };
-await registrarAuditoria(db, req.userId, 'CREAR', 'alumnos', nuevoId, antes, despues);
+res.status(201).json(respuestaExito({ id }, 'Alumno creado exitosamente'));
+auditar(getDatabase(), req, 'CREAR', 'alumnos', id, null, req.body);
 ```
 
+**Ejemplo real en PUT /api/alumnos/:id (con captura de estado anterior):**
 ```javascript
-// En PUT /api/alumnos/:id
-const alumnoActual = await getOne('SELECT * FROM alumnos WHERE id = ?', [id]);
-// ... actualizar ...
-const alumnoActualizado = await getOne('SELECT * FROM alumnos WHERE id = ?', [id]);
-await registrarAuditoria(db, req.userId, 'ACTUALIZAR', 'alumnos', id, alumnoActual, alumnoActualizado);
+const id = req.params.id;
+const antes = await getOne('SELECT * FROM alumnos WHERE id = ?', [id]);
+if (!antes) return res.status(404).json(...);
+// ... ejecutar UPDATE ...
+res.json(respuestaExito({}, 'Alumno actualizado exitosamente'));
+auditar(getDatabase(), req, 'ACTUALIZAR', 'alumnos', id, antes, req.body);
+```
+
+**Ejemplo real en DELETE /api/alumnos/:id:**
+```javascript
+const alumno = await getOne('SELECT * FROM alumnos WHERE id = ?', [id]);
+// ... ejecutar DELETE en cascada ...
+res.json(respuestaExito({}, 'Alumno eliminado completamente'));
+auditar(getDatabase(), req, 'ELIMINAR', 'alumnos', id, alumno, null);
 ```
 
 ---
@@ -1982,7 +1954,7 @@ Solución:
 ```
 SOA/
 │
-├── api-gateway/                      ← Gateway principal (Express, ~1550 líneas)
+├── api-gateway/                      ← Gateway principal (Express, ~1675 líneas)
 │   ├── gateway.js                    ← Toda la lógica CRUD + rutas + middlewares
 │   ├── public/                       ← Archivos estáticos del gateway (opcional)
 │   └── middleware/

@@ -79,8 +79,19 @@ const Cursos: React.FC = () => {
 
   const handleOpenModal = (curso?: any) => {
     setError(''); setSuccess('');
-    if (curso) { setFormData(curso); setEditingId(curso.id); }
-    else { setFormData(emptyForm()); setEditingId(null); }
+    if (curso) {
+      setFormData({
+        nombre: curso.nombre || '',
+        codigo: curso.codigo || '',
+        grado_nivel: curso.grado || '',
+        capacidad_maxima: curso.capacidad || 40,
+        profesor_id: curso.profesor_id || '',
+        seccion: curso.seccion || 'A',
+        aula_asignada: curso.salon || '',
+        periodo_academico: curso.periodo_academico || `${new Date().getFullYear()}-1`,
+      });
+      setEditingId(curso.id);
+    } else { setFormData(emptyForm()); setEditingId(null); }
     setShowModal(true);
   };
 
@@ -95,16 +106,16 @@ const Cursos: React.FC = () => {
     try {
       setError('');
       const payload = {
-        nombre: formData.nombre, codigo: formData.codigo, descripcion: '',
-        grado_nivel: formData.grado_nivel, grado: formData.grado_nivel,
-        capacidad_maxima: formData.capacidad_maxima, profesor_id: formData.profesor_id,
-        seccion: formData.seccion, aula_asignada: formData.aula_asignada,
-        periodo_academico: formData.periodo_academico,
+        nombre: formData.nombre, codigo: formData.codigo,
+        grado: formData.grado_nivel,
+        capacidad: formData.capacidad_maxima,
+        profesor_id: formData.profesor_id,
+        seccion: formData.seccion, salon: formData.aula_asignada,
       };
       if (editingId) { await cursosService.update(editingId, payload); setSuccess('Curso actualizado'); }
       else { await cursosService.create(payload); setSuccess('Curso creado'); }
       handleCloseModal(); fetchCursos(); setTimeout(() => setSuccess(''), 3000);
-    } catch (err: any) { setError(err.response?.data?.mensaje || 'Error al guardar curso'); }
+    } catch (err: any) { setError(err.response?.data?.mensaje || err.response?.data?.error || 'Error al guardar curso'); }
   };
 
   const handleDeleteConfirm = async () => {
@@ -116,7 +127,7 @@ const Cursos: React.FC = () => {
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
       setConfirmDelete({ show: false, id: '', nombre: '' });
-      setError(err.response?.data?.mensaje || 'Error al eliminar curso');
+      setError(err.response?.data?.mensaje || err.response?.data?.error || 'Error al eliminar curso');
     }
   };
 
@@ -125,7 +136,7 @@ const Cursos: React.FC = () => {
     const q = search.toLowerCase();
     return (c.nombre || '').toLowerCase().includes(q) ||
       (c.codigo || '').toLowerCase().includes(q) ||
-      (c.grado_nivel || '').toLowerCase().includes(q) ||
+      (c.grado || '').toLowerCase().includes(q) ||
       (c.profesor_nombre || '').toLowerCase().includes(q);
   });
 
@@ -188,7 +199,7 @@ const Cursos: React.FC = () => {
                   <tr>
                     <th onClick={() => requestSort('nombre')} style={{ cursor: 'pointer' }}>Nombre <SortIcon col="nombre" /></th>
                     <th onClick={() => requestSort('codigo')} style={{ cursor: 'pointer' }}>Código <SortIcon col="codigo" /></th>
-                    <th onClick={() => requestSort('grado_nivel')} style={{ cursor: 'pointer' }}>Grado <SortIcon col="grado_nivel" /></th>
+                    <th onClick={() => requestSort('grado')} style={{ cursor: 'pointer' }}>Grado <SortIcon col="grado" /></th>
                     <th onClick={() => requestSort('profesor_nombre')} style={{ cursor: 'pointer' }} className="d-none d-md-table-cell">Profesor <SortIcon col="profesor_nombre" /></th>
                     <th className="d-none d-lg-table-cell">Aula</th>
                     {(allowEdit || allowDelete) && <th className="text-end" style={{ width: 110 }}>Acciones</th>}
@@ -205,15 +216,15 @@ const Cursos: React.FC = () => {
                       <td className="fw-semibold">{c.nombre}</td>
                       <td><span className="badge-matricula">{c.codigo || '—'}</span></td>
                       <td>
-                        {c.grado_nivel
-                          ? <span className="badge rounded-pill" style={{ background: 'rgba(5,150,105,0.1)', color: '#059669', fontWeight: 600 }}>{c.grado_nivel}</span>
+                        {c.grado
+                          ? <span className="badge rounded-pill" style={{ background: 'rgba(5,150,105,0.1)', color: '#059669', fontWeight: 600 }}>{c.grado}</span>
                           : '—'}
                         {c.seccion && <span className="ms-1 text-muted small">· {c.seccion}</span>}
                       </td>
                       <td className="d-none d-md-table-cell">
                         <div className="fw-semibold" style={{ fontSize: '0.88rem' }}>{c.profesor_nombre || '—'}</div>
                       </td>
-                      <td className="d-none d-lg-table-cell text-muted small">{c.aula_asignada || c.salon || '—'}</td>
+                      <td className="d-none d-lg-table-cell text-muted small">{c.salon || '—'}</td>
                       {(allowEdit || allowDelete) && (
                         <td className="text-end">
                           <div className="d-flex gap-1 justify-content-end">

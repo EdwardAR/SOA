@@ -118,6 +118,15 @@ const obtenerParametrosPaginacion = (req) => {
   return { pagina, limite, offset };
 };
 
+// Envoltorio seguro para auditar (no lanza errores)
+const auditar = async (db, req, accion, tabla, registroId, antes = null, despues = null) => {
+  try {
+    await registrarAuditoria(db, req.userId, accion, tabla, registroId, antes, despues);
+  } catch (err) {
+    console.error(`[Auditoría] Error al registrar ${accion} en ${tabla}:`, err.message);
+  }
+};
+
 // Registrar auditoría
 const registrarAuditoria = async (db, usuarioId, accion, tablaAfectada, registroId, datosBefore = null, datosAfter = null) => {
   return new Promise((resolve, reject) => {
@@ -146,5 +155,6 @@ module.exports = {
   respuestaError,
   sanitizar,
   obtenerParametrosPaginacion,
-  registrarAuditoria
+  registrarAuditoria,
+  auditar
 };
