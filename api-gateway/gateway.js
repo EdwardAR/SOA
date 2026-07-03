@@ -1742,6 +1742,127 @@ app.get('/api/logs/stats', authMiddleware, requireRole(['director', 'administrat
 }));
 
 // ============================================
+// REPORTES GENERADOS
+// ============================================
+
+// GET /api/reportes — listar reportes del usuario o todos (admin)
+app.get('/api/reportes', authMiddleware, asyncHandler(async (req, res) => {
+  try {
+    const rol = req.usuario.tipo_usuario;
+    const usuarioId = req.usuario.id;
+    const { page = 1, limit = 20 } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    let where = '';
+    const params = [];
+
+    if (['director', 'administrativo'].includes(rol)) {
+      // admins ven todos
+    } else {
+      where = 'WHERE r.generado_por = ?';
+      params.push(usuarioId);
+    }
+
+    const [reportes, totalRow] = await Promise.all([
+      getAll(
+        `SELECT r.*, u.nombre AS creador_nombre
+         FROM reportes_generados r
+         LEFT JOIN usuarios u ON u.id = r.generado_por
+         ${where}
+         ORDER BY r.fecha_generacion DESC
+         LIMIT ? OFFSET ?`,
+        [...params, parseInt(limit), offset]
+      ),
+      getOne(`SELECT COUNT(*) AS total FROM reportes_generados r ${where}`, params),
+    ]);
+
+    res.json(respuestaExito({
+      reportes,
+      total: totalRow?.total || 0,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      pages: Math.ceil((totalRow?.total || 0) / parseInt(limit)),
+    }, 'Reportes obtenidos'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al listar reportes: ' + error.message));
+  }
+}));
+
+// GET /api/reportes/:id — obtener un reporte específico
+app.get('/api/reportes/:id', authMiddleware, asyncHandler(async (req, res) => {
+  try {
+    const reporte = await getOne(
+      `SELECT r.*, u.nombre AS creador_nombre
+       FROM reportes_generados r
+       LEFT JOIN usuarios u ON u.id = r.generado_por
+       WHERE r.id = ?`,
+      [req.params.id]
+    );
+
+    if (!reporte) {
+      return res.status(404).json(respuestaError('Reporte no encontrado', 'NOT_FOUND'));
+    }
+
+    // Verificar permiso: admin o propietario
+    const esAdmin = ['director', 'administrativo'].includes(req.usuario.tipo_usuario);
+    if (!esAdmin && reporte.generado_por !== req.usuario.id) {
+      return res.status(403).json(respuestaError('No tienes permiso para ver este reporte', 'FORBIDDEN'));
+    }
+
+    res.json(respuestaExito({ reporte }, 'Reporte obtenido'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al obtener reporte: ' + error.message));
+  }
+}));
+
+// POST /api/reportes — guardar un reporte generado
+app.post('/api/reportes', authMiddleware, asyncHandler(async (req, res) => {
+  try {
+    const { tipo_reporte, alumno_id, periodo_academico, datos_reporte, formato } = req.body;
+
+    if (!tipo_reporte || !alumno_id) {
+      return res.status(400).json(respuestaError('Faltan campos requeridos: tipo_reporte, alumno_id', 'VALIDATION_ERROR'));
+    }
+
+    const id = generarId();
+    await runQuery(
+      `INSERT INTO reportes_generados (id, tipo_reporte, generado_por, alumno_id, periodo_academico, datos_reporte, formato, estado)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'generado')`,
+      [id, tipo_reporte, req.usuario.id, alumno_id, periodo_academico || null,
+       datos_reporte ? JSON.stringify(datos_reporte) : null, formato || 'pdf']
+    );
+
+    res.status(201).json(respuestaExito({ id }, 'Reporte registrado correctamente'));
+    auditar(getDatabase(), req, 'CREAR', 'reportes_generados', id, null, req.body);
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al registrar reporte: ' + error.message));
+  }
+}));
+
+// PATCH /api/reportes/:id/estado — actualizar estado (descargado, enviado)
+app.patch('/api/reportes/:id/estado', authMiddleware, asyncHandler(async (req, res) => {
+  try {
+    const { estado } = req.body;
+    if (!['generado', 'enviado', 'descargado'].includes(estado)) {
+      return res.status(400).json(respuestaError('Estado inválido', 'VALIDATION_ERROR'));
+    }
+
+    const antes = await getOne('SELECT * FROM reportes_generados WHERE id = ?', [req.params.id]);
+    if (!antes) return res.status(404).json(respuestaError('Reporte no encontrado', 'NOT_FOUND'));
+
+    await runQuery(
+      `UPDATE reportes_generados SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id = ?`,
+      [estado, req.params.id]
+    );
+
+    res.json(respuestaExito({}, 'Estado de reporte actualizado'));
+    auditar(getDatabase(), req, 'ACTUALIZAR', 'reportes_generados', req.params.id, antes, { estado });
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al actualizar reporte: ' + error.message));
+  }
+}));
+
+// ============================================
 // MANEJO DE ERRORES
 // ============================================
 
@@ -1765,9 +1886,23 @@ app.use(errorHandler);
 // INICIAR SERVIDOR
 // ============================================
 
+const ensureReportesColumn = async () => {
+  try {
+    const rows = await getAll("PRAGMA table_info(reportes_generados)", []);
+    const hasAlumnoId = rows.some(r => r.name === 'alumno_id');
+    if (!hasAlumnoId) {
+      await runQuery("ALTER TABLE reportes_generados ADD COLUMN alumno_id TEXT REFERENCES alumnos(id)");
+      console.log('  ✓ Columna alumno_id añadida a reportes_generados');
+    }
+  } catch (err) {
+    console.error('  ⚠ No se pudo verificar columna alumno_id:', err.message);
+  }
+};
+
 const iniciarGateway = async () => {
   try {
     await initDatabase();
+    await ensureReportesColumn();
     console.log('✓ Base de datos inicializada');
 
     app.listen(GATEWAY_PORT, () => {

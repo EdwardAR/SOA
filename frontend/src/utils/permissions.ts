@@ -12,7 +12,7 @@ const rolePermissions: Record<string, PermissionSet> = {
   administrativo:{ view: ['*'], create: ['*'], edit: ['*'], delete: ['*'] },
   docente:       { view: ['alumnos','cursos','asistencia','calificaciones','notificaciones'], create: ['asistencia','calificaciones'], edit: ['asistencia','calificaciones'], delete: [] },
   profesor:      { view: ['alumnos','cursos','asistencia','calificaciones'], create: ['calificaciones'], edit: ['calificaciones'], delete: [] },
-  padre:         { view: ['alumnos','pagos','notificaciones','asistencia','calificaciones','cursos','matriculas'], create: [], edit: [], delete: [] },
+  padre:         { view: ['alumnos','pagos','notificaciones','asistencia','calificaciones','cursos','matriculas','reportes'], create: [], edit: [], delete: [] },
   alumno:        { view: ['calificaciones','asistencia','notificaciones','alumnos','cursos','matriculas','pagos'], create: [], edit: [], delete: [] },
 };
 

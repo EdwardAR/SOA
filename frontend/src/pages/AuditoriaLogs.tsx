@@ -170,12 +170,16 @@ const AuditoriaLogs: React.FC = () => {
 
   useEffect(() => { fetchLogs(1); }, [fetchLogs]);
 
-  useEffect(() => {
-    logsService.getStats()
-      .then(r => setStats(r.data?.datos || null))
-      .catch(() => {})
-      .finally(() => setStatsLoading(false));
+  const fetchStats = useCallback(async () => {
+    try {
+      setStatsLoading(true);
+      const r = await logsService.getStats();
+      setStats(r.data?.datos || null);
+    } catch { /* ignore */ }
+    finally { setStatsLoading(false); }
   }, []);
+
+  useEffect(() => { fetchStats(); }, [fetchStats]);
 
   const filtrados = sortedRows.filter(l => {
     if (!search) return true;
@@ -350,6 +354,9 @@ const AuditoriaLogs: React.FC = () => {
                 <span className="badge bg-white text-primary ms-2 fw-semibold" style={{ fontSize: '0.78rem' }}>{filtrados.length}</span>
               </h5>
               <div className="d-flex align-items-center gap-2">
+                <button className="btn btn-light btn-sm" onClick={() => { fetchLogs(page); fetchStats(); }} title="Refrescar">
+                  <i className="bi bi-arrow-clockwise"></i>
+                </button>
                 <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.75)' }}>
                   Página {page} de {totalPages} · {totalLogs} total
                 </span>

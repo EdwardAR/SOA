@@ -57,6 +57,18 @@ export const calificacionesService = createCrudService('/calificaciones', true);
 // Notificaciones
 export const notificacionesService = createCrudService('/notificaciones', true);
 
+// Reportes Generados
+export const reportesService = {
+  getAll: (params?: Record<string, any>) =>
+    apiClient.get('/reportes', { params }),
+  getById: (id: string) =>
+    apiClient.get(`/reportes/${id}`),
+  create: (data: any) =>
+    apiClient.post('/reportes', data),
+  updateEstado: (id: string, estado: string) =>
+    apiClient.patch(`/reportes/${id}/estado`, { estado }),
+};
+
 // Logs de Auditoría
 export const logsService = {
   getLogs: (params?: Record<string, any>) =>

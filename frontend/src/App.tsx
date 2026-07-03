@@ -14,6 +14,8 @@ import Calificaciones from './pages/Calificaciones';
 import Notificaciones from './pages/Notificaciones';
 import Perfil from './pages/Perfil';
 import AuditoriaLogs from './pages/AuditoriaLogs';
+import Servicios from './pages/Servicios';
+import Reportes from './pages/Reportes';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import NotificationBanner from './components/NotificationBanner';
@@ -67,6 +69,8 @@ const AppContent: React.FC = () => {
             <Route path="/notificaciones" element={<Notificaciones />} />
             <Route path="/perfil" element={<Perfil />} />
             <Route path="/auditoria" element={<AuditoriaLogs />} />
+            <Route path="/servicios" element={<Servicios />} />
+            <Route path="/reportes" element={<Reportes />} />
             <Route path="/" element={<Navigate to="/dashboard" />} />
             <Route path="/login" element={<Navigate to="/dashboard" replace />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

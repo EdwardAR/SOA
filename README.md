@@ -1988,17 +1988,17 @@ Solución:
 
 ## Servicios y Puertos — Mapa Completo
 
-| Servicio | Archivo | Puerto | Tipo | ¿Proxy activo? |
-|----------|---------|:------:|------|:--------------:|
-| **API Gateway** | `api-gateway/gateway.js` | 3000 | Gateway central | — |
-| Alumnos | `services/alumnos-service/server.js` | 3001 | Entidad | ❌ (comentado) |
-| Matrícula | `services/matricula-service/server.js` | 3002 | Entidad | ❌ (comentado) |
-| Profesores | `services/profesores-service/server.js` | 3003 | Entidad | ❌ (comentado) |
-| Cursos | `services/cursos-service/server.js` | 3004 | Entidad | ❌ (comentado) |
-| Pagos | `services/pagos-service/server.js` | 3005 | Entidad | ❌ (comentado) |
-| Notificaciones | `services/notificaciones-service/server.js` | 3006 | **Utilidad** | ❌ (comentado) |
-| Asistencia | `services/asistencia-service/server.js` | 3007 | **Tarea** | ❌ (comentado) |
-| Calificaciones | `services/calificaciones-service/server.js` | 3008 | **Tarea** | ❌ (comentado) |
+| Servicio | Archivo | Puerto | Tipo | Endpoints | ¿Proxy activo? |
+|----------|---------|:------:|------|-----------|:--------------:|
+| **API Gateway** | `api-gateway/gateway.js` | 3000 | Gateway central | `GET /api/health`, `POST /api/auth/*`, CRUD completo 8 entidades, `GET /api/usuarios`, `GET /api/logs` | — |
+| Alumnos | `services/alumnos-service/server.js` | 3001 | Entidad | `GET /alumnos`, `GET /alumnos/:id`, `POST /alumnos`, `PUT /alumnos/:id`, `DELETE /alumnos/:id`, `GET /alumnos-por-padre/:padre_id`, `GET /alumnos/:id/deuda` | ❌ (comentado) |
+| Matrícula | `services/matricula-service/server.js` | 3002 | Entidad | `GET /matriculas`, `GET /matriculas/:id`, `POST /matriculas`, `PUT /matriculas/:id`, `DELETE /matriculas/:id`, `GET /matriculas-alumno/:alumno_id` | ❌ (comentado) |
+| Profesores | `services/profesores-service/server.js` | 3003 | Entidad | `GET /profesores`, `GET /profesores/:id`, `POST /profesores`, `PUT /profesores/:id`, `DELETE /profesores/:id`, `GET /profesores-activos/lista/todos` | ❌ (comentado) |
+| Cursos | `services/cursos-service/server.js` | 3004 | Entidad | `GET /cursos`, `GET /cursos/:id`, `POST /cursos`, `PUT /cursos/:id`, `DELETE /cursos/:id`, `GET /cursos/:id/estudiantes`, `GET /cursos-profesor/:profesor_id` | ❌ (comentado) |
+| Pagos | `services/pagos-service/server.js` | 3005 | Entidad | `GET /pagos`, `GET /pagos/:id`, `POST /pagos`, `PUT /pagos/:id`, `PUT /pagos/:id/procesar`, `DELETE /pagos/:id`, `GET /pagos-alumno/:alumno_id`, `GET /deuda/:alumno_id` | ❌ (comentado) |
+| Notificaciones | `services/notificaciones-service/server.js` | 3006 | **Utilidad** | `GET /notificaciones`, `GET /notificaciones/:id`, `POST /notificaciones`, `PUT /notificaciones/:id`, `DELETE /notificaciones/:id`, `GET /notificaciones-usuario/:usuario_id`, `POST /notificaciones/inasistencia` | ❌ (comentado) |
+| Asistencia | `services/asistencia-service/server.js` | 3007 | **Tarea** | `GET /asistencia`, `GET /asistencia/:id`, `POST /asistencia`, `PUT /asistencia/:id`, `DELETE /asistencia/:id`, `GET /asistencia-alumno/:alumno_id`, `GET /asistencia-curso/:curso_id`, `GET /reporte-inasistencias/:fecha` | ❌ (comentado) |
+| Calificaciones | `services/calificaciones-service/server.js` | 3008 | **Tarea** | `GET /calificaciones`, `GET /calificaciones/:id`, `POST /calificaciones`, `PUT /calificaciones/:id`, `DELETE /calificaciones/:id`, `GET /calificaciones-alumno/:alumno_id`, `GET /calificaciones-curso/:curso_id`, `GET /reporte-promedios/:curso_id` | ❌ (comentado) |
 
 ---
 
