@@ -1557,8 +1557,8 @@ auditar(getDatabase(), req, 'ELIMINAR', 'alumnos', id, alumno, null);
 ```mermaid
 graph TD
     subgraph "AuthContext (Provider)"
-        AC[AuthProvider] -->|useState| USER[user: User | null]
-        AC -->|useState| TOKEN[token: string | null]
+        AC[AuthProvider] -->|useState| USER["user: User | null"]
+        AC -->|useState| TOKEN["token: string | null"]
         AC -->|useMemo| ISAUTH[isAuthenticated: boolean]
         AC -->|fn| LOGIN[login(email, password)]
         AC -->|fn| LOGOUT[logout()]
