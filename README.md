@@ -290,7 +290,7 @@ copy .env.example .env
 # 5. Inicializar base de datos con datos de prueba
 npm run db:init
 # Esto crea 11 tablas y siembra: 23 usuarios, 6 profesores, 8 alumnos,
-# 6 cursos, 8 matrículas, 66 pagos, 8 asistencias, 8 calificaciones, 8 notificaciones
+# 6 cursos, 8 matrículas, 72 pagos, 8 asistencias, 8 calificaciones, 8 notificaciones
 ```
 
 ### Ejecución en Desarrollo
@@ -836,8 +836,6 @@ Registra un pago. Cualquier usuario autenticado puede crear pagos.
 ```
 
 #### PUT /api/pagos/:id
-#### PUT /api/pagos/:id/procesar
-Procesa un pago pendiente: actualiza estado a "pagado", ajusta `alumnos.deuda_pendiente` y `alumnos.monto_deuda`.
 #### DELETE /api/pagos/:id
 
 ### Asistencia
@@ -961,8 +959,8 @@ Health check. No requiere autenticación.
 ```json
 {
   "status": "OK",
+  "timestamp": "2026-07-02T12:00:00.000Z",
   "servicios": {
-    "gateway": "http://localhost:3000",
     "alumnos": "http://localhost:3001",
     "matricula": "http://localhost:3002",
     "profesores": "http://localhost:3003",
@@ -1043,7 +1041,7 @@ Almacena las cuentas de todos los usuarios del sistema. Cada persona (director, 
 ---
 
 #### `alumnos`
-Datos específicos de los estudiantes. Vinculados a un usuario y opcionalmente a padres/apoderados.
+Datos específicos de los estudiantes. Vinculados a un usuario y opcionalmente a hasta 3 tutores (padre, madre, apoderado).
 
 | Campo | Tipo | Restricciones | Descripción |
 |-------|------|---------------|-------------|
@@ -1053,16 +1051,27 @@ Datos específicos de los estudiantes. Vinculados a un usuario y opcionalmente a
 | `apellido_paterno` | TEXT | NOT NULL | Apellido paterno |
 | `apellido_materno` | TEXT | — | Apellido materno |
 | `primer_nombre` | TEXT | NOT NULL | Primer nombre |
+| `segundo_nombre` | TEXT | — | Segundo nombre |
+| `fecha_nacimiento` | DATE | — | Fecha de nacimiento |
 | `numero_documento` | TEXT | UNIQUE | DNI (8 dígitos) |
+| `genero` | TEXT | CHECK(`M`, `F`, `Otro`) | Género |
+| `direccion` | TEXT | — | Dirección de domicilio |
 | `telefono` | TEXT | — | Teléfono de contacto |
 | `email_contacto` | TEXT | — | Email alternativo |
 | `padre_id` | TEXT | FK→usuarios(id) | Tutor padre |
+| `madre_id` | TEXT | FK→usuarios(id) | Tutor madre |
+| `apoderado_id` | TEXT | FK→usuarios(id) | Tutor apoderado |
 | `datos_completos` | BOOLEAN | DEFAULT FALSE | Flag de datos completados |
 | `deuda_pendiente` | BOOLEAN | DEFAULT FALSE | Indica si tiene deuda |
+| `monto_deuda` | DECIMAL(10,2) | DEFAULT 0.00 | Monto total de deuda |
+| `aula_asignada` | BOOLEAN | DEFAULT FALSE | Si tiene aula asignada |
+| `aula_id` | TEXT | — | ID del aula asignada |
 | `periodo_academico` | TEXT | — | Período actual (ej: 2026-1) |
 | `estado` | TEXT | DEFAULT 'activo' | `activo`, `inactivo`, `egresado` |
+| `fecha_creacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
+| `fecha_actualizacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
 
-**Índices:** `idx_alumnos_usuario_id`, `idx_alumnos_numero_documento`
+**Índices:** `idx_alumnos_usuario_id`, `idx_alumnos_numero_documento`, `idx_alumnos_deuda_pendiente`, `idx_alumnos_aula_asignada`, `idx_alumnos_periodo`
 
 ---
 
@@ -1073,17 +1082,17 @@ Datos específicos de los docentes.
 |-------|------|---------------|-------------|
 | `id` | TEXT | PK | UUID v4 |
 | `usuario_id` | TEXT | UNIQUE, NOT NULL, FK→usuarios(id) | Cuenta de usuario asociada |
-| `numero_empleado` | TEXT | UNIQUE, NOT NULL | Código de empleado (ej: EMP-2041) |
-| `nombre` | TEXT | NOT NULL | Nombre completo |
 | `apellido_paterno` | TEXT | NOT NULL | Apellido paterno |
+| `apellido_materno` | TEXT | — | Apellido materno |
 | `primer_nombre` | TEXT | NOT NULL | Primer nombre |
+| `segundo_nombre` | TEXT | — | Segundo nombre |
 | `numero_documento` | TEXT | UNIQUE | DNI (8 dígitos) |
 | `especialidad` | TEXT | — | Especialidad / área (ej: Matematica, Comunicacion) |
-| `email` | TEXT | UNIQUE, NOT NULL | Email institucional |
-| `email_contacto` | TEXT | — | Email alternativo |
 | `telefono` | TEXT | — | Teléfono de contacto |
 | `estado` | TEXT | DEFAULT 'activo' | `activo`, `inactivo`, `licencia` |
 | `fecha_contratacion` | DATE | — | Fecha de inicio laboral |
+| `fecha_creacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
+| `fecha_actualizacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
 
 **Índices:** `idx_profesores_usuario_id`, `idx_profesores_numero_documento`
 
@@ -1097,12 +1106,19 @@ Catálogo de cursos/secciones ofrecidos.
 | `id` | TEXT | PK | UUID v4 |
 | `codigo` | TEXT | UNIQUE, NOT NULL | Código del curso (ej: SEC-1A) |
 | `nombre` | TEXT | NOT NULL | Nombre del curso |
-| `grado` | TEXT | NOT NULL | Grado (ej: 1ro-sec, 2do-sec, ..., 5to-sec) |
+| `descripcion` | TEXT | — | Descripción del curso |
+| `grado_nivel` | TEXT | NOT NULL | Grado (ej: 1ro-sec, 2do-sec, ..., 5to-sec) |
 | `seccion` | TEXT | — | Sección (A, B, etc.) |
 | `profesor_id` | TEXT | NOT NULL, FK→profesores(id) | Profesor asignado |
-| `salon` | TEXT | — | Salón (ej: A-101) |
-| `capacidad` | INT | DEFAULT 40 | Cupo máximo de estudiantes |
+| `capacidad_maxima` | INT | DEFAULT 40 | Cupo máximo de estudiantes |
+| `capacidad_actual` | INT | DEFAULT 0 | Estudiantes inscritos actualmente |
+| `aula_asignada` | TEXT | — | Aula / salón (ej: A-101) |
+| `horario_inicio` | TIME | — | Hora de inicio |
+| `horario_fin` | TIME | — | Hora de fin |
+| `periodo_academico` | TEXT | NOT NULL | Período académico (ej: 2026-1) |
 | `estado` | TEXT | DEFAULT 'activo' | `activo`, `cancelado`, `pausado` |
+| `fecha_creacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
+| `fecha_actualizacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
 
 **Índices:** `idx_cursos_profesor_id`, `idx_cursos_periodo`, `idx_cursos_estado`
 
@@ -1116,11 +1132,14 @@ Relación alumno-curso. Un alumno puede estar en múltiples cursos pero solo una
 | `id` | TEXT | PK | UUID v4 |
 | `alumno_id` | TEXT | NOT NULL, FK→alumnos(id) | Estudiante |
 | `curso_id` | TEXT | NOT NULL, FK→cursos(id) | Curso |
+| `aula_asignada` | TEXT | — | Aula específica asignada |
 | `periodo_academico` | TEXT | NOT NULL | Período (ej: 2026-1) |
 | `fecha_matricula` | DATETIME | DEFAULT CURRENT_TIMESTAMP | Fecha de inscripción |
 | `estado` | TEXT | DEFAULT 'activa' | `activa`, `cancelada`, `suspendida` |
-| `observaciones` | TEXT | — | Notas adicionales |
+| `fecha_creacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
+| `fecha_actualizacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
 
+**Índices:** `idx_matriculas_alumno_id`, `idx_matriculas_curso_id`, `idx_matriculas_periodo`, `idx_matriculas_estado`
 **Unique:** `UNIQUE(alumno_id, curso_id, periodo_academico)` — evita duplicados
 
 ---
@@ -1134,11 +1153,17 @@ Registro de pagos y deudas de estudiantes.
 | `alumno_id` | TEXT | NOT NULL, FK→alumnos(id) | Estudiante |
 | `monto` | DECIMAL(10,2) | NOT NULL | Monto del pago |
 | `concepto` | TEXT | NOT NULL | Concepto (ej: Matricula 2026, Pension Junio) |
-| `estado_pago` | TEXT | DEFAULT 'pendiente' | `pendiente`, `pagado`, `cancelado`, `rechazado` |
-| `estado` | TEXT | DEFAULT 'pendiente' | `pendiente`, `pagado`, `cancelado` |
+| `periodo_academico` | TEXT | — | Período asociado (ej: 2026-1) |
+| `estado` | TEXT | DEFAULT 'pendiente' | `pendiente`, `pagado`, `cancelado`, `rechazado` |
+| `fecha_vencimiento` | DATE | — | Fecha límite de pago |
 | `fecha_pago` | DATETIME | — | Fecha en que se pagó |
 | `metodo_pago` | TEXT | CHECK | `tarjeta_credito`, `tarjeta_debito`, `transferencia`, `efectivo`, `cheque` |
-| `observaciones` | TEXT | — | Notas adicionales |
+| `referencia_pago` | TEXT | — | Número de referencia / voucher |
+| `deuda_pendiente` | BOOLEAN | DEFAULT TRUE | Indica si el alumno aún debe |
+| `fecha_creacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
+| `fecha_actualizacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
+
+**Índices:** `idx_pagos_alumno_id`, `idx_pagos_estado`, `idx_pagos_periodo`, `idx_pagos_deuda_pendiente`
 
 ---
 
@@ -1154,7 +1179,10 @@ Registro diario de asistencia por alumno y curso.
 | `estado` | TEXT | NOT NULL, CHECK | `PRESENTE`, `FALTA`, `JUSTIFICADO` |
 | `registrada` | BOOLEAN | DEFAULT FALSE | Si fue registrada oficialmente |
 | `motivo_falta` | TEXT | — | Razón de la falta/justificación |
+| `fecha_creacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
+| `fecha_actualizacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
 
+**Índices:** `idx_asistencias_alumno_id`, `idx_asistencias_curso_id`, `idx_asistencias_fecha`, `idx_asistencias_estado`
 **Unique:** `UNIQUE(alumno_id, curso_id, fecha)` — un registro por alumno/curso/día
 
 ---
@@ -1167,24 +1195,42 @@ Notas y evaluaciones de estudiantes.
 | `id` | TEXT | PK | UUID v4 |
 | `alumno_id` | TEXT | NOT NULL, FK→alumnos(id) | Estudiante |
 | `curso_id` | TEXT | NOT NULL, FK→cursos(id) | Curso |
-| `nota` | DECIMAL(5,2) | NOT NULL | Nota (0-20) |
-| `periodo` | TEXT | NOT NULL | Período (ej: 1, 2, 3, 4) |
+| `tipo_evaluacion` | TEXT | NOT NULL, CHECK | `parcial`, `final`, `extra` |
+| `puntuacion` | DECIMAL(5,2) | NOT NULL | Nota (0-20) |
+| `peso` | DECIMAL(3,2) | DEFAULT 1.0 | Peso para cálculo de promedio |
 | `observaciones` | TEXT | — | Comentarios |
+| `fecha_registro` | DATETIME | DEFAULT CURRENT_TIMESTAMP | Fecha de registro |
+| `registrada` | BOOLEAN | DEFAULT FALSE | Si fue oficialmente registrada |
+| `periodo_academico` | TEXT | NOT NULL | Período académico (ej: 2026-1) |
+| `fecha_limite_notas` | DATETIME | — | Fecha límite para registrar |
+| `estado` | TEXT | DEFAULT 'pendiente' | `pendiente`, `registrada`, `revisada` |
+| `fecha_creacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
+| `fecha_actualizacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
+
+**Índices:** `idx_calificaciones_alumno_id`, `idx_calificaciones_curso_id`, `idx_calificaciones_periodo`, `idx_calificaciones_estado`
 
 ---
 
 #### `notificaciones`
-Mensajes enviados a usuarios (alertas, informativos, recordatorios).
+Mensajes y alertas enviados a usuarios del sistema.
 
 | Campo | Tipo | Restricciones | Descripción |
 |-------|------|---------------|-------------|
 | `id` | TEXT | PK | UUID v4 |
-| `destinatario_id` | TEXT | NOT NULL, FK→usuarios(id) | Destinatario (usuario_id) |
-| `tipo` | TEXT | NOT NULL, CHECK | `informacion`, `alerta`, `recordatorio` |
+| `usuario_id` | TEXT | NOT NULL, FK→usuarios(id) | Usuario destinatario |
+| `tipo` | TEXT | NOT NULL, CHECK | `email`, `sms`, `app` |
+| `asunto` | TEXT | NOT NULL | Asunto del mensaje |
 | `mensaje` | TEXT | NOT NULL | Contenido del mensaje |
-| `leida` | BOOLEAN | DEFAULT FALSE | Indica si fue leída |
-| `fecha_lectura` | DATETIME | — | Cuándo se leyó |
+| `estado` | TEXT | DEFAULT 'pendiente' | `pendiente`, `enviado`, `fallido`, `leido` |
+| `destinatario` | TEXT | — | Dirección de destino (email/tel) |
+| `fecha_envio` | DATETIME | — | Cuándo se envió |
+| `fecha_intento_fallo` | DATETIME | — | Último intento fallido |
+| `numero_intentos` | INT | DEFAULT 0 | Intentos de envío |
+| `razon_fallo` | TEXT | — | Motivo del fallo |
+| `evento_generador` | TEXT | — | Evento que generó la notificación |
 | `fecha_creacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | — |
+
+**Índices:** `idx_notificaciones_usuario_id`, `idx_notificaciones_estado`, `idx_notificaciones_tipo`
 
 ---
 
@@ -1201,6 +1247,8 @@ Tabla para almacenar reportes generados (sin seed data).
 | `formato` | TEXT | CHECK(`pdf`, `excel`, `json`) |
 | `ruta_archivo` | TEXT | — |
 | `estado` | TEXT | DEFAULT 'generado' |
+| `fecha_generacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP |
+| `fecha_actualizacion` | DATETIME | DEFAULT CURRENT_TIMESTAMP |
 
 ---
 
@@ -1216,7 +1264,10 @@ Registro de auditoría para transacciones críticas (sin seed data).
 | `registro_id` | TEXT | — | ID del registro afectado |
 | `datos_antes` | TEXT | — | Estado anterior (JSON) |
 | `datos_despues` | TEXT | — | Estado posterior (JSON) |
+| `ip_origen` | TEXT | — | Dirección IP del cliente |
 | `fecha_accion` | DATETIME | DEFAULT CURRENT_TIMESTAMP | Marca de tiempo |
+
+**Índices:** `idx_logs_auditoria_usuario_id`, `idx_logs_auditoria_tabla`, `idx_logs_auditoria_fecha`
 
 ---
 
@@ -1379,7 +1430,7 @@ const corsOptions = {
 | `esUUIDValido` | Formato UUID v4 |
 | `esFechaValida` | Formato YYYY-MM-DD + fecha válida |
 | `esPuntuacionValida` | Número entre 0 y 20 |
-| `esMontoValido` | Número > 0 |
+| `esMontValido` | Número > 0 |
 | `esTipoUsuarioValido` | Uno de: alumno, docente, administrativo, padre, director |
 | `esEstadoAsistenciaValido` | Uno de: PRESENTE, FALTA, JUSTIFICADO |
 | `esEstadoPagoValido` | Uno de: pendiente, pagado, cancelado, rechazado |
@@ -1776,14 +1827,16 @@ graph TD
 | Lucia Vargas | SEC-1A (Matematica) | 2026-1 | activa |
 | Thiago Mendoza | SEC-2A (Comunicacion) | 2026-1 | activa |
 
-### Pagos (66 registros)
+### Pagos (72 registros)
 
 Cada estudiante tiene:
 - **1 pago de Matrícula** (S/230.00) — estado `pagado`
 - **8 cuotas mensuales** (S/420.00 cada una) por los meses Mayo-Diciembre
 
-Estudiantes sin deuda: primeros **2 meses pagados**, 6 pendientes.
-Estudiantes con deuda (Andres, Mateo, Thiago): solo **1 mes pagado**, 7 pendientes.
+Estudiantes sin deuda (Valeria, Camila, Sofia, Lucia): primeros **2 meses pagados**, 6 pendientes.
+Estudiantes con deuda (Diego, Andres, Mateo, Thiago): solo **1 mes pagado**, 7 pendientes.
+
+Total: 2 alumnos base × 9 pagos + 6 familias × 9 pagos = **72 registros**.
 
 ### Resumen de Datos Sembrados
 
@@ -1794,7 +1847,7 @@ Estudiantes con deuda (Andres, Mateo, Thiago): solo **1 mes pagado**, 7 pendient
 | `alumnos` | 8 |
 | `cursos` | 6 |
 | `matriculas` | 8 |
-| `pagos` | 66 |
+| `pagos` | 72 |
 | `asistencias` | 8 |
 | `calificaciones` | 8 |
 | `notificaciones` | 8 |
