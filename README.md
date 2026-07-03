@@ -1556,41 +1556,41 @@ auditar(getDatabase(), req, 'ELIMINAR', 'alumnos', id, alumno, null);
 
 ```mermaid
 graph TD
-    subgraph "AuthContext (Provider)"
+    subgraph AuthContext_Provider
         AC[AuthProvider] -->|useState| USER["user: User | null"]
         AC -->|useState| TOKEN["token: string | null"]
-        AC -->|useMemo| ISAUTH[isAuthenticated: boolean]
-        AC -->|fn| LOGIN[login(email, password)]
-        AC -->|fn| LOGOUT[logout()]
+        AC -->|useMemo| ISAUTH["isAuthenticated: boolean"]
+        AC -->|fn| LOGIN["login(email, password)"]
+        AC -->|fn| LOGOUT["logout()"]
     end
 
-    subgraph "API Layer (Axios)"
-        CLIENT[client.ts] -->|create| AXIOS[axios instance]
-        AXIOS -->|interceptor request| ATTACH[Attach JWT header]
-        AXIOS -->|interceptor response| HANDLE401[Handle 401 → redirect login]
-        SERVICES[services.ts] -->|createCrudService| CRUD[getAll, getById, create, update, delete]
+    subgraph API_Layer_Axios
+        CLIENT["client.ts"] -->|create| AXIOS["axios instance"]
+        AXIOS -->|interceptor request| ATTACH["Attach JWT header"]
+        AXIOS -->|interceptor response| HANDLE401["Handle 401 redirect login"]
+        SERVICES["services.ts"] -->|createCrudService| CRUD["getAll, getById, create, update, delete"]
     end
 
-    subgraph "Pages"
-        LOGIN_PAGE[Login.tsx] -->|calls| AC
-        DASH[Dashboard.tsx] -->|calls| SERVICES
-        ALUMNOS[Alumnos.tsx] -->|calls| SERVICES
-        PROF[Profesores.tsx] -->|calls| SERVICES
-        CURSOS[Cursos.tsx] -->|calls| SERVICES
-        MAT[Matriculas.tsx] -->|calls| SERVICES
-        PAGOS[Pagos.tsx] -->|calls| SERVICES
-        ASIS[Asistencia.tsx] -->|calls| SERVICES
-        CAL[Calificaciones.tsx] -->|calls| SERVICES
-        NOT[Notificaciones.tsx] -->|calls| SERVICES
-        PERFIL[Perfil.tsx] -->|calls| SERVICES
+    subgraph Pages
+        LOGIN_PAGE["Login.tsx"] -->|calls| AC
+        DASH["Dashboard.tsx"] -->|calls| SERVICES
+        ALUMNOS["Alumnos.tsx"] -->|calls| SERVICES
+        PROF["Profesores.tsx"] -->|calls| SERVICES
+        CURSOS["Cursos.tsx"] -->|calls| SERVICES
+        MAT["Matriculas.tsx"] -->|calls| SERVICES
+        PAGOS["Pagos.tsx"] -->|calls| SERVICES
+        ASIS["Asistencia.tsx"] -->|calls| SERVICES
+        CAL["Calificaciones.tsx"] -->|calls| SERVICES
+        NOT["Notificaciones.tsx"] -->|calls| SERVICES
+        PERFIL["Perfil.tsx"] -->|calls| SERVICES
     end
 
-    subgraph "Shared Components"
-        NAV[Navbar.tsx] -->|reads| AC
-        SIDE[Sidebar.tsx] -->|reads| AC
-        MODAL[Modal.tsx] -->|props| PAGES[All CRUD pages]
-        CONFIRM[ConfirmModal.tsx] -->|props| PAGES
-        BANNER[NotificationBanner.tsx] -->|reads| SERVICES
+    subgraph Shared_Components
+        NAV["Navbar.tsx"] -->|reads| AC
+        SIDE["Sidebar.tsx"] -->|reads| AC
+        MODAL["Modal.tsx"] -->|props| PAGES["All CRUD pages"]
+        CONFIRM["ConfirmModal.tsx"] -->|props| PAGES
+        BANNER["NotificationBanner.tsx"] -->|reads| SERVICES
     end
 
     SERVICES --> AXIOS
@@ -1739,19 +1739,19 @@ const { sortedRows, requestSort, sortConfig } = useSortableData(alumnos, 'primer
 
 ```mermaid
 graph TD
-    subgraph "App.tsx"
+    subgraph App_tsx
         direction TB
-        LOADING{loading?} -->|Sí| SPINNER[Spinner fullscreen]
-        LOADING -->|No| AUTH{isAuthenticated?}
-        AUTH -->|No| PUBLIC[Routes públicas: /, /login, /*→login]
+        LOADING{"loading?"} -->|Sí| SPINNER["Spinner fullscreen"]
+        LOADING -->|No| AUTH{"isAuthenticated?"}
+        AUTH -->|No| PUBLIC["Routes: /, /login, /* => login"]
         AUTH -->|Sí| PRIVATE
-        subgraph PRIVATE[Layout Autenticado]
-            NAV[Navbar sticky]
-            CONTENT[Contenedor flex]
-            SIDE[Sidebar 250px<br/>filtrada por rol]
-            RIGHT[Área principal]
-            BANNER[NotificationBanner<br/>polling 30s]
-            ROUTES[<Routes>:<br/>dashboard, alumnos,<br/>profesores, cursos,<br/>matriculas, pagos,<br/>asistencia, calificaciones,<br/>notificaciones, perfil]
+        subgraph PRIVATE["Layout Autenticado"]
+            NAV["Navbar sticky"]
+            CONTENT["Contenedor flex"]
+            SIDE["Sidebar 250px<br/>filtrada por rol"]
+            RIGHT["Área principal"]
+            BANNER["NotificationBanner<br/>polling 30s"]
+            ROUTES["Routes: dashboard, alumnos, profesores, cursos, matriculas, pagos, asistencia, calificaciones, notificaciones, perfil"]
         end
         NAV --> CONTENT
         CONTENT --> SIDE
