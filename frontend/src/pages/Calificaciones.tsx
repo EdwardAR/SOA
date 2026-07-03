@@ -29,6 +29,8 @@ const normCal = (c: any): Calificacion => ({
 
 const gradeBadge = (n: number) => n >= 15 ? ['success','Excelente'] : n >= 11 ? ['info','Aprobado'] : n >= 6 ? ['warning','En desarrollo'] : ['danger','Desaprobado'];
 
+const GRADOS = ['Todos', '1ro', '2do', '3ro', '4to', '5to'];
+
 const Calificaciones: React.FC = () => {
   const [calificaciones, setCalificaciones] = useState<Calificacion[]>([]);
   const [alumnos, setAlumnos] = useState<any[]>([]);
@@ -39,6 +41,7 @@ const Calificaciones: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [filtroGrado, setFiltroGrado] = useState('Todos');
   const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; id: string }>({ show: false, id: '' });
   const [formData, setFormData] = useState<Calificacion>({ alumno_id:'', curso_id:'', tipo_evaluacion:'parcial', puntuacion:0, periodo_academico:`${new Date().getFullYear()}-1` });
 
@@ -89,17 +92,20 @@ const Calificaciones: React.FC = () => {
     } catch { setConfirmDelete({ show:false, id:'' }); setError('Error al eliminar'); }
   };
 
+  const cursoGrado = Object.fromEntries(cursos.map((c: any) => [c.id, c.grado || c.grado_nivel || '']));
+
   const filtradas = ordenadas.filter(c => {
+    if (filtroGrado !== 'Todos' && cursoGrado[c.curso_id] !== filtroGrado) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return (c.alumno_nombre||'').toLowerCase().includes(q) || (c.curso_nombre||'').toLowerCase().includes(q) ||
       (c.periodo_academico||'').toLowerCase().includes(q);
   });
 
-  const notas = calificaciones.map(c => c.puntuacion).filter(n => n != null);
-  const promedio = notas.length > 0 ? (notas.reduce((a,b)=>a+b,0)/notas.length).toFixed(2) : '—';
-  const maxima = notas.length > 0 ? Math.max(...notas) : '—';
-  const minima = notas.length > 0 ? Math.min(...notas) : '—';
+  const notasFiltradas = filtradas.map(c => c.puntuacion).filter(n => n != null);
+  const promedio = notasFiltradas.length > 0 ? (notasFiltradas.reduce((a,b)=>a+b,0)/notasFiltradas.length).toFixed(2) : '—';
+  const maxima = notasFiltradas.length > 0 ? Math.max(...notasFiltradas) : '—';
+  const minima = notasFiltradas.length > 0 ? Math.min(...notasFiltradas) : '—';
 
   const SortIcon = ({ col }: { col: string }) =>
     sortConfig.key === col ? <i className={`bi bi-caret-${sortConfig.direction==='asc'?'up':'down'}-fill ms-1`} style={{fontSize:'0.7rem'}}></i>
@@ -146,6 +152,9 @@ const Calificaciones: React.FC = () => {
                 <span className="badge bg-white text-primary ms-2 fw-semibold" style={{fontSize:'0.78rem'}}>{filtradas.length}</span>
               </h5>
               <div className="d-flex gap-2 align-items-center flex-wrap">
+                <select className="form-select form-select-sm" style={{width:130}} value={filtroGrado} onChange={e=>setFiltroGrado(e.target.value)}>
+                  {GRADOS.map(g=><option key={g} value={g}>{g === 'Todos' ? 'Todos los grados' : `${g} grado`}</option>)}
+                </select>
                 <div className="input-group input-group-sm" style={{width:220}}>
                   <span className="input-group-text bg-white border-end-0"><i className="bi bi-search text-muted"></i></span>
                   <input type="text" className="form-control border-start-0 ps-0" placeholder="Buscar..." value={search} onChange={e=>setSearch(e.target.value)} style={{borderRadius:'0 8px 8px 0'}}/>

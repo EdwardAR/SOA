@@ -75,11 +75,13 @@ const INLINE_STYLES = `
   .rpt-fade { animation: rptFi 0.3s ease-out; }
   @keyframes rptFi { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
   .rpt-tab-btn {
-    transition: all 0.2s ease; border-radius: 10px 10px 0 0; border: none; background: transparent;
-    padding: 0.6rem 1.2rem; font-weight: 600; font-size: 0.85rem; color: ${C.slateLight}; cursor: pointer;
+    transition: all 0.2s ease; border-radius: 10px 10px 0 0; border: 1px solid transparent;
+    border-bottom: none; background: transparent;
+    padding: 0.6rem 1.3rem; font-weight: 600; font-size: 0.85rem; color: ${C.slateLight}; cursor: pointer;
+    margin-bottom: -1px; position: relative; z-index: 1;
   }
-  .rpt-tab-btn:hover { color: ${C.blue}; background: rgba(15,98,254,0.04); }
-  .rpt-tab-btn.active { color: ${C.blue}; background: #fff; box-shadow: 0 -2px 0 ${C.blue}; }
+  .rpt-tab-btn:hover { color: ${C.blue}; background: #f8fafc; border-color: ${C.slateBorder}; }
+  .rpt-tab-btn.active { color: ${C.blue}; background: #fff; border-color: ${C.slateBorder}; box-shadow: 0 -2px 0 ${C.blue}; }
   .rpt-stat { border-radius: 14px; padding: 1rem; text-align: center; transition: all 0.2s; }
   .rpt-stat:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.06); }
   .rpt-stat-value { font-size: 1.8rem; font-weight: 800; line-height: 1.2; letter-spacing: -0.02em; }
@@ -102,6 +104,24 @@ const INLINE_STYLES = `
   .rpt-pdf-btn { border-radius: 12px; font-weight: 700; font-size: 0.9rem; transition: all 0.25s ease; }
   .rpt-pdf-btn:hover:not(:disabled) { transform: scale(1.03); }
   .rpt-pdf-btn:active:not(:disabled) { transform: scale(0.97); }
+  .rpt-table-wrap { border-radius: 12px; border: 1px solid ${C.slateBorder}; overflow: hidden; }
+  .rpt-table-wrap table { margin-bottom: 0; }
+  .rpt-table-wrap th { background: ${C.slateBg}; padding: 0.65rem 1rem; text-align: left; font-weight: 700; color: #475569; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .rpt-table-wrap td { padding: 0.55rem 1rem; border-bottom: 1px solid #f1f5f9; }
+  .rpt-table-wrap tr:last-child td { border-bottom: none; }
+  @media (min-width: 992px) {
+    .rpt-metrics-grid { grid-template-columns: repeat(3, 1fr) !important; }
+    .rpt-info-grid { grid-template-columns: repeat(4, 1fr) !important; }
+    .rpt-content { box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
+  }
+  @media (max-width: 576px) {
+    .rpt-hero { padding: 1.2rem 1rem !important; }
+    .rpt-hero h1 { font-size: 1.3rem !important; }
+    .rpt-hero p { font-size: 0.82rem !important; }
+    .rpt-content { padding: 1.2rem 1rem !important; }
+    .rpt-content table tr td:first-child { padding-left: 0 !important; }
+    .rpt-content table tr td:last-child { padding-right: 0 !important; }
+  }
   @media print { .no-print { display: none !important; } }
 `;
 
@@ -336,11 +356,11 @@ const Reportes: React.FC = () => {
                   >
                     <div className="d-flex align-items-center gap-3">
                       <div className="rpt-avatar" style={{ background: bg }}>{initials}</div>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontWeight: 700, fontSize: '0.85rem', color: C.dark, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.85rem', color: C.dark, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {a.primer_nombre} {a.apellido_paterno}
                         </div>
-                        <div style={{ fontSize: '0.72rem', color: C.slateLight, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ fontSize: '0.72rem', color: C.slateLight, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {a.numero_matricula || 'Sin matrícula'}
                         </div>
                         <div style={{ marginTop: 2 }}>
@@ -369,7 +389,7 @@ const Reportes: React.FC = () => {
           </div>
         </div>
         <div className="card-footer" style={{ background: C.slateBg, borderTop: `1px solid ${C.slateBorder}`, borderRadius: '0 0 18px 18px', padding: '0.6rem 1.25rem' }}>
-          <div className="d-flex justify-content-between align-items-center">
+          <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
             <span style={{ fontSize: '0.78rem', color: C.slate }}>
               {childData ? `${childData.matriculas.length} curso${childData.matriculas.length !== 1 ? 's' : ''} · ${totalAsistencias} asistencias · ${childData.calificaciones.length} nota${childData.calificaciones.length !== 1 ? 's' : ''}` : 'Selecciona un estudiante'}
             </span>
@@ -398,7 +418,7 @@ const Reportes: React.FC = () => {
         <div className="rpt-fade">
           {/* Tabs (hidden during PDF capture) */}
           {!showAllForPdf && (
-            <div className="no-print d-flex gap-1 mb-0" style={{ borderBottom: `2px solid ${C.slateBorder}`, paddingLeft: '0.25rem' }}>
+            <div className="no-print d-flex flex-wrap gap-0 mb-0" style={{ borderBottom: `1px solid ${C.slateBorder}`, paddingLeft: '0.25rem' }}>
               {TABS.map(t => (
                 <button key={t.key} className={`rpt-tab-btn ${activeTab === t.key ? 'active' : ''}`} onClick={() => setActiveTab(t.key)}>
                   <i className={`bi ${t.icon} me-1`}></i> {t.label}
@@ -407,89 +427,105 @@ const Reportes: React.FC = () => {
             </div>
           )}
 
-          <div ref={reportRef} style={{
+          <div ref={reportRef} className="rpt-content" style={{
             background: '#fff', borderRadius: showAllForPdf ? 0 : '0 12px 12px 12px',
-            padding: '2.2rem 2.2rem 1.5rem',
+            padding: '2.5rem 2.8rem 1.8rem',
             border: `1px solid ${C.slateBorder}`, borderTop: showAllForPdf ? `1px solid ${C.slateBorder}` : 'none',
           }}>
             {/* Header */}
-            <div style={{ textAlign: 'center', marginBottom: '1.5rem', paddingBottom: '1.2rem', borderBottom: `3px double ${C.darkBlue}` }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.2rem', marginBottom: '0.3rem' }}>
+            <div style={{ textAlign: 'center', marginBottom: '2rem', paddingBottom: '1.5rem', borderBottom: `2px solid ${C.darkBlue}` }}>
+              <div className="d-flex align-items-center justify-content-center flex-wrap" style={{ gap: '1.2rem', marginBottom: '0.3rem' }}>
                 <div style={{
                   width: 52, height: 52, borderRadius: '50%',
-                  background: `linear-gradient(135deg, ${C.darkBlue}, ${C.primary})`,
+                  background: C.darkBlue,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#fff', fontSize: '1.4rem', fontWeight: 900, fontFamily: 'serif',
-                  boxShadow: `0 3px 10px rgba(15,71,161,0.3)`,
+                  color: '#fff', fontSize: '1.3rem', fontWeight: 900, fontFamily: 'serif',
+                  flexShrink: 0, letterSpacing: '-0.03em',
                 }}>
                   FD
                 </div>
-                <div>
-                  <h2 style={{ margin: 0, color: C.darkBlue, fontWeight: 800, fontSize: '1.35rem', letterSpacing: '-0.02em' }}>Colegio Futuro Digital</h2>
-                  <p style={{ margin: '2px 0 0', color: C.slateLight, fontSize: '0.76rem' }}>
+                <div style={{ minWidth: 0 }}>
+                  <h2 style={{ margin: 0, color: C.dark, fontWeight: 700, fontSize: '1.25rem', letterSpacing: '-0.01em' }}>Colegio Futuro Digital</h2>
+                  <p style={{ margin: '3px 0 0', color: C.slate, fontSize: '0.78rem' }}>
                     Reporte Académico · {new Date().toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' })}
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Student info grid */}
-            <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.5rem',
-              marginBottom: '1.5rem', padding: '1rem 1.2rem',
-              background: `linear-gradient(135deg, ${C.slateBg}, #f1f5f9)`, borderRadius: 12,
-              border: `1px solid ${C.slateBorder}`,
-            }}>
-              {[
-                { label: 'Estudiante', value: `${childData.alumno.primer_nombre} ${childData.alumno.segundo_nombre || ''} ${childData.alumno.apellido_paterno} ${childData.alumno.apellido_materno || ''}`.replace(/\s+/g, ' ') },
-                { label: 'Matrícula', value: childData.alumno.numero_matricula || '—' },
-                { label: 'Documento', value: childData.alumno.numero_documento || '—' },
-                { label: 'Estado', value: childData.alumno.estado, color: ESTADO_COLOR[childData.alumno.estado] },
-                ...(childData.alumno.fecha_nacimiento ? [{ label: 'Fecha Nac.', value: fmt(childData.alumno.fecha_nacimiento) }] : []),
-                ...(childData.alumno.email_contacto ? [{ label: 'Email', value: childData.alumno.email_contacto }] : []),
-                ...(childData.alumno.telefono ? [{ label: 'Teléfono', value: childData.alumno.telefono }] : []),
-              ].map(d => (
-                <div key={d.label}>
-                  <div style={{ fontSize: '0.66rem', fontWeight: 700, color: C.slateLight, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{d.label}</div>
-                  <div style={{ fontWeight: 600, color: d.color || C.dark, fontSize: '0.86rem', marginTop: 1 }}>{d.value}</div>
-                </div>
-              ))}
+            {/* Student info */}
+            <div style={{ marginBottom: '2rem' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                <tbody>
+                  <tr>
+                    {[
+                      { label: 'Estudiante', value: `${childData.alumno.primer_nombre} ${childData.alumno.segundo_nombre || ''} ${childData.alumno.apellido_paterno} ${childData.alumno.apellido_materno || ''}`.replace(/\s+/g, ' ') },
+                      { label: 'Matrícula', value: childData.alumno.numero_matricula || '—' },
+                      { label: 'Documento', value: childData.alumno.numero_documento || '—' },
+                    ].map(d => (
+                      <td key={d.label} style={{ padding: '0.4rem 0.8rem 0.4rem 0', verticalAlign: 'top', width: '33%' }}>
+                        <div style={{ fontSize: '0.65rem', fontWeight: 600, color: C.slate, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.15rem' }}>{d.label}</div>
+                        <div style={{ fontWeight: 500, color: C.dark }}>{d.value}</div>
+                      </td>
+                    ))}
+                  </tr>
+                  <tr>
+                    {[
+                      { label: 'Estado', value: childData.alumno.estado },
+                      ...(childData.alumno.fecha_nacimiento ? [{ label: 'Fecha Nac.', value: fmt(childData.alumno.fecha_nacimiento) }] : [{ label: 'Email', value: childData.alumno.email_contacto || '—' }]),
+                      ...(childData.alumno.email_contacto && childData.alumno.fecha_nacimiento ? [{ label: 'Email', value: childData.alumno.email_contacto }] : childData.alumno.telefono ? [{ label: 'Teléfono', value: childData.alumno.telefono }] : [{ label: '—', value: '' }]),
+                    ].slice(0, 3).map((d: any) => (
+                      <td key={d.label} style={{ padding: '0.4rem 0.8rem 0.4rem 0', verticalAlign: 'top', width: '33%' }}>
+                        <div style={{ fontSize: '0.65rem', fontWeight: 600, color: C.slate, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.15rem' }}>{d.label}</div>
+                        <div style={{ fontWeight: 500, color: C.dark }}>{d.value}</div>
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
             {/* Courses */}
-            <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{ marginBottom: '2rem' }}>
               <SectionTitle icon="bi-book" label="Cursos Matriculados" />
-              <div className="d-flex flex-wrap gap-2">
-                {childData.matriculas.map(m => (
-                  <span key={m.id} style={{
-                    padding: '0.3rem 0.8rem', background: C.blueBg,
-                    color: C.blue, borderRadius: 8, fontSize: '0.82rem', fontWeight: 600,
-                    border: `1px solid ${C.blueBorder}`,
-                  }}>
-                    {m.curso_nombre || m.curso_id}
-                    <span style={{ fontWeight: 400, color: C.slate }}> · {m.periodo_academico}</span>
-                  </span>
-                ))}
-                {childData.matriculas.length === 0 && <span style={{ color: C.slateLight }}>Sin cursos matriculados</span>}
-              </div>
+              {childData.matriculas.length === 0 ? (
+                <span style={{ color: C.slateLight }}>Sin cursos matriculados</span>
+              ) : (
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                  <tbody>
+                    <tr>
+                      {childData.matriculas.map((m, i) => (
+                        <td key={m.id} style={{ padding: '0.3rem 0.6rem 0.3rem 0', verticalAlign: 'top', width: `${100 / Math.min(childData.matriculas.length, 4)}%` }}>
+                          <div style={{ fontWeight: 500, color: C.dark, fontSize: '0.85rem' }}>{m.curso_nombre || m.curso_id}</div>
+                          <div style={{ fontSize: '0.72rem', color: C.slate }}>{m.periodo_academico}</div>
+                        </td>
+                      ))}
+                    </tr>
+                  </tbody>
+                </table>
+              )}
             </div>
 
             {/* Section: Resumen */}
             {(showSection('resumen')) && (
-              <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ marginBottom: '2rem' }}>
                 <SectionTitle icon="bi-graph-up-arrow" label="Métricas Generales" />
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '0.7rem' }}>
+                <div className="rpt-metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0' }}>
                   {[
-                    { label: 'Promedio', value: promedio, bg: C.blueBg, border: C.blueBorder, color: C.blue },
-                    { label: 'Presentes', value: presentes, bg: C.greenBg, border: C.greenBorder, color: C.green },
-                    { label: 'Faltas', value: faltas, bg: C.redBg, border: C.redBorder, color: C.red },
-                    { label: 'Justificados', value: justificados, bg: C.amberBg, border: C.amberBorder, color: C.amber },
-                    { label: 'Total Pagado', value: `S/ ${totalPagado.toFixed(2)}`, bg: C.greenBg, border: C.greenBorder, color: C.green },
-                    { label: 'Pendiente', value: `S/ ${totalPendiente.toFixed(2)}`, bg: totalPendiente > 0 ? C.redBg : C.greenBg, border: totalPendiente > 0 ? C.redBorder : C.greenBorder, color: totalPendiente > 0 ? C.red : C.green },
+                    { label: 'Promedio General', value: promedio },
+                    { label: 'Asistencias', value: `${presentes} / ${totalAsistencias}` },
+                    { label: 'Faltas', value: `${faltas}` },
+                    { label: 'Justificados', value: `${justificados}` },
+                    { label: 'Total Pagado', value: `S/ ${totalPagado.toFixed(2)}` },
+                    { label: 'Pendiente', value: `S/ ${totalPendiente.toFixed(2)}` },
                   ].map(s => (
-                    <div key={s.label} className="rpt-stat" style={{ background: s.bg, border: `1px solid ${s.border}` }}>
-                      <div className="rpt-stat-label" style={{ color: s.color }}>{s.label}</div>
-                      <div className="rpt-stat-value" style={{ color: s.color }}>{s.value}</div>
+                    <div key={s.label} style={{
+                      padding: '0.85rem 0.75rem', textAlign: 'center',
+                      borderRight: `1px solid ${C.slateBorder}`,
+                      borderBottom: `1px solid ${C.slateBorder}`,
+                    }}>
+                      <div style={{ fontSize: '0.64rem', fontWeight: 600, color: C.slate, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>{s.label}</div>
+                      <div style={{ fontSize: '1.4rem', fontWeight: 700, color: C.dark, lineHeight: 1.2 }}>{s.value}</div>
                     </div>
                   ))}
                 </div>
@@ -498,7 +534,7 @@ const Reportes: React.FC = () => {
 
             {/* Section: Calificaciones */}
             {(showSection('calificaciones')) && (
-              <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ marginBottom: '2rem' }}>
                 <SectionTitle icon="bi-file-earmark-text" label="Calificaciones" />
                 {childData.calificaciones.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '2rem', color: C.slateLight }}>
@@ -506,23 +542,21 @@ const Reportes: React.FC = () => {
                     <p className="mt-2 mb-0" style={{ fontSize: '0.85rem' }}>No hay calificaciones registradas</p>
                   </div>
                 ) : (
-                  <div style={{ overflowX: 'auto', borderRadius: 12, border: `1px solid ${C.slateBorder}` }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.84rem' }}>
+                  <div className="rpt-table-wrap" style={{ overflowX: 'auto' }}>
+                    <table className="table align-middle mb-0" style={{ fontSize: '0.84rem', width: '100%' }}>
                       <thead>
-                        <tr style={{ background: C.slateBg }}>
-                          <th style={{ padding: '0.6rem 0.9rem', textAlign: 'left', fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Curso</th>
-                          <th style={{ padding: '0.6rem 0.9rem', textAlign: 'left', fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Evaluación</th>
-                          <th style={{ padding: '0.6rem 0.9rem', textAlign: 'center', fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Nota</th>
+                        <tr>
+                          <th>Curso</th>
+                          <th className="d-none d-sm-table-cell">Evaluación</th>
+                          <th style={{ textAlign: 'center' }}>Nota</th>
                         </tr>
                       </thead>
                       <tbody>
                         {childData.calificaciones.map(c => (
-                          <tr key={c.id} style={{ borderBottom: `1px solid #f1f5f9` }}>
-                            <td style={{ padding: '0.5rem 0.9rem', color: C.dark, fontWeight: 500 }}>{c.curso_nombre || '—'}</td>
-                            <td style={{ padding: '0.5rem 0.9rem', color: C.slate, textTransform: 'capitalize' }}>{c.tipo_evaluacion}</td>
-                            <td style={{ padding: '0.5rem 0.9rem', textAlign: 'center', fontWeight: 700, color: c.puntuacion >= 11 ? C.green : C.red }}>
-                              {c.puntuacion}
-                            </td>
+                          <tr key={c.id}>
+                            <td style={{ color: C.dark, fontWeight: 500 }}>{c.curso_nombre || '—'}</td>
+                            <td className="d-none d-sm-table-cell" style={{ color: C.slate, textTransform: 'capitalize' }}>{c.tipo_evaluacion}</td>
+                            <td style={{ textAlign: 'center', fontWeight: 600, color: C.dark }}>{c.puntuacion}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -534,16 +568,13 @@ const Reportes: React.FC = () => {
 
             {/* Section: Asistencia */}
             {(showSection('asistencia')) && (
-              <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ marginBottom: '2rem' }}>
                 <SectionTitle icon="bi-calendar-check" label="Registro de Asistencia" />
                 {totalAsistencias > 0 && (
-                  <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
-                    <div style={{ padding: '0.4rem 1rem', borderRadius: 10, background: C.greenBg, border: `1px solid ${C.greenBorder}` }}>
-                      <span style={{ fontWeight: 800, color: C.green, fontSize: '1.1rem' }}>{presentes}</span>
-                      <span style={{ color: C.slate, fontSize: '0.8rem', marginLeft: '0.3rem' }}>de {totalAsistencias}</span>
-                    </div>
-                    <Badge text={`${faltas} falta${faltas !== 1 ? 's' : ''}`} color={C.red} />
-                    <Badge text={`${justificados} justificado${justificados !== 1 ? 's' : ''}`} color={C.amber} />
+                  <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '0.75rem', flexWrap: 'wrap', fontSize: '0.84rem' }}>
+                    <span><strong style={{ color: C.dark }}>{presentes}</strong> <span style={{ color: C.slate }}>presentes</span></span>
+                    <span><strong style={{ color: C.dark }}>{faltas}</strong> <span style={{ color: C.slate }}>falta{faltas !== 1 ? 's' : ''}</span></span>
+                    <span><strong style={{ color: C.dark }}>{justificados}</strong> <span style={{ color: C.slate }}>justificado{justificados !== 1 ? 's' : ''}</span></span>
                   </div>
                 )}
                 {childData.asistencias.length === 0 ? (
@@ -552,22 +583,29 @@ const Reportes: React.FC = () => {
                     <p className="mt-2 mb-0" style={{ fontSize: '0.85rem' }}>No hay registros de asistencia</p>
                   </div>
                 ) : (
-                  <div style={{ overflowX: 'auto', borderRadius: 12, border: `1px solid ${C.slateBorder}` }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.84rem' }}>
+                  <div className="rpt-table-wrap" style={{ overflowX: 'auto' }}>
+                    <table className="table align-middle mb-0" style={{ fontSize: '0.84rem', width: '100%' }}>
                       <thead>
-                        <tr style={{ background: C.slateBg }}>
-                          <th style={{ padding: '0.6rem 0.9rem', textAlign: 'left', fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Curso</th>
-                          <th style={{ padding: '0.6rem 0.9rem', textAlign: 'left', fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Fecha</th>
-                          <th style={{ padding: '0.6rem 0.9rem', textAlign: 'center', fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Estado</th>
+                        <tr>
+                          <th>Curso</th>
+                          <th className="d-none d-sm-table-cell">Fecha</th>
+                          <th style={{ textAlign: 'center' }}>Estado</th>
                         </tr>
                       </thead>
                       <tbody>
                         {childData.asistencias.map(a => (
-                          <tr key={a.id} style={{ borderBottom: `1px solid #f1f5f9` }}>
-                            <td style={{ padding: '0.5rem 0.9rem', color: C.dark, fontWeight: 500 }}>{a.curso_nombre || '—'}</td>
-                            <td style={{ padding: '0.5rem 0.9rem', color: C.slate }}>{fmt(a.fecha)}</td>
-                            <td style={{ padding: '0.5rem 0.9rem', textAlign: 'center' }}>
-                              <Badge text={a.estado} color={ESTADO_COLOR[a.estado] || C.slateLight} />
+                          <tr key={a.id}>
+                            <td style={{ color: C.dark, fontWeight: 500 }}>{a.curso_nombre || '—'}</td>
+                            <td className="d-none d-sm-table-cell" style={{ color: C.slate }}>{fmt(a.fecha)}</td>
+                            <td style={{ textAlign: 'center' }}>
+                              <span style={{
+                                display: 'inline-block', padding: '0.15rem 0.6rem', borderRadius: 4,
+                                fontSize: '0.75rem', fontWeight: 600,
+                                background: a.estado === 'PRESENTE' ? '#f0fdf4' : a.estado === 'FALTA' ? '#fef2f2' : '#fffbeb',
+                                color: a.estado === 'PRESENTE' ? '#166534' : a.estado === 'FALTA' ? '#991b1b' : '#92400e',
+                              }}>
+                                {a.estado}
+                              </span>
                             </td>
                           </tr>
                         ))}
@@ -580,18 +618,12 @@ const Reportes: React.FC = () => {
 
             {/* Section: Pagos */}
             {(showSection('pagos')) && (
-              <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ marginBottom: '2rem' }}>
                 <SectionTitle icon="bi-credit-card" label="Historial de Pagos" />
                 {(totalPagado > 0 || totalPendiente > 0) && (
-                  <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
-                    <div style={{ padding: '0.4rem 1rem', borderRadius: 10, background: C.greenBg, border: `1px solid ${C.greenBorder}` }}>
-                      <span style={{ fontWeight: 800, color: C.green, fontSize: '1.1rem' }}>S/ {totalPagado.toFixed(2)}</span>
-                      <span style={{ color: C.slate, fontSize: '0.8rem', marginLeft: '0.3rem' }}>pagado</span>
-                    </div>
-                    <div style={{ padding: '0.4rem 1rem', borderRadius: 10, background: totalPendiente > 0 ? C.redBg : C.greenBg, border: `1px solid ${totalPendiente > 0 ? C.redBorder : C.greenBorder}` }}>
-                      <span style={{ fontWeight: 800, color: totalPendiente > 0 ? C.red : C.green, fontSize: '1.1rem' }}>S/ {totalPendiente.toFixed(2)}</span>
-                      <span style={{ color: C.slate, fontSize: '0.8rem', marginLeft: '0.3rem' }}>pendiente</span>
-                    </div>
+                  <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '0.75rem', flexWrap: 'wrap', fontSize: '0.84rem' }}>
+                    <span><strong style={{ color: C.dark }}>S/ {totalPagado.toFixed(2)}</strong> <span style={{ color: C.slate }}>pagado</span></span>
+                    <span><strong style={{ color: C.dark }}>S/ {totalPendiente.toFixed(2)}</strong> <span style={{ color: C.slate }}>pendiente</span></span>
                   </div>
                 )}
                 {childData.pagos.length === 0 ? (
@@ -600,25 +632,32 @@ const Reportes: React.FC = () => {
                     <p className="mt-2 mb-0" style={{ fontSize: '0.85rem' }}>No hay pagos registrados</p>
                   </div>
                 ) : (
-                  <div style={{ overflowX: 'auto', borderRadius: 12, border: `1px solid ${C.slateBorder}` }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.84rem' }}>
+                  <div className="rpt-table-wrap" style={{ overflowX: 'auto' }}>
+                    <table className="table align-middle mb-0" style={{ fontSize: '0.84rem', width: '100%' }}>
                       <thead>
-                        <tr style={{ background: C.slateBg }}>
-                          <th style={{ padding: '0.6rem 0.9rem', textAlign: 'left', fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Concepto</th>
-                          <th style={{ padding: '0.6rem 0.9rem', textAlign: 'right', fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Monto</th>
-                          <th style={{ padding: '0.6rem 0.9rem', textAlign: 'center', fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Estado</th>
-                          <th style={{ padding: '0.6rem 0.9rem', textAlign: 'left', fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Fecha</th>
+                        <tr>
+                          <th>Concepto</th>
+                          <th className="d-none d-sm-table-cell" style={{ textAlign: 'right' }}>Monto</th>
+                          <th style={{ textAlign: 'center' }}>Estado</th>
+                          <th className="d-none d-sm-table-cell">Fecha</th>
                         </tr>
                       </thead>
                       <tbody>
                         {childData.pagos.map(p => (
-                          <tr key={p.id} style={{ borderBottom: `1px solid #f1f5f9` }}>
-                            <td style={{ padding: '0.5rem 0.9rem', color: C.dark, fontWeight: 500 }}>{p.concepto}</td>
-                            <td style={{ padding: '0.5rem 0.9rem', textAlign: 'right', fontWeight: 700 }}>S/ {p.monto.toFixed(2)}</td>
-                            <td style={{ padding: '0.5rem 0.9rem', textAlign: 'center' }}>
-                              <Badge text={p.estado} color={ESTADO_COLOR[p.estado] || C.slateLight} />
+                          <tr key={p.id}>
+                            <td style={{ color: C.dark, fontWeight: 500 }}>{p.concepto}</td>
+                            <td className="d-none d-sm-table-cell" style={{ textAlign: 'right', fontWeight: 600, color: C.dark }}>S/ {p.monto.toFixed(2)}</td>
+                            <td style={{ textAlign: 'center' }}>
+                              <span style={{
+                                display: 'inline-block', padding: '0.15rem 0.6rem', borderRadius: 4,
+                                fontSize: '0.75rem', fontWeight: 600,
+                                background: p.estado === 'pagado' ? '#f0fdf4' : p.estado === 'pendiente' ? '#fffbeb' : '#fef2f2',
+                                color: p.estado === 'pagado' ? '#166534' : p.estado === 'pendiente' ? '#92400e' : '#991b1b',
+                              }}>
+                                {p.estado}
+                              </span>
                             </td>
-                            <td style={{ padding: '0.5rem 0.9rem', color: C.slate }}>{p.fecha_pago ? fmt(p.fecha_pago) : '—'}</td>
+                            <td className="d-none d-sm-table-cell" style={{ color: C.slate }}>{p.fecha_pago ? fmt(p.fecha_pago) : '—'}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -629,9 +668,9 @@ const Reportes: React.FC = () => {
             )}
 
             {/* Footer */}
-            <div style={{ textAlign: 'center', paddingTop: '1rem', marginTop: '0.5rem', borderTop: `2px solid ${C.slateBorder}`, color: C.slateLight, fontSize: '0.7rem' }}>
+            <div style={{ textAlign: 'center', paddingTop: '1.2rem', marginTop: '0.5rem', borderTop: `1px solid ${C.slateBorder}`, color: C.slateLight, fontSize: '0.68rem' }}>
               <p style={{ margin: 0, fontWeight: 500 }}>Colegio Futuro Digital · Sistema de Gestión Académica</p>
-              <p style={{ margin: '2px 0 0' }}>Reporte generado el {new Date().toLocaleString('es-PE')}</p>
+              <p style={{ margin: '3px 0 0' }}>Reporte generado el {new Date().toLocaleString('es-PE')}</p>
             </div>
           </div>
         </div>
@@ -657,10 +696,10 @@ const Reportes: React.FC = () => {
                   <tr>
                     <th>Tipo</th>
                     <th>Estudiante</th>
-                    <th>Periodo</th>
-                    <th>Formato</th>
+                    <th className="d-none d-sm-table-cell">Periodo</th>
+                    <th className="d-none d-sm-table-cell">Formato</th>
                     <th style={{ textAlign: 'center' }}>Estado</th>
-                    <th>Fecha</th>
+                    <th className="d-none d-md-table-cell">Fecha</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -672,12 +711,12 @@ const Reportes: React.FC = () => {
                         </span>
                       </td>
                       <td style={{ fontWeight: 600, color: C.dark }}>{r.datos_reporte ? (typeof r.datos_reporte === 'string' ? JSON.parse(r.datos_reporte).alumno : r.datos_reporte.alumno) : '—'}</td>
-                      <td style={{ color: C.slate }}>{r.periodo_academico || '—'}</td>
-                      <td><span style={{ fontWeight: 700, fontSize: '0.78rem', letterSpacing: '0.04em', color: C.slate }}>{r.formato?.toUpperCase()}</span></td>
+                      <td className="d-none d-sm-table-cell" style={{ color: C.slate }}>{r.periodo_academico || '—'}</td>
+                      <td className="d-none d-sm-table-cell"><span style={{ fontWeight: 700, fontSize: '0.78rem', letterSpacing: '0.04em', color: C.slate }}>{r.formato?.toUpperCase()}</span></td>
                       <td style={{ textAlign: 'center' }}>
                         <Badge text={r.estado} color={C.green} />
                       </td>
-                      <td style={{ color: C.slate, fontSize: '0.8rem' }}>{fmt(r.fecha_generacion)}</td>
+                      <td className="d-none d-md-table-cell" style={{ color: C.slate, fontSize: '0.8rem' }}>{fmt(r.fecha_generacion)}</td>
                     </tr>
                   ))}
                 </tbody>

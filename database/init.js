@@ -14,6 +14,13 @@ if (fs.existsSync(DB_PATH) && !shouldResetDb) {
   process.exit(0);
 }
 
+// Si RESET_DB=true, marcar para regenerar esquema
+let shouldRecreateSchema = false;
+if (shouldResetDb && fs.existsSync(DB_PATH)) {
+  shouldRecreateSchema = true;
+  console.log('🗑️ Modo RESET_DB activo — se regenerarán las tablas');
+}
+
 // Asegurar que el directorio existe
 if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
@@ -28,6 +35,19 @@ const db = new sqlite3.Database(DB_PATH, (err) => {
 });
 
 db.serialize(() => {
+  // Si RESET_DB está activo, eliminar tablas existentes primero
+  if (shouldRecreateSchema) {
+    const tablas = ['logs_auditoria','reportes_generados','notificaciones','calificaciones','asistencias','pagos','matriculas','cursos','profesores','alumnos','usuarios'];
+    let dropCount = 0;
+    tablas.forEach((t, i) => {
+      db.run(`DROP TABLE IF EXISTS ${t}`, (err) => {
+        if (err) console.error(`Error dropping ${t}:`, err);
+        dropCount++;
+      });
+    });
+    // Esperar a que terminen los drops (serialize asegura orden)
+  }
+
   // Leer y ejecutar schema
   const schemaPath = path.join(__dirname, 'schema.sql');
   const schema = fs.readFileSync(schemaPath, 'utf8');
@@ -281,6 +301,7 @@ async function seedDatabase() {
     console.log('✓ Alumnos creados');
 
     // Insertar cursos
+    const BASE_PERIODO = '2026-1';
     const cursos = [
       {
         id: uuidv4(),
@@ -291,6 +312,7 @@ async function seedDatabase() {
         profesor_id: profesores[0].id,
         salon: 'A-101',
         capacidad: 32,
+        periodo_academico: BASE_PERIODO,
         estado: 'activo'
       },
       {
@@ -302,6 +324,7 @@ async function seedDatabase() {
         profesor_id: profesores[1].id,
         salon: 'A-102',
         capacidad: 32,
+        periodo_academico: BASE_PERIODO,
         estado: 'activo'
       },
       {
@@ -313,6 +336,7 @@ async function seedDatabase() {
         profesor_id: profesores[2].id,
         salon: 'B-101',
         capacidad: 34,
+        periodo_academico: BASE_PERIODO,
         estado: 'activo'
       },
       {
@@ -324,6 +348,7 @@ async function seedDatabase() {
         profesor_id: profesores[3].id,
         salon: 'B-102',
         capacidad: 34,
+        periodo_academico: BASE_PERIODO,
         estado: 'activo'
       },
       {
@@ -335,6 +360,7 @@ async function seedDatabase() {
         profesor_id: profesores[4].id,
         salon: 'C-201',
         capacidad: 30,
+        periodo_academico: BASE_PERIODO,
         estado: 'activo'
       },
       {
@@ -346,6 +372,7 @@ async function seedDatabase() {
         profesor_id: profesores[5].id,
         salon: 'C-202',
         capacidad: 30,
+        periodo_academico: BASE_PERIODO,
         estado: 'activo'
       }
     ];
@@ -473,16 +500,20 @@ async function seedDatabase() {
         id: uuidv4(),
         alumno_id: alumnoIds[0],
         curso_id: cursos[0].id,
-        nota: 18.5,
-        periodo: '1',
+        puntuacion: 18.5,
+        periodo_academico: '2026-1',
+        tipo_evaluacion: 'parcial',
+        peso: 1.0,
         observaciones: 'Buen desempeño',
       },
       {
         id: uuidv4(),
         alumno_id: alumnoIds[1],
         curso_id: cursos[1].id,
-        nota: 14.0,
-        periodo: '1',
+        puntuacion: 14.0,
+        periodo_academico: '2026-1',
+        tipo_evaluacion: 'parcial',
+        peso: 1.0,
         observaciones: 'Necesita reforzar ejercicios prácticos',
       }
     ];
@@ -712,14 +743,243 @@ async function seedDatabase() {
     }
     console.log(`✓ Seed adicional: ${familias.length} alumnos y relaciones creadas`);
 
-    const totalUsuarios = usuarios.length + familias.length * 2;
-    const totalProfesores = profesores.length;
-    const totalAlumnos = alumnos.length + familias.length;
-    const totalCursos = cursos.length;
-    const totalMatriculas = matriculas.length + familias.length;
-    const totalPagos = pagos.length + (familias.length * (1 + cuotasMensuales.length));
-    const totalAsistencias = asistencias.length + familias.length;
-    const totalCalificaciones = calificaciones.length + familias.length;
+    // ============================================
+    // EXPANSIÓN: más profesores, cursos, alumnos con padres y hermanos
+    // ============================================
+    const GRADOS = ['1ro', '2do', '3ro', '4to', '5to'];
+    const MATERIAS_POR_GRADO = {
+      '1ro': [
+        { nombre: 'Matemática Básica', sigla: 'MAT' },
+        { nombre: 'Comunicación Integral', sigla: 'COM' },
+        { nombre: 'Ciencias Naturales', sigla: 'CNT' },
+        { nombre: 'Arte y Cultura', sigla: 'ART' },
+        { nombre: 'Educación Física', sigla: 'EDF' },
+      ],
+      '2do': [
+        { nombre: 'Álgebra', sigla: 'ALG' },
+        { nombre: 'Lenguaje', sigla: 'LEN' },
+        { nombre: 'Biología', sigla: 'BIO' },
+        { nombre: 'Historia del Perú', sigla: 'HIS' },
+        { nombre: 'Arte Plástico', sigla: 'ARP' },
+      ],
+      '3ro': [
+        { nombre: 'Geometría', sigla: 'GEO' },
+        { nombre: 'Literatura', sigla: 'LIT' },
+        { nombre: 'Física Elemental', sigla: 'FIS' },
+        { nombre: 'Historia Universal', sigla: 'HIU' },
+        { nombre: 'Arte Dramático', sigla: 'ARD' },
+      ],
+      '4to': [
+        { nombre: 'Trigonometría', sigla: 'TRI' },
+        { nombre: 'Redacción', sigla: 'RED' },
+        { nombre: 'Química', sigla: 'QUI' },
+        { nombre: 'Geografía', sigla: 'GEO' },
+        { nombre: 'Computación', sigla: 'CPT' },
+      ],
+      '5to': [
+        { nombre: 'Razonamiento Matemático', sigla: 'RMT' },
+        { nombre: 'Análisis Literario', sigla: 'ANL' },
+        { nombre: 'Química Avanzada', sigla: 'QAV' },
+        { nombre: 'Economía', sigla: 'ECO' },
+        { nombre: 'Inglés Técnico', sigla: 'INT' },
+      ],
+    };
+
+    // 4 nuevos profesores
+    const profesorNuevoIds = [uuidv4(), uuidv4(), uuidv4(), uuidv4()];
+    const nuevosProfesoresData = [
+      { id: profesorNuevoIds[0], nombre: 'Raúl Mendoza', email: 'raul.mendoza@colegiofuturo.edu', especialidad: 'Matemática Superior' },
+      { id: profesorNuevoIds[1], nombre: 'Carmen Vega', email: 'carmen.vega@colegiofuturo.edu', especialidad: 'Inglés' },
+      { id: profesorNuevoIds[2], nombre: 'Diego Huamán', email: 'diego.huaman@colegiofuturo.edu', especialidad: 'Computación' },
+      { id: profesorNuevoIds[3], nombre: 'Luisa Flores', email: 'luisa.flores@colegiofuturo.edu', especialidad: 'Ciencias Sociales' },
+    ];
+
+    const nuevosProfesoresIds = [];
+    for (const prof of nuevosProfesoresData) {
+      await insertUser({ id: prof.id, nombre: `Prof. ${prof.nombre}`, email: prof.email, password: hashedPassword, tipo_usuario: 'docente' });
+      const profRecordId = uuidv4();
+      nuevosProfesoresIds.push(profRecordId);
+      await insertProfesor({
+        id: profRecordId, usuario_id: prof.id, numero_empleado: `EMP-20${50 + nuevosProfesoresData.indexOf(prof)}`,
+        nombre: prof.nombre, apellido_paterno: prof.nombre.split(' ')[0], primer_nombre: prof.nombre,
+        email: prof.email, telefono: `98765${40 + nuevosProfesoresData.indexOf(prof)}`, especialidad: prof.especialidad,
+      });
+    }
+    const todosProfesores = [...profesores];
+    for (const profRecordId of nuevosProfesoresIds) {
+      todosProfesores.push({ id: profRecordId });
+    }
+    console.log('✓ Profesores expandidos (4 nuevos)');
+
+    // 19 nuevos cursos (llenar a 5 por grado)
+    const nuevosCursos = [];
+    let secIndex = 0;
+    const SECCIONES = ['A', 'B', 'C', 'D', 'E'];
+    for (const grado of GRADOS) {
+      const materias = MATERIAS_POR_GRADO[grado];
+      for (let m = 0; m < materias.length; m++) {
+        const materia = materias[m];
+        const profIdx = secIndex % todosProfesores.length;
+        nuevosCursos.push({
+          id: uuidv4(), codigo: `${materia.sigla}-${grado}${SECCIONES[m % SECCIONES.length]}`,
+          nombre: `${materia.nombre} (${grado})`, grado: grado, seccion: SECCIONES[m % SECCIONES.length],
+          profesor_id: todosProfesores[profIdx].id, salon: `${grado === '1ro' || grado === '2do' ? 'A' : grado === '3ro' ? 'B' : grado === '4to' ? 'B' : 'C'}-${10 + m}${secIndex}`,
+          capacidad: 30, periodo_academico: '2026-1', estado: 'activo',
+        });
+        secIndex++;
+      }
+    }
+    for (const curso of nuevosCursos) {
+      await insertCurso(curso);
+    }
+    const todosCursos = [...cursos, ...nuevosCursos];
+    console.log(`✓ Cursos expandidos (${nuevosCursos.length} nuevos)`);
+
+    // Nuevos alumnos con padres y hermanos
+    const nuevasFamilias = [
+      {
+        grado: '1ro', apellido: 'Gutiérrez',
+        hijos: [
+          { nombre: 'Mateo', doc: '30123456', tel: '999800201', mat: 'MAT-2026-009' },
+          { nombre: 'Valentina', doc: '30123457', tel: '999800202', mat: 'MAT-2026-010' },
+        ],
+        padre: 'Roberto Gutiérrez', emailPadre: 'roberto.gutierrez@colegiofuturo.edu',
+      },
+      {
+        grado: '2do', apellido: 'Ramírez',
+        hijos: [
+          { nombre: 'Santiago', doc: '30234567', tel: '999800203', mat: 'MAT-2026-011' },
+        ],
+        padre: 'Marina Ramírez', emailPadre: 'marina.ramirez@colegiofuturo.edu',
+      },
+      {
+        grado: '3ro', apellido: 'López',
+        hijos: [
+          { nombre: 'Camila', doc: '30345678', tel: '999800204', mat: 'MAT-2026-012' },
+          { nombre: 'Bruno', doc: '30345679', tel: '999800205', mat: 'MAT-2026-013' },
+          { nombre: 'Daniela', doc: '30345680', tel: '999800206', mat: 'MAT-2026-014' },
+        ],
+        padre: 'Sofía López', emailPadre: 'sofia.lopez@colegiofuturo.edu',
+      },
+      {
+        grado: '4to', apellido: 'Huaraca',
+        hijos: [
+          { nombre: 'Fabiola', doc: '30456781', tel: '999800207', mat: 'MAT-2026-015' },
+        ],
+        padre: 'Pedro Huaraca', emailPadre: 'pedro.huaraca@colegiofuturo.edu',
+      },
+      {
+        grado: '5to', apellido: 'Quispe',
+        hijos: [
+          { nombre: 'Joaquín', doc: '30567891', tel: '999800208', mat: 'MAT-2026-016' },
+          { nombre: 'Ariana', doc: '30567892', tel: '999800209', mat: 'MAT-2026-017' },
+        ],
+        padre: 'Elena Quispe', emailPadre: 'elena.quispe@colegiofuturo.edu',
+      },
+      {
+        grado: '1ro', apellido: 'Castro',
+        hijos: [
+          { nombre: 'Benjamín', doc: '30678901', tel: '999800210', mat: 'MAT-2026-018' },
+        ],
+        padre: 'Miguel Castro', emailPadre: 'miguel.castro@colegiofuturo.edu',
+      },
+      {
+        grado: '4to', apellido: 'Paredes',
+        hijos: [
+          { nombre: 'Gabriela', doc: '30789012', tel: '999800211', mat: 'MAT-2026-019' },
+          { nombre: 'Emilio', doc: '30789013', tel: '999800212', mat: 'MAT-2026-020' },
+        ],
+        padre: 'Rosa Paredes', emailPadre: 'rosa.paredes@colegiofuturo.edu',
+      },
+      {
+        grado: '2do', apellido: 'Tapia',
+        hijos: [
+          { nombre: 'Isabella', doc: '30890123', tel: '999800213', mat: 'MAT-2026-021' },
+        ],
+        padre: 'Fernando Tapia', emailPadre: 'fernando.tapia@colegiofuturo.edu',
+      },
+    ];
+
+    let nuevosAlumnosCount = 0;
+    let nuevasMatriculasCount = 0;
+    let nuevasCalificacionesCount = 0;
+    let nuevasAsistenciasCount = 0;
+    let nuevosPagosCount = 0;
+
+    for (const familia of nuevasFamilias) {
+      const grado = familia.grado;
+      const cursosDelGrado = todosCursos.filter((c) => c.grado === grado);
+      if (cursosDelGrado.length === 0) continue;
+
+      const padreUsuarioId = uuidv4();
+      await insertUser({
+        id: padreUsuarioId, nombre: familia.padre, email: familia.emailPadre,
+        password: hashedPassword, tipo_usuario: 'padre',
+      });
+
+      for (const hijo of familia.hijos) {
+        const alumnoUsuarioId = uuidv4();
+        await insertUser({
+          id: alumnoUsuarioId, nombre: hijo.nombre,
+          email: `${hijo.nombre.toLowerCase()}.${familia.apellido.toLowerCase()}@colegiofuturo.edu`,
+          password: hashedPassword, tipo_usuario: 'alumno',
+        });
+
+        const alumnoId = uuidv4();
+        await insertAlumno({
+          id: alumnoId, usuario_id: alumnoUsuarioId, numero_matricula: hijo.mat,
+          apellido_paterno: familia.apellido, apellido_materno: '', primer_nombre: hijo.nombre,
+          telefono: hijo.tel, email_contacto: `${hijo.nombre.toLowerCase()}.${familia.apellido.toLowerCase()}@colegiofuturo.edu`,
+          numero_documento: hijo.doc, padre_id: padreUsuarioId, datos_completos: true,
+          deuda_pendiente: false, periodo_academico: '2026-1',
+        });
+        nuevosAlumnosCount++;
+
+        for (const curso of cursosDelGrado) {
+          await insertMatricula({
+            id: uuidv4(), alumno_id: alumnoId, curso_id: curso.id,
+            periodo_academico: '2026-1', fecha_matricula: '2026-03-10', estado: 'activa',
+          });
+          nuevasMatriculasCount++;
+
+          const nota = 10 + Math.round(Math.random() * 10);
+          await insertCalificacion({
+            id: uuidv4(), alumno_id: alumnoId, curso_id: curso.id,
+            puntuacion: nota, periodo_academico: '2026-1', tipo_evaluacion: 'parcial',
+            peso: 1.0, observaciones: nota >= 15 ? 'Buen rendimiento' : nota >= 11 ? 'Rendimiento aceptable' : 'Requiere apoyo',
+          });
+          nuevasCalificacionesCount++;
+
+          await insertAsistencia({
+            id: uuidv4(), alumno_id: alumnoId, curso_id: curso.id,
+            fecha: '2026-06-01', estado: Math.random() > 0.2 ? 'PRESENTE' : 'FALTA',
+            registrada: true, motivo_falta: null,
+          });
+          nuevasAsistenciasCount++;
+        }
+
+        const pagoMatricula = await insertPago({
+          id: uuidv4(), alumno_id: alumnoId, monto: MONTO_MATRICULA,
+          concepto: 'Matrícula 2026', estado_pago: 'pagado', estado: 'pagado',
+          fecha_pago: '2026-03-10 08:00:00', metodo_pago: 'transferencia', observaciones: 'Pago de matrícula',
+        });
+        nuevosPagosCount++;
+        for (const cuota of crearCuotasMensuales(alumnoId, 2)) {
+          await insertPago(cuota);
+          nuevosPagosCount++;
+        }
+      }
+    }
+    console.log(`✓ Datos expandidos: ${nuevosAlumnosCount} alumnos, ${nuevasMatriculasCount} matrículas, ${nuevasCalificacionesCount} calificaciones, ${nuevasAsistenciasCount} asistencias, ${nuevosPagosCount} pagos`);
+
+    const totalUsuarios = usuarios.length + familias.length * 2 + nuevasFamilias.reduce((acc, f) => acc + 1 + f.hijos.length, 0);
+    const totalProfesores = profesores.length + nuevosProfesoresData.length;
+    const totalAlumnos = alumnos.length + familias.length + nuevosAlumnosCount;
+    const totalCursos = cursos.length + nuevosCursos.length;
+    const totalMatriculas = matriculas.length + familias.length + nuevasMatriculasCount;
+    const totalPagos = pagos.length + (familias.length * (1 + cuotasMensuales.length)) + nuevosPagosCount;
+    const totalAsistencias = asistencias.length + familias.length + nuevasAsistenciasCount;
+    const totalCalificaciones = calificaciones.length + familias.length + nuevasCalificacionesCount;
     const totalNotificaciones = notificaciones.length + familias.length;
 
     console.log('\n✅ Base de datos inicializada correctamente\n');
@@ -846,10 +1106,10 @@ function insertAlumno(alumno) {
 function insertCurso(curso) {
   return new Promise((resolve, reject) => {
     db.run(
-      `INSERT INTO cursos (id, nombre, codigo, grado, seccion, capacidad, profesor_id, salon, estado)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO cursos (id, nombre, codigo, grado, seccion, capacidad, profesor_id, salon, periodo_academico, estado)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [curso.id, curso.nombre, curso.codigo, curso.grado, curso.seccion,
-       curso.capacidad, curso.profesor_id, curso.salon, curso.estado || 'activo'],
+       curso.capacidad, curso.profesor_id, curso.salon, curso.periodo_academico || '2026-1', curso.estado || 'activo'],
       (err) => {
         if (err) reject(err);
         else resolve();
@@ -907,10 +1167,11 @@ function insertAsistencia(asistencia) {
 function insertCalificacion(calificacion) {
   return new Promise((resolve, reject) => {
     db.run(
-      `INSERT INTO calificaciones (id, alumno_id, curso_id, nota, periodo, observaciones)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [calificacion.id, calificacion.alumno_id, calificacion.curso_id, calificacion.nota,
-       calificacion.periodo, calificacion.observaciones || null],
+      `INSERT INTO calificaciones (id, alumno_id, curso_id, puntuacion, periodo_academico, tipo_evaluacion, peso, observaciones)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [calificacion.id, calificacion.alumno_id, calificacion.curso_id, calificacion.puntuacion,
+       calificacion.periodo_academico, calificacion.tipo_evaluacion || 'parcial', calificacion.peso || 1.0,
+       calificacion.observaciones || null],
       (err) => {
         if (err) reject(err);
         else resolve();

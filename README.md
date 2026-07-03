@@ -289,8 +289,8 @@ copy .env.example .env
 
 # 5. Inicializar base de datos con datos de prueba
 npm run db:init
-# Esto crea 11 tablas y siembra: 23 usuarios, 6 profesores, 8 alumnos,
-# 6 cursos, 8 matrículas, 72 pagos, 8 asistencias, 8 calificaciones, 8 notificaciones
+# Esto crea 11 tablas y siembra: ~46 usuarios, 10 profesores, 20 alumnos,
+# ~31 cursos, ~72 matrículas, ~59 pagos, ~72 asistencias, ~72 calificaciones, 7 notificaciones
 ```
 
 ### Ejecución en Desarrollo
