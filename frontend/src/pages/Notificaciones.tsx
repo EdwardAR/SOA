@@ -5,6 +5,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import { useAuth } from '../context/AuthContext';
 import { can } from '../utils/permissions';
 import { useSortableData } from '../utils/tableSort';
+import JsonViewButton from '../components/JsonViewButton';
 
 interface Notificacion {
   id?: string;
@@ -178,7 +179,7 @@ const Notificaciones: React.FC = () => {
                     <th>Mensaje</th>
                     <th onClick={()=>requestSort('leida')} style={{cursor:'pointer'}}>Estado <SortIcon col="leida"/></th>
                     <th onClick={()=>requestSort('fecha_creacion')} style={{cursor:'pointer'}} className="d-none d-md-table-cell">Fecha <SortIcon col="fecha_creacion"/></th>
-                    <th className="text-end" style={{width:130}}>Acciones</th>
+                    <th className="text-end" style={{width:160}}>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -217,6 +218,7 @@ const Notificaciones: React.FC = () => {
                           </button>
                           {allowEdit && <button className="btn btn-sm app-btn-edit" onClick={()=>handleOpenModal(n)} title="Editar"><i className="bi bi-pencil"></i></button>}
                           {allowDelete && <button className="btn btn-sm app-btn-delete" onClick={()=>setConfirmDelete({show:true,id:n.id!})} title="Eliminar"><i className="bi bi-trash3"></i></button>}
+                          <JsonViewButton data={n} role={role} title="Notificación" />
                         </div>
                       </td>
                     </tr>

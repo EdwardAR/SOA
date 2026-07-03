@@ -7,6 +7,7 @@ import { can } from '../utils/permissions';
 import { useSortableData } from '../utils/tableSort';
 import { generateStructuredCode } from '../utils/codeGenerators';
 import { validarCurso } from '../utils/validators';
+import JsonViewButton from '../components/JsonViewButton';
 
 interface Curso {
   id?: string;
@@ -202,7 +203,7 @@ const Cursos: React.FC = () => {
                     <th onClick={() => requestSort('grado')} style={{ cursor: 'pointer' }}>Grado <SortIcon col="grado" /></th>
                     <th onClick={() => requestSort('profesor_nombre')} style={{ cursor: 'pointer' }} className="d-none d-md-table-cell">Profesor <SortIcon col="profesor_nombre" /></th>
                     <th className="d-none d-lg-table-cell">Aula</th>
-                    {(allowEdit || allowDelete) && <th className="text-end" style={{ width: 110 }}>Acciones</th>}
+                    {(allowEdit || allowDelete) && <th className="text-end" style={{ width: 150 }}>Acciones</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -233,6 +234,7 @@ const Cursos: React.FC = () => {
                               onClick={() => setConfirmDelete({ show: true, id: c.id, nombre: c.nombre })} title="Eliminar">
                               <i className="bi bi-trash3"></i>
                             </button>}
+                            <JsonViewButton data={c} role={role} title="Curso" />
                           </div>
                         </td>
                       )}

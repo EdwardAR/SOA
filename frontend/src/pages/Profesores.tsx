@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { can } from '../utils/permissions';
 import { useSortableData } from '../utils/tableSort';
 import { validarProfesor } from '../utils/validators';
+import JsonViewButton from '../components/JsonViewButton';
 
 interface Profesor {
   id?: string;
@@ -220,7 +221,7 @@ const Profesores: React.FC = () => {
                     <th onClick={() => requestSort('especialidad')} style={{ cursor: 'pointer' }}>Especialidad <SortIcon col="especialidad" /></th>
                     <th onClick={() => requestSort('email_contacto')} style={{ cursor: 'pointer' }} className="d-none d-md-table-cell">Email <SortIcon col="email_contacto" /></th>
                     <th onClick={() => requestSort('numero_documento')} style={{ cursor: 'pointer' }} className="d-none d-lg-table-cell">Documento <SortIcon col="numero_documento" /></th>
-                    {(allowEdit || allowDelete) && <th className="text-end" style={{ width: 110 }}>Acciones</th>}
+                    {(allowEdit || allowDelete) && <th className="text-end" style={{ width: 150 }}>Acciones</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -259,6 +260,7 @@ const Profesores: React.FC = () => {
                                 <i className="bi bi-trash3"></i>
                               </button>
                             )}
+                            <JsonViewButton data={p} role={role} title="Profesor" />
                           </div>
                         </td>
                       )}

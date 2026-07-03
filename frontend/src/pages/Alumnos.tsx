@@ -7,6 +7,7 @@ import { validarAlumno } from '../utils/validators';
 import { useAuth } from '../context/AuthContext';
 import { can } from '../utils/permissions';
 import { useSortableData } from '../utils/tableSort';
+import JsonViewButton from '../components/JsonViewButton';
 
 interface Alumno {
   id?: string;
@@ -347,7 +348,7 @@ const Alumnos: React.FC = () => {
                       Teléfono <SortIcon col="telefono" />
                     </th>
                     {(allowEdit || allowDelete) && (
-                      <th className="text-end" style={{ width: 110 }}>Acciones</th>
+                      <th className="text-end" style={{ width: 150 }}>Acciones</th>
                     )}
                   </tr>
                 </thead>
@@ -400,6 +401,7 @@ const Alumnos: React.FC = () => {
                                   <i className="bi bi-trash3"></i>
                                 </button>
                               )}
+                              <JsonViewButton data={alumno} role={role} title="Alumno" />
                             </div>
                           </td>
                         )}

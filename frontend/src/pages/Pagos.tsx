@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { can } from '../utils/permissions';
 import { useSortableData } from '../utils/tableSort';
 import { validarPago } from '../utils/validators';
+import JsonViewButton from '../components/JsonViewButton';
 
 interface Pago {
   id?: string;
@@ -177,7 +178,7 @@ const Pagos: React.FC = () => {
                     <th onClick={()=>requestSort('estado')} style={{cursor:'pointer'}}>Estado <SortIcon col="estado"/></th>
                     <th onClick={()=>requestSort('fecha_pago')} style={{cursor:'pointer'}} className="d-none d-md-table-cell">Fecha <SortIcon col="fecha_pago"/></th>
                     <th onClick={()=>requestSort('metodo_pago')} style={{cursor:'pointer'}} className="d-none d-lg-table-cell">Método <SortIcon col="metodo_pago"/></th>
-                    {(allowEdit||allowDelete) && <th className="text-end" style={{width:110}}>Acciones</th>}
+                    {(allowEdit||allowDelete) && <th className="text-end" style={{width:150}}>Acciones</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -202,6 +203,7 @@ const Pagos: React.FC = () => {
                           <div className="d-flex gap-1 justify-content-end">
                             {allowEdit && <button className="btn btn-sm app-btn-edit" onClick={()=>handleOpenModal(p as Pago)} title="Editar"><i className="bi bi-pencil"></i></button>}
                             {allowDelete && <button className="btn btn-sm app-btn-delete" onClick={()=>setConfirmDelete({show:true,id:p.id!,label:`${p.alumno_nombre} — ${p.concepto}`})} title="Eliminar"><i className="bi bi-trash3"></i></button>}
+                            <JsonViewButton data={p} role={role} title="Pago" />
                           </div>
                         </td>
                       )}

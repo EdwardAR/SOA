@@ -5,6 +5,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import { useAuth } from '../context/AuthContext';
 import { can } from '../utils/permissions';
 import { useSortableData } from '../utils/tableSort';
+import JsonViewButton from '../components/JsonViewButton';
 import { validarMatricula } from '../utils/validators';
 
 interface Matricula {
@@ -202,7 +203,7 @@ const Matriculas: React.FC = () => {
                     <th onClick={() => requestSort('periodo_academico')} style={{ cursor: 'pointer' }} className="d-none d-lg-table-cell">Período <SortIcon col="periodo_academico" /></th>
                     <th onClick={() => requestSort('fecha_matricula')} style={{ cursor: 'pointer' }} className="d-none d-lg-table-cell">Fecha <SortIcon col="fecha_matricula" /></th>
                     <th onClick={() => requestSort('estado')} style={{ cursor: 'pointer' }}>Estado <SortIcon col="estado" /></th>
-                    {(allowEdit || allowDelete) && <th className="text-end" style={{ width: 110 }}>Acciones</th>}
+                    {(allowEdit || allowDelete) && <th className="text-end" style={{ width: 150 }}>Acciones</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -234,6 +235,7 @@ const Matriculas: React.FC = () => {
                               onClick={() => setConfirmDelete({ show: true, id: m.id, label: `${m.alumno_nombre} — ${m.curso_nombre}` })} title="Eliminar">
                               <i className="bi bi-trash3"></i>
                             </button>}
+                            <JsonViewButton data={m} role={role} title="Matrícula" />
                           </div>
                         </td>
                       )}

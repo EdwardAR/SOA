@@ -5,6 +5,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import { useAuth } from '../context/AuthContext';
 import { can } from '../utils/permissions';
 import { useSortableData } from '../utils/tableSort';
+import JsonViewButton from '../components/JsonViewButton';
 
 interface AsistenciaRecord {
   id?: string;
@@ -164,7 +165,7 @@ const Asistencia: React.FC = () => {
                     <th onClick={()=>requestSort('fecha')} style={{cursor:'pointer'}}>Fecha <SortIcon col="fecha"/></th>
                     <th onClick={()=>requestSort('estado')} style={{cursor:'pointer'}}>Estado <SortIcon col="estado"/></th>
                     <th className="d-none d-lg-table-cell">Motivo</th>
-                    {(allowEdit||allowDelete) && <th className="text-end" style={{width:110}}>Acciones</th>}
+                    {(allowEdit||allowDelete) && <th className="text-end" style={{width:150}}>Acciones</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -188,6 +189,7 @@ const Asistencia: React.FC = () => {
                           <div className="d-flex gap-1 justify-content-end">
                             {allowEdit && <button className="btn btn-sm app-btn-edit" onClick={()=>handleOpenModal(a)} title="Editar"><i className="bi bi-pencil"></i></button>}
                             {allowDelete && <button className="btn btn-sm app-btn-delete" onClick={()=>setConfirmDelete({show:true,id:a.id!})} title="Eliminar"><i className="bi bi-trash3"></i></button>}
+                            <JsonViewButton data={a} role={role} title="Asistencia" />
                           </div>
                         </td>
                       )}
