@@ -74,6 +74,71 @@ const SERVICIOS = {
 
 const ROLES_CON_ACCESO_TOTAL = new Set(['director', 'administrativo']);
 
+// ── Audit logger ──────────────────────────────────────────────────────────────
+const registrarLog = async ({ usuario_id, accion, tabla_afectada, registro_id = null, datos_antes = null, datos_despues = null, ip_origen = null }) => {
+  try {
+    await runQuery(
+      `INSERT INTO logs_auditoria (id, usuario_id, accion, tabla_afectada, registro_id, datos_antes, datos_despues, ip_origen, fecha_accion)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+      [
+        generarId(),
+        usuario_id || null,
+        accion,
+        tabla_afectada,
+        registro_id || null,
+        datos_antes ? JSON.stringify(datos_antes) : null,
+        datos_despues ? JSON.stringify(datos_despues) : null,
+        ip_origen || null,
+      ]
+    );
+  } catch (_) { /* log silently — never break main flow */ }
+};
+
+// ── HTTP request logger middleware ────────────────────────────────────────────
+// Maps HTTP methods to acciones and tabla from URL
+const HTTP_ACCION = { POST: 'CREAR', PUT: 'ACTUALIZAR', PATCH: 'ACTUALIZAR', DELETE: 'ELIMINAR' };
+const TABLA_DESDE_URL = (url) => {
+  const parts = url.replace(/^\/api\//, '').split('/');
+  const base = parts[0];
+  const map = {
+    'alumnos': 'alumnos', 'profesores': 'profesores', 'cursos': 'cursos',
+    'matriculas': 'matriculas', 'pagos': 'pagos', 'asistencia': 'asistencias',
+    'calificaciones': 'calificaciones', 'notificaciones': 'notificaciones',
+    'auth': null,
+  };
+  return map[base] || base;
+};
+
+const httpAuditMiddleware = (req, res, next) => {
+  const accion = HTTP_ACCION[req.method];
+  if (!accion) return next(); // skip GET / OPTIONS / HEAD
+
+  const tabla = TABLA_DESDE_URL(req.url);
+  if (!tabla) return next(); // skip auth routes
+
+  const originalJson = res.json.bind(res);
+  res.json = (body) => {
+    const usuario_id = req.usuario?.id || null;
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || null;
+    const registro_id = body?.datos?.id || req.params?.id || null;
+
+    registrarLog({
+      usuario_id,
+      accion: `${req.method}:${accion}`,
+      tabla_afectada: tabla,
+      registro_id,
+      datos_antes: req.method === 'DELETE' ? (req._datosPrevios || null) : null,
+      datos_despues: (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') ? req.body : null,
+      ip_origen: ip,
+    });
+
+    return originalJson(body);
+  };
+  next();
+};
+
+app.use(httpAuditMiddleware);
+
 const getProfesorIdPorUsuario = async (usuarioId) => {
   const profesor = await getOne('SELECT id FROM profesores WHERE usuario_id = ?', [usuarioId]);
   return profesor?.id || null;
@@ -1611,6 +1676,70 @@ app.get('/', (req, res) => {
     message: 'API Gateway en ejecución'
   });
 });
+
+// ============================================
+// LOGS DE AUDITORÍA
+// ============================================
+
+// GET /api/logs — listado con filtros y paginación
+app.get('/api/logs', authMiddleware, requireRole(['director', 'administrativo']), asyncHandler(async (req, res) => {
+  const { tabla, accion, usuario_id, desde, hasta, page = 1, limit = 50 } = req.query;
+  const offset = (parseInt(page) - 1) * parseInt(limit);
+  const conditions = [];
+  const params = [];
+
+  if (tabla)      { conditions.push('l.tabla_afectada = ?'); params.push(tabla); }
+  if (accion)     { conditions.push('l.accion LIKE ?');      params.push(`%${accion}%`); }
+  if (usuario_id) { conditions.push('l.usuario_id = ?');     params.push(usuario_id); }
+  if (desde)      { conditions.push("l.fecha_accion >= ?");  params.push(desde); }
+  if (hasta)      { conditions.push("l.fecha_accion <= ?");  params.push(hasta + ' 23:59:59'); }
+
+  const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
+
+  const [logs, totalRow] = await Promise.all([
+    getAll(
+      `SELECT l.*, u.nombre AS usuario_nombre, u.tipo_usuario AS usuario_rol
+       FROM logs_auditoria l
+       LEFT JOIN usuarios u ON u.id = l.usuario_id
+       ${where}
+       ORDER BY l.fecha_accion DESC
+       LIMIT ? OFFSET ?`,
+      [...params, parseInt(limit), offset]
+    ),
+    getOne(
+      `SELECT COUNT(*) AS total FROM logs_auditoria l ${where}`,
+      params
+    ),
+  ]);
+
+  res.json(respuestaExito({
+    logs,
+    total: totalRow?.total || 0,
+    page: parseInt(page),
+    limit: parseInt(limit),
+    pages: Math.ceil((totalRow?.total || 0) / parseInt(limit)),
+  }, 'Logs obtenidos'));
+}));
+
+// GET /api/logs/stats — resumen para dashboard de auditoría
+app.get('/api/logs/stats', authMiddleware, requireRole(['director', 'administrativo']), asyncHandler(async (req, res) => {
+  const [porAccion, porTabla, recientes, usuariosActivos] = await Promise.all([
+    getAll(`SELECT accion, COUNT(*) AS total FROM logs_auditoria GROUP BY accion ORDER BY total DESC`, []),
+    getAll(`SELECT tabla_afectada, COUNT(*) AS total FROM logs_auditoria GROUP BY tabla_afectada ORDER BY total DESC`, []),
+    getAll(
+      `SELECT l.*, u.nombre AS usuario_nombre, u.tipo_usuario AS usuario_rol
+       FROM logs_auditoria l LEFT JOIN usuarios u ON u.id = l.usuario_id
+       ORDER BY l.fecha_accion DESC LIMIT 10`, []
+    ),
+    getAll(
+      `SELECT u.nombre, u.tipo_usuario, COUNT(*) AS acciones, MAX(l.fecha_accion) AS ultima_accion
+       FROM logs_auditoria l LEFT JOIN usuarios u ON u.id = l.usuario_id
+       WHERE u.id IS NOT NULL
+       GROUP BY l.usuario_id ORDER BY acciones DESC LIMIT 8`, []
+    ),
+  ]);
+  res.json(respuestaExito({ porAccion, porTabla, recientes, usuariosActivos }, 'Estadísticas obtenidas'));
+}));
 
 // ============================================
 // MANEJO DE ERRORES

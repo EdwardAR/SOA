@@ -20,6 +20,7 @@ const Sidebar: React.FC = () => {
     { path: '/asistencia', label: 'Asistencia', icon: 'bi-calendar-check' },
     { path: '/calificaciones', label: 'Calificaciones', icon: 'bi-file-earmark-text' },
     { path: '/notificaciones', label: 'Notificaciones', icon: 'bi-bell' },
+    { path: '/auditoria',      label: 'Auditoría',      icon: 'bi-journal-text' },
   ];
 
   const toggleSidebar = () => setIsExpanded(!isExpanded);
