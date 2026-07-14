@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { calificacionesService, alumnosService, cursosService } from '../api/services';
+import apiClient from '../api/client';
 import Modal from '../components/Modal';
 import ConfirmModal from '../components/ConfirmModal';
 import { useAuth } from '../context/AuthContext';
@@ -44,6 +45,8 @@ const Calificaciones: React.FC = () => {
   const [filtroGrado, setFiltroGrado] = useState('Todos');
   const [cursoFiltroId, setCursoFiltroId] = useState('');
   const [estudiantesDelCurso, setEstudiantesDelCurso] = useState<any[]>([]);
+  const [cargandoEstudiantes, setCargandoEstudiantes] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; id: string }>({ show: false, id: '' });
   const [formData, setFormData] = useState<Calificacion>({ alumno_id:'', curso_id:'', tipo_evaluacion:'parcial', puntuacion:0, periodo_academico:`${new Date().getFullYear()}-1` });
 
@@ -54,48 +57,58 @@ const Calificaciones: React.FC = () => {
   const allowEdit = can(role, 'calificaciones', 'edit');
   const allowDelete = can(role, 'calificaciones', 'delete');
 
-  useEffect(() => { fetchCalificaciones(); fetchRelacionados(); }, []);
-  useEffect(() => { if (cursoFiltroId) fetchEstudiantes(cursoFiltroId); else setEstudiantesDelCurso([]); }, [cursoFiltroId]);
-
-  const fetchRelacionados = async () => {
+  const cargarDatos = useCallback(async (cursoId: string) => {
+    setLoading(true);
     try {
-      const [a, c] = await Promise.all([alumnosService.getAll(), cursosService.getAll()]);
-      setAlumnos(a.data?.datos || []); setCursos(c.data?.datos || []);
-    } catch {}
-  };
+      const url = cursoId ? `/calificaciones?curso_id=${cursoId}` : '/calificaciones';
+      const [calRes, curRes] = await Promise.all([
+        apiClient.get(url),
+        cursosService.getAll(),
+      ]);
+      setCalificaciones((calRes.data?.datos || []).map(normCal));
+      setCursos(curRes.data?.datos || []);
+      setError('');
+    } catch { setError('Error al cargar datos'); } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { cargarDatos(cursoFiltroId); }, [cursoFiltroId, refreshKey, cargarDatos]);
+
+  useEffect(() => {
+    apiClient.get('/alumnos').then(r => setAlumnos(r.data?.datos || [])).catch(() => {});
+  }, []);
+
+  useEffect(() => { if (cursoFiltroId) fetchEstudiantes(cursoFiltroId); else setEstudiantesDelCurso([]); }, [cursoFiltroId]);
 
   const fetchEstudiantes = async (cursoId: string) => {
     try {
+      setCargandoEstudiantes(true);
       const res = await cursosService.getEstudiantes(cursoId);
       setEstudiantesDelCurso(res.data?.datos || []);
-    } catch { setEstudiantesDelCurso([]); }
+    } catch { setEstudiantesDelCurso([]); } finally { setCargandoEstudiantes(false); }
   };
 
-  const fetchCalificaciones = async () => {
-    try {
-      setLoading(true);
-      const res = await calificacionesService.getAll();
-      setCalificaciones((res.data?.datos || []).map(normCal));
-      setError('');
-    } catch { setError('Error al cargar calificaciones'); } finally { setLoading(false); }
+  const handleModalCursoChange = (cursoId: string) => {
+    setFormData(prev => ({ ...prev, curso_id: cursoId, alumno_id: '' }));
+    if (cursoId) fetchEstudiantes(cursoId);
+    else setEstudiantesDelCurso([]);
   };
 
-  const handleFiltrarPorCurso = async (cursoId: string) => {
+  const handleFiltrarPorCurso = (cursoId: string) => {
     setCursoFiltroId(cursoId);
-    try {
-      setLoading(true);
-      const url = cursoId ? `/calificaciones?curso_id=${cursoId}` : '/calificaciones';
-      const res = await (await import('../api/client')).default.get(url);
-      setCalificaciones((res.data?.datos || []).map(normCal));
-      setError('');
-    } catch { setError('Error al filtrar'); } finally { setLoading(false); }
   };
 
   const handleOpenModal = (c?: Calificacion) => {
     setError(''); setSuccess('');
-    const defaults = { alumno_id:'', curso_id: cursoFiltroId, tipo_evaluacion:'parcial' as const, puntuacion:0, periodo_academico:`${new Date().getFullYear()}-1` };
-    if (c) { setEditingId(c.id||null); setFormData(c); }
-    else { setEditingId(null); setFormData(defaults); if (cursoFiltroId) fetchEstudiantes(cursoFiltroId); }
+    if (c) {
+      setEditingId(c.id||null);
+      setFormData({...c, alumno_id: c.alumno_id || ''});
+      if (c.curso_id) fetchEstudiantes(c.curso_id);
+    } else {
+      setEditingId(null);
+      const defaults = { alumno_id:'', curso_id: cursoFiltroId, tipo_evaluacion:'parcial' as const, puntuacion:0, periodo_academico:`${new Date().getFullYear()}-1` };
+      setFormData(defaults);
+      if (cursoFiltroId) fetchEstudiantes(cursoFiltroId); else setEstudiantesDelCurso([]);
+    }
     setShowModal(true);
   };
 
@@ -108,13 +121,13 @@ const Calificaciones: React.FC = () => {
         puntuacion: formData.puntuacion, periodo: formData.periodo_academico, tipo_evaluacion: formData.tipo_evaluacion, observaciones: formData.observaciones };
       if (editingId) { await calificacionesService.update(editingId, payload); setSuccess('Calificación actualizada'); }
       else { await calificacionesService.create(payload); setSuccess('Calificación registrada'); }
-      setShowModal(false); setEditingId(null); handleFiltrarPorCurso(cursoFiltroId); setTimeout(() => setSuccess(''), 3000);
+      setShowModal(false); setEditingId(null); setRefreshKey(k => k + 1); setTimeout(() => setSuccess(''), 3000);
     } catch { setError('Error al guardar calificación'); }
   };
 
   const handleDeleteConfirm = async () => {
     try { await calificacionesService.delete(confirmDelete.id); setConfirmDelete({ show:false, id:'' });
-      setSuccess('Calificación eliminada'); handleFiltrarPorCurso(cursoFiltroId); setTimeout(() => setSuccess(''), 3000);
+      setSuccess('Calificación eliminada'); setRefreshKey(k => k + 1); setTimeout(() => setSuccess(''), 3000);
     } catch { setConfirmDelete({ show:false, id:'' }); setError('Error al eliminar'); }
   };
 
@@ -253,23 +266,28 @@ const Calificaciones: React.FC = () => {
       <Modal show={showModal} title={editingId?'Editar Calificación':'Registrar Calificación'} onClose={()=>{setShowModal(false);setEditingId(null);}} onSave={handleSave} error={error} success={success}>
         <form onSubmit={e=>e.preventDefault()}>
           <div className="mb-3">
-            <label className="form-label fw-semibold">Alumno <span className="text-danger">*</span></label>
-            <select className="form-select" value={formData.alumno_id} onChange={e=>setFormData({...formData,alumno_id:e.target.value})}>
-              <option value="">Seleccionar alumno</option>
-              {formData.curso_id
-                ? estudiantesDelCurso.map((a: any)=><option key={a.id} value={a.id}>{a.primer_nombre} {a.apellido_paterno} ({a.numero_matricula})</option>)
-                : alumnos.map((a: any)=><option key={a.id} value={a.id}>{a.primer_nombre} {a.apellido_paterno} ({a.numero_matricula})</option>)
-              }
-            </select>
-            {formData.curso_id && estudiantesDelCurso.length > 0 &&
-              <small className="text-muted">{estudiantesDelCurso.length} alumno(s) en este curso</small>}
-          </div>
-          <div className="mb-3">
             <label className="form-label fw-semibold">Curso <span className="text-danger">*</span></label>
-            <select className="form-select" value={formData.curso_id} onChange={e=>{setFormData({...formData,curso_id:e.target.value}); if(e.target.value) fetchEstudiantes(e.target.value);}}>
-              <option value="">Seleccionar curso</option>
+            <select className="form-select" value={formData.curso_id} onChange={e=>handleModalCursoChange(e.target.value)}>
+              <option value="">{role==='docente' ? '— Seleccione un curso —' : 'Seleccionar curso'}</option>
               {cursos.map(c=><option key={c.id} value={c.id}>{c.nombre} ({c.codigo||c.grado_nivel})</option>)}
             </select>
+          </div>
+          <div className="mb-3">
+            <label className="form-label fw-semibold">Alumno <span className="text-danger">*</span></label>
+            {!formData.curso_id ? (
+              <div className="text-muted small py-2"><i className="bi bi-info-circle me-1"></i>{role==='docente' ? 'Seleccione un curso para ver los alumnos disponibles' : 'Seleccione un curso para filtrar alumnos'}</div>
+            ) : cargandoEstudiantes ? (
+              <div className="text-muted small py-2"><span className="spinner-border spinner-border-sm me-1" role="status"></span>Cargando alumnos...</div>
+            ) : (
+              <>
+                <select className="form-select" value={formData.alumno_id} onChange={e=>setFormData({...formData,alumno_id:e.target.value})}>
+                  <option value="">Seleccionar alumno</option>
+                  {estudiantesDelCurso.map((a: any)=><option key={a.id} value={a.id}>{a.primer_nombre} {a.apellido_paterno} ({a.numero_matricula})</option>)}
+                </select>
+                {estudiantesDelCurso.length > 0 && <small className="text-muted">{estudiantesDelCurso.length} alumno(s) en este curso</small>}
+                {estudiantesDelCurso.length === 0 && !cargandoEstudiantes && <small className="text-warning">No hay alumnos matriculados en este curso</small>}
+              </>
+            )}
           </div>
           <div className="row g-3">
             <div className="col-md-6">
