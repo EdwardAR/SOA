@@ -972,14 +972,116 @@ async function seedDatabase() {
     }
     console.log(`✓ Datos expandidos: ${nuevosAlumnosCount} alumnos, ${nuevasMatriculasCount} matrículas, ${nuevasCalificacionesCount} calificaciones, ${nuevasAsistenciasCount} asistencias, ${nuevosPagosCount} pagos`);
 
-    const totalUsuarios = usuarios.length + familias.length * 2 + nuevasFamilias.reduce((acc, f) => acc + 1 + f.hijos.length, 0);
+    // ============================================
+    // FASE 4: EXPANSIÓN MASIVA — 30 alumnos por curso (150 nuevos alumnos)
+    // ============================================
+    const NOMBRES_MASC = ['Mateo','Thiago','Bruno','Diego','Santiago','Joaquín','Benjamín','Emilio','Sebastián','Andrés','Gabriel','Samuel','Daniel','Fernando','Alejandro','Lucas','Maximiliano','Adrián','Julián','Martín','Pablo','Nicolás','Cristóbal','Tomás','Ángel','Isaac','Leonardo','Felipe','Juan','David','Rafael','Luis'];
+    const NOMBRES_FEM = ['Luciana','Camila','Valentina','Ariana','Isabella','Sofía','Gabriela','Fabiola','Daniela','Mariana','Valeria','Ximena','Renata','Alessandra','Fiorella','Nicole','Angie','Briana','Mía','Luna','Elena','Sara','Claudia','Rosa','Lourdes','Carmen','Paula','Clara','Julia','Ana','Ruth','Noemí'];
+
+    const GRUPOS_F4 = [
+      { a:'Quispe', g:'1ro', h:['Mateo','Luciana','Thiago'] },{ a:'Condori', g:'1ro', h:['Camila','Bruno','Valentina'] },
+      { a:'Mamani', g:'1ro', h:['Ariana','Santiago','Isabella'] },{ a:'Huamán', g:'1ro', h:['Diego','Sofía','Joaquín'] },
+      { a:'Chávez', g:'1ro', h:['Benjamín','Gabriela','Emilio'] },{ a:'Huarcaya', g:'1ro', h:['Sebastián','Fabiola','Andrés'] },
+      { a:'Cárdenas', g:'1ro', h:['Gabriel','Daniela','Samuel'] },{ a:'Montoya', g:'1ro', h:['Daniel','Mariana','Fernando'] },
+      { a:'Yupanqui', g:'1ro', h:['Alejandro','Valeria','Lucas'] },{ a:'Tupac', g:'1ro', h:['Maximiliano','Ximena','Adrián'] },
+      { a:'Vilca', g:'2do', h:['Julián','Renata','Martín'] },{ a:'Ccori', g:'2do', h:['Pablo','Alessandra','Nicolás'] },
+      { a:'Palomino', g:'2do', h:['Cristóbal','Fiorella','Tomás'] },{ a:'Llanos', g:'2do', h:['Ángel','Nicole','Isaac'] },
+      { a:'Chipana', g:'2do', h:['Leonardo','Angie','Felipe'] },{ a:'Pumacahua', g:'2do', h:['Juan','Briana','David'] },
+      { a:'Sullca', g:'2do', h:['Rafael','Mía','Luis'] },{ a:'Anccasi', g:'2do', h:['Mateo','Luna','Camila'] },
+      { a:'Pacco', g:'2do', h:['Thiago','Elena','Bruno'] },{ a:'Hancco', g:'2do', h:['Diego','Sara','Valentina'] },
+      { a:'Huerta', g:'3ro', h:['Santiago','Claudia','Joaquín'] },{ a:'Espinoza', g:'3ro', h:['Benjamín','Rosa','Emilio'] },
+      { a:'Ramos', g:'3ro', h:['Sebastián','Lourdes','Andrés'] },{ a:'Flores', g:'3ro', h:['Gabriel','Carmen','Samuel'] },
+      { a:'Cruz', g:'3ro', h:['Daniel','Paula','Fernando'] },{ a:'Silva', g:'3ro', h:['Alejandro','Clara','Lucas'] },
+      { a:'Vega', g:'3ro', h:['Maximiliano','Julia','Adrián'] },{ a:'Rojas', g:'3ro', h:['Julián','Ana','Martín'] },
+      { a:'Torres', g:'3ro', h:['Pablo','Ruth','Nicolás'] },{ a:'Castro', g:'3ro', h:['Cristóbal','Noemí','Tomás'] },
+      { a:'García', g:'4to', h:['Ángel','Luciana','Isaac'] },{ a:'Reyes', g:'4to', h:['Leonardo','Camila','Felipe'] },
+      { a:'Morales', g:'4to', h:['Juan','Valentina','David'] },{ a:'Ortiz', g:'4to', h:['Rafael','Ariana','Luis'] },
+      { a:'Delgado', g:'4to', h:['Mateo','Isabella','Thiago'] },{ a:'Paredes', g:'4to', h:['Bruno','Sofía','Diego'] },
+      { a:'Guerrero', g:'4to', h:['Santiago','Gabriela','Joaquín'] },{ a:'Campos', g:'4to', h:['Benjamín','Fabiola','Emilio'] },
+      { a:'Rivas', g:'4to', h:['Sebastián','Daniela','Andrés'] },{ a:'Mendoza', g:'4to', h:['Gabriel','Mariana','Samuel'] },
+      { a:'Salazar', g:'5to', h:['Daniel','Valeria','Fernando'] },{ a:'Vargas', g:'5to', h:['Alejandro','Ximena','Lucas'] },
+      { a:'Herrera', g:'5to', h:['Maximiliano','Renata','Adrián'] },{ a:'Figueroa', g:'5to', h:['Julián','Alessandra','Martín'] },
+      { a:'Peña', g:'5to', h:['Pablo','Fiorella','Nicolás'] },{ a:'Tapia', g:'5to', h:['Cristóbal','Nicole','Tomás'] },
+      { a:'Soto', g:'5to', h:['Ángel','Angie','Isaac'] },{ a:'Medina', g:'5to', h:['Leonardo','Briana','Felipe'] },
+      { a:'Carrasco', g:'5to', h:['Juan','Mía','David'] },{ a:'Huamaní', g:'5to', h:['Rafael','Luna','Luis'] },
+    ];
+
+    let f4MatCounter = 100;
+    let f4Alumnos = 0, f4Matriculas = 0, f4Califs = 0, f4Asists = 0, f4Pagos = 0;
+    const MONTO_MAT_F4 = 230.00;
+
+    for (const grupo of GRUPOS_F4) {
+      const cursosDelGrado = todosCursos.filter(c => c.grado === grupo.g);
+      if (cursosDelGrado.length === 0) continue;
+
+      const padreId = uuidv4();
+      await insertUser({ id: padreId, nombre: `Sr(a). ${grupo.a}`, email: `f4.padre.${grupo.a.toLowerCase()}@colegiofuturo.edu`, password: hashedPassword, tipo_usuario: 'padre' });
+
+      for (const nombreHijo of grupo.h) {
+        const alumnoUsrId = uuidv4();
+        const genero = NOMBRES_FEM.includes(nombreHijo) ? 'F' : 'M';
+        const matNum = `MAT-2026-${String(f4MatCounter).padStart(3,'0')}`;
+        const emailAlum = `${nombreHijo.toLowerCase()}.${grupo.a.toLowerCase()}${f4MatCounter}@colegiofuturo.edu`;
+        f4MatCounter++;
+
+        await insertUser({ id: alumnoUsrId, nombre: nombreHijo, email: emailAlum, password: hashedPassword, tipo_usuario: 'alumno' });
+
+        const alumnoId = uuidv4();
+        await insertAlumno({
+          id: alumnoId, usuario_id: alumnoUsrId, numero_matricula: matNum,
+          apellido_paterno: grupo.a, apellido_materno: '', primer_nombre: nombreHijo,
+          telefono: `9998${String(0 + (f4MatCounter % 100)).padStart(2,'0')}`,
+          email_contacto: emailAlum, numero_documento: `40${String(100000 + f4MatCounter).slice(0,8)}`,
+          padre_id: padreId, datos_completos: true, deuda_pendiente: false, periodo_academico: '2026-1',
+        });
+        f4Alumnos++;
+
+        for (const curso of cursosDelGrado) {
+          await insertMatricula({
+            id: uuidv4(), alumno_id: alumnoId, curso_id: curso.id,
+            periodo_academico: '2026-1', fecha_matricula: '2026-03-10', estado: 'activa',
+          });
+          f4Matriculas++;
+
+          const nota = 10 + Math.round(Math.random() * 10);
+          await insertCalificacion({
+            id: uuidv4(), alumno_id: alumnoId, curso_id: curso.id,
+            puntuacion: nota, periodo_academico: '2026-1', tipo_evaluacion: 'parcial',
+            peso: 1.0, observaciones: nota >= 16 ? 'Excelente rendimiento' : nota >= 13 ? 'Buen desempeño' : nota >= 11 ? 'Rendimiento aceptable' : 'Requiere apoyo',
+          });
+          f4Califs++;
+
+          await insertAsistencia({
+            id: uuidv4(), alumno_id: alumnoId, curso_id: curso.id,
+            fecha: '2026-06-15', estado: Math.random() > 0.15 ? 'PRESENTE' : 'FALTA',
+            registrada: true, motivo_falta: null,
+          });
+          f4Asists++;
+        }
+
+        await insertPago({
+          id: uuidv4(), alumno_id: alumnoId, monto: MONTO_MAT_F4,
+          concepto: 'Matrícula 2026', estado_pago: 'pagado', estado: 'pagado',
+          fecha_pago: '2026-03-10 08:00:00', metodo_pago: 'transferencia', observaciones: 'Pago de matrícula',
+        });
+        f4Pagos++;
+
+        for (const cuota of crearCuotasMensuales(alumnoId, 2)) {
+          await insertPago(cuota);
+          f4Pagos++;
+        }
+      }
+    }
+    console.log(`✓ Fase 4 - Masiva: ${f4Alumnos} alumnos, ${f4Matriculas} matrículas, ${f4Califs} calificaciones, ${f4Asists} asistencias, ${f4Pagos} pagos`);
+
+    const totalUsuarios = usuarios.length + familias.length * 2 + nuevasFamilias.reduce((acc, f) => acc + 1 + f.hijos.length, 0) + (GRUPOS_F4.length + f4Alumnos);
     const totalProfesores = profesores.length + nuevosProfesoresData.length;
-    const totalAlumnos = alumnos.length + familias.length + nuevosAlumnosCount;
+    const totalAlumnos = alumnos.length + familias.length + nuevosAlumnosCount + f4Alumnos;
     const totalCursos = cursos.length + nuevosCursos.length;
-    const totalMatriculas = matriculas.length + familias.length + nuevasMatriculasCount;
-    const totalPagos = pagos.length + (familias.length * (1 + cuotasMensuales.length)) + nuevosPagosCount;
-    const totalAsistencias = asistencias.length + familias.length + nuevasAsistenciasCount;
-    const totalCalificaciones = calificaciones.length + familias.length + nuevasCalificacionesCount;
+    const totalMatriculas = matriculas.length + familias.length + nuevasMatriculasCount + f4Matriculas;
+    const totalPagos = pagos.length + (familias.length * (1 + cuotasMensuales.length)) + nuevosPagosCount + f4Pagos;
+    const totalAsistencias = asistencias.length + familias.length + nuevasAsistenciasCount + f4Asists;
+    const totalCalificaciones = calificaciones.length + familias.length + nuevasCalificacionesCount + f4Califs;
     const totalNotificaciones = notificaciones.length + familias.length;
 
     console.log('\n✅ Base de datos inicializada correctamente\n');

@@ -37,7 +37,10 @@ export const alumnosService = createCrudService('/alumnos', true);
 export const usuariosService = createCrudService('/usuarios');
 
 // Cursos
-export const cursosService = createCrudService('/cursos', true);
+export const cursosService = {
+  ...createCrudService('/cursos', true),
+  getEstudiantes: (id: string) => apiClient.get(`/cursos/${id}/estudiantes`),
+};
 
 // Profesores
 export const profesoresService = createCrudService('/profesores', true);

@@ -575,6 +575,63 @@ app.get('/api/cursos/:id', authMiddleware, asyncHandler(async (req, res) => {
   }
 }));
 
+// ESTUDIANTES POR CURSO
+app.get('/api/cursos/:id/estudiantes', authMiddleware, asyncHandler(async (req, res) => {
+  try {
+    const cursoId = req.params.id;
+    const usuarioId = req.usuario.id;
+    const rol = req.usuario.tipo_usuario;
+
+    // Verificar acceso al curso
+    let tieneAcceso = false;
+    if (ROLES_CON_ACCESO_TOTAL.has(rol)) {
+      tieneAcceso = true;
+    } else if (rol === 'docente') {
+      const profesorId = await getProfesorIdPorUsuario(usuarioId);
+      const curso = profesorId ? await getOne('SELECT id FROM cursos WHERE id = ? AND profesor_id = ?', [cursoId, profesorId]) : null;
+      tieneAcceso = !!curso;
+    } else if (rol === 'alumno') {
+      const curso = await getOne(`
+        SELECT c.id FROM cursos c
+        INNER JOIN matriculas m ON m.curso_id = c.id
+        INNER JOIN alumnos a ON a.id = m.alumno_id
+        WHERE c.id = ? AND a.usuario_id = ? LIMIT 1
+      `, [cursoId, usuarioId]);
+      tieneAcceso = !!curso;
+    } else if (rol === 'padre') {
+      const curso = await getOne(`
+        SELECT c.id FROM cursos c
+        INNER JOIN matriculas m ON m.curso_id = c.id
+        INNER JOIN alumnos a ON a.id = m.alumno_id
+        WHERE c.id = ? AND a.padre_id = ? LIMIT 1
+      `, [cursoId, usuarioId]);
+      tieneAcceso = !!curso;
+    }
+
+    if (!tieneAcceso) {
+      return res.status(403).json(respuestaError('No tienes acceso a este curso'));
+    }
+
+    const estudiantes = await getAll(`
+      SELECT
+        al.id,
+        al.primer_nombre,
+        al.apellido_paterno,
+        al.numero_matricula,
+        al.numero_documento,
+        TRIM(COALESCE(al.primer_nombre, '') || ' ' || COALESCE(al.apellido_paterno, '')) AS nombre_completo
+      FROM alumnos al
+      INNER JOIN matriculas m ON m.alumno_id = al.id
+      WHERE m.curso_id = ? AND m.estado = 'activa'
+      ORDER BY al.apellido_paterno, al.primer_nombre
+    `, [cursoId]);
+
+    res.json(respuestaExito(estudiantes, 'Estudiantes del curso obtenidos'));
+  } catch (error) {
+    res.status(500).json(respuestaError('Error al obtener estudiantes del curso'));
+  }
+}));
+
 // PROFESORES desde BD
 app.get('/api/profesores', authMiddleware, asyncHandler(async (req, res) => {
   try {
@@ -922,68 +979,51 @@ app.get('/api/calificaciones', authMiddleware, asyncHandler(async (req, res) => 
   try {
     const usuarioId = req.usuario.id;
     const rol = req.usuario.tipo_usuario;
+    const cursoIdFilter = req.query.curso_id;
     let calificaciones = [];
+    let sql;
+    let params;
+
+    const BASE_SELECT = `
+      SELECT
+        c.*,
+        TRIM(COALESCE(al.primer_nombre, '') || ' ' || COALESCE(al.apellido_paterno, '')) AS alumno_nombre,
+        al.numero_matricula AS alumno_numero_matricula,
+        cur.nombre AS curso_nombre,
+        cur.codigo AS curso_codigo
+      FROM calificaciones c
+      LEFT JOIN alumnos al ON al.id = c.alumno_id
+      LEFT JOIN cursos cur ON cur.id = c.curso_id
+    `;
 
     if (ROLES_CON_ACCESO_TOTAL.has(rol)) {
-      calificaciones = await getAll(`
-        SELECT
-          c.*,
-          TRIM(COALESCE(al.primer_nombre, '') || ' ' || COALESCE(al.apellido_paterno, '')) AS alumno_nombre,
-          al.numero_matricula AS alumno_numero_matricula,
-          cur.nombre AS curso_nombre,
-          cur.codigo AS curso_codigo
-        FROM calificaciones c
-        LEFT JOIN alumnos al ON al.id = c.alumno_id
-        LEFT JOIN cursos cur ON cur.id = c.curso_id
-        LIMIT 100
-      `);
+      sql = BASE_SELECT;
+      params = [];
     } else if (rol === 'alumno') {
-      calificaciones = await getAll(`
-        SELECT
-          c.*,
-          TRIM(COALESCE(al.primer_nombre, '') || ' ' || COALESCE(al.apellido_paterno, '')) AS alumno_nombre,
-          al.numero_matricula AS alumno_numero_matricula,
-          cur.nombre AS curso_nombre,
-          cur.codigo AS curso_codigo
-        FROM calificaciones c
-        LEFT JOIN alumnos al ON al.id = c.alumno_id
-        LEFT JOIN cursos cur ON cur.id = c.curso_id
-        WHERE al.usuario_id = ?
-        LIMIT 100
-      `, [usuarioId]);
+      sql = `${BASE_SELECT} WHERE al.usuario_id = ?`;
+      params = [usuarioId];
     } else if (rol === 'padre') {
-      calificaciones = await getAll(`
-        SELECT
-          c.*,
-          TRIM(COALESCE(al.primer_nombre, '') || ' ' || COALESCE(al.apellido_paterno, '')) AS alumno_nombre,
-          al.numero_matricula AS alumno_numero_matricula,
-          cur.nombre AS curso_nombre,
-          cur.codigo AS curso_codigo
-        FROM calificaciones c
-        LEFT JOIN alumnos al ON al.id = c.alumno_id
-        LEFT JOIN cursos cur ON cur.id = c.curso_id
-        WHERE al.padre_id = ?
-        LIMIT 100
-      `, [usuarioId]);
+      sql = `${BASE_SELECT} WHERE al.padre_id = ?`;
+      params = [usuarioId];
     } else if (rol === 'docente') {
       const profesorId = await getProfesorIdPorUsuario(usuarioId);
       if (profesorId) {
-        calificaciones = await getAll(`
-          SELECT DISTINCT
-            c.*,
-            TRIM(COALESCE(al.primer_nombre, '') || ' ' || COALESCE(al.apellido_paterno, '')) AS alumno_nombre,
-            al.numero_matricula AS alumno_numero_matricula,
-            cur.nombre AS curso_nombre,
-            cur.codigo AS curso_codigo
-          FROM calificaciones c
-          LEFT JOIN alumnos al ON al.id = c.alumno_id
-          LEFT JOIN cursos cur ON cur.id = c.curso_id
-          INNER JOIN matriculas m ON m.alumno_id = al.id
-          WHERE cur.profesor_id = ?
-          LIMIT 100
-        `, [profesorId]);
+        sql = `${BASE_SELECT} INNER JOIN matriculas m ON m.alumno_id = al.id AND m.curso_id = c.curso_id WHERE cur.profesor_id = ?`;
+        params = [profesorId];
       }
     }
+
+    if (sql && cursoIdFilter) {
+      sql += params.length === 0 ? ' WHERE' : ' AND';
+      sql += ' c.curso_id = ?';
+      params.push(cursoIdFilter);
+    }
+
+    if (sql) {
+      sql += ' LIMIT 100';
+      calificaciones = await getAll(sql, params);
+    }
+
     res.json(respuestaExito(calificaciones, 'Calificaciones obtenidas'));
   } catch (error) {
     res.status(500).json(respuestaError('Error al obtener calificaciones'));
@@ -1398,18 +1438,19 @@ app.post('/api/asistencia', authMiddleware, requireRole(['docente', 'director', 
 
 // POST CALIFICACIONES
 app.post('/api/calificaciones', authMiddleware, requireRole(['docente', 'director', 'administrativo']), asyncHandler(async (req, res) => {
-  const { alumno_id, curso_id, nota, periodo, observaciones } = req.body;
+  const { alumno_id, curso_id, puntuacion, nota, periodo, observaciones } = req.body;
   const id = generarId();
+  const puntuacionFinal = puntuacion ?? nota;
 
-  if (!alumno_id || !curso_id || nota === undefined || nota === null) {
-    return res.status(400).json(respuestaError('Faltan campos requeridos: alumno_id, curso_id, nota'));
+  if (!alumno_id || !curso_id || puntuacionFinal === undefined || puntuacionFinal === null) {
+    return res.status(400).json(respuestaError('Faltan campos requeridos: alumno_id, curso_id, puntuacion'));
   }
 
   try {
     await runQuery(
-      `INSERT INTO calificaciones (id, alumno_id, curso_id, nota, periodo, observaciones, fecha_creacion, fecha_actualizacion)
-       VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-      [id, alumno_id, curso_id, nota, periodo || '1', observaciones || null]
+      `INSERT INTO calificaciones (id, alumno_id, curso_id, puntuacion, periodo_academico, tipo_evaluacion, observaciones, fecha_creacion, fecha_actualizacion)
+       VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      [id, alumno_id, curso_id, puntuacionFinal, periodo || '1', 'parcial', observaciones || null]
     );
     res.status(201).json(respuestaExito({ id }, 'Calificación registrada exitosamente'));
     auditar(getDatabase(), req, 'CREAR', 'calificaciones', id, null, req.body);
@@ -1479,13 +1520,14 @@ app.put('/api/calificaciones/:id', authMiddleware, requireRole(['docente', 'dire
   const { id } = req.params;
   const antes = await getOne('SELECT * FROM calificaciones WHERE id = ?', [id]);
   if (!antes) return res.status(404).json(respuestaError('Calificación no encontrada'));
-  const { alumno_id, curso_id, nota, periodo, observaciones } = req.body;
+  const { alumno_id, curso_id, puntuacion, nota, periodo, tipo_evaluacion, observaciones } = req.body;
+  const puntuacionFinal = puntuacion ?? nota;
   try {
     await runQuery(
       `UPDATE calificaciones
-       SET alumno_id = ?, curso_id = ?, nota = ?, periodo = ?, observaciones = ?, fecha_actualizacion = CURRENT_TIMESTAMP
+       SET alumno_id = ?, curso_id = ?, puntuacion = ?, periodo_academico = ?, tipo_evaluacion = COALESCE(?, tipo_evaluacion), observaciones = ?, fecha_actualizacion = CURRENT_TIMESTAMP
        WHERE id = ?`,
-      [alumno_id, curso_id, nota, periodo || '1', observaciones || null, id]
+      [alumno_id, curso_id, puntuacionFinal, periodo || '1', tipo_evaluacion || null, observaciones || null, id]
     );
     res.json(respuestaExito({}, 'Calificación actualizada exitosamente'));
     auditar(getDatabase(), req, 'ACTUALIZAR', 'calificaciones', id, antes, req.body);
