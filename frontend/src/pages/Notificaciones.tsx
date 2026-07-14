@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { notificacionesService, usuariosService, alumnosService } from '../api/services';
 import Modal from '../components/Modal';
 import ConfirmModal from '../components/ConfirmModal';
@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { can } from '../utils/permissions';
 import { useSortableData } from '../utils/tableSort';
 import JsonViewButton from '../components/JsonViewButton';
+import SearchableSelect from '../components/SearchableSelect';
 
 interface Notificacion {
   id?: string;
@@ -51,6 +52,17 @@ const Notificaciones: React.FC = () => {
       setUsuarios(u.data?.datos || []); setAlumnos(a.data?.datos || []);
     } catch {}
   };
+
+  const destinatarioGroups = useMemo(() => [
+    {
+      label: 'Usuarios del sistema',
+      options: usuarios.map(u => ({ value: u.id, label: `${u.nombre} (${u.tipo_usuario})` }))
+    },
+    {
+      label: 'Alumnos',
+      options: alumnos.map(a => ({ value: a.usuario_id, label: `${a.primer_nombre} ${a.apellido_paterno} (${a.numero_matricula})` }))
+    }
+  ], [usuarios, alumnos]);
 
   const fetchNotificaciones = async () => {
     try { setLoading(true); setNotificaciones((await notificacionesService.getAll()).data?.datos || []); setError(''); }
@@ -234,15 +246,12 @@ const Notificaciones: React.FC = () => {
         <form onSubmit={e=>e.preventDefault()}>
           <div className="mb-3">
             <label className="form-label fw-semibold">Destinatario <span className="text-danger">*</span></label>
-            <select className="form-select" value={formData.destinatario_id} onChange={e=>setFormData({...formData,destinatario_id:e.target.value})}>
-              <option value="">Seleccionar destinatario</option>
-              <optgroup label="Usuarios del sistema">
-                {usuarios.map(u=><option key={u.id} value={u.id}>{u.nombre} ({u.tipo_usuario})</option>)}
-              </optgroup>
-              <optgroup label="Alumnos">
-                {alumnos.map(a=><option key={a.id} value={a.usuario_id}>{a.primer_nombre} {a.apellido_paterno} ({a.numero_matricula})</option>)}
-              </optgroup>
-            </select>
+            <SearchableSelect
+              groups={destinatarioGroups}
+              value={formData.destinatario_id}
+              onChange={v => setFormData({ ...formData, destinatario_id: v })}
+              placeholder="Buscar destinatario..."
+            />
           </div>
           <div className="mb-3">
             <label className="form-label fw-semibold">Tipo</label>

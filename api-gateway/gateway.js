@@ -381,7 +381,6 @@ app.get('/api/alumnos', authMiddleware, asyncHandler(async (req, res) => {
         LEFT JOIN usuarios u ON u.id = a.usuario_id
         LEFT JOIN usuarios p ON p.id = a.padre_id
         ORDER BY a.primer_nombre, a.apellido_paterno
-        LIMIT 100
       `);
     } else if (rol === 'alumno') {
       alumnos = await getAll(`
@@ -394,7 +393,6 @@ app.get('/api/alumnos', authMiddleware, asyncHandler(async (req, res) => {
         LEFT JOIN usuarios p ON p.id = a.padre_id
         WHERE a.usuario_id = ?
         ORDER BY a.primer_nombre, a.apellido_paterno
-        LIMIT 100
       `, [usuarioId]);
     } else if (rol === 'padre') {
       alumnos = await getAll(`
@@ -407,7 +405,6 @@ app.get('/api/alumnos', authMiddleware, asyncHandler(async (req, res) => {
         LEFT JOIN usuarios p ON p.id = a.padre_id
         WHERE a.padre_id = ?
         ORDER BY a.primer_nombre, a.apellido_paterno
-        LIMIT 100
       `, [usuarioId]);
     } else if (rol === 'docente') {
       const profesorId = await getProfesorIdPorUsuario(usuarioId);
@@ -424,7 +421,6 @@ app.get('/api/alumnos', authMiddleware, asyncHandler(async (req, res) => {
           LEFT JOIN usuarios p ON p.id = a.padre_id
           WHERE c.profesor_id = ?
           ORDER BY a.primer_nombre, a.apellido_paterno
-          LIMIT 100
         `, [profesorId]);
       }
     }
@@ -482,7 +478,6 @@ app.get('/api/cursos', authMiddleware, asyncHandler(async (req, res) => {
         FROM cursos c
         LEFT JOIN profesores p ON p.id = c.profesor_id
         ORDER BY c.nombre
-        LIMIT 100
       `);
     } else if (rol === 'docente') {
       const profesorId = await getProfesorIdPorUsuario(usuarioId);
@@ -497,7 +492,6 @@ app.get('/api/cursos', authMiddleware, asyncHandler(async (req, res) => {
           LEFT JOIN profesores p ON p.id = c.profesor_id
           WHERE c.profesor_id = ?
           ORDER BY c.nombre
-          LIMIT 100
         `, [profesorId]);
       }
     } else if (rol === 'alumno') {
@@ -513,7 +507,6 @@ app.get('/api/cursos', authMiddleware, asyncHandler(async (req, res) => {
         LEFT JOIN profesores p ON p.id = c.profesor_id
         WHERE a.usuario_id = ?
         ORDER BY c.nombre
-        LIMIT 100
       `, [usuarioId]);
     } else if (rol === 'padre') {
       cursos = await getAll(`
@@ -528,7 +521,6 @@ app.get('/api/cursos', authMiddleware, asyncHandler(async (req, res) => {
         LEFT JOIN profesores p ON p.id = c.profesor_id
         WHERE a.padre_id = ?
         ORDER BY c.nombre
-        LIMIT 100
       `, [usuarioId]);
     }
     res.json(respuestaExito(cursos, 'Cursos obtenidos'));
@@ -648,7 +640,6 @@ app.get('/api/profesores', authMiddleware, asyncHandler(async (req, res) => {
         FROM profesores p
         LEFT JOIN usuarios u ON u.id = p.usuario_id
         ORDER BY p.primer_nombre, p.apellido_paterno
-        LIMIT 100
       `);
     } else if (rol === 'docente') {
       profesores = await getAll(`
@@ -660,7 +651,6 @@ app.get('/api/profesores', authMiddleware, asyncHandler(async (req, res) => {
         LEFT JOIN usuarios u ON u.id = p.usuario_id
         WHERE p.usuario_id = ?
         ORDER BY p.primer_nombre, p.apellido_paterno
-        LIMIT 100
       `, [usuarioId]);
     } else if (rol === 'alumno') {
       profesores = await getAll(`
@@ -675,7 +665,6 @@ app.get('/api/profesores', authMiddleware, asyncHandler(async (req, res) => {
         INNER JOIN alumnos a ON a.id = m.alumno_id
         WHERE a.usuario_id = ?
         ORDER BY p.primer_nombre, p.apellido_paterno
-        LIMIT 100
       `, [usuarioId]);
     } else if (rol === 'padre') {
       profesores = await getAll(`
@@ -690,7 +679,6 @@ app.get('/api/profesores', authMiddleware, asyncHandler(async (req, res) => {
         INNER JOIN alumnos a ON a.id = m.alumno_id
         WHERE a.padre_id = ?
         ORDER BY p.primer_nombre, p.apellido_paterno
-        LIMIT 100
       `, [usuarioId]);
     }
     res.json(respuestaExito(profesores, 'Profesores obtenidos'));
@@ -761,7 +749,6 @@ app.get('/api/matriculas', authMiddleware, asyncHandler(async (req, res) => {
         LEFT JOIN cursos c ON c.id = m.curso_id
         LEFT JOIN profesores p ON p.id = c.profesor_id
         ORDER BY m.fecha_matricula DESC
-        LIMIT 100
       `);
     } else if (rol === 'alumno') {
       matriculas = await getAll(`
@@ -780,7 +767,6 @@ app.get('/api/matriculas', authMiddleware, asyncHandler(async (req, res) => {
         LEFT JOIN profesores p ON p.id = c.profesor_id
         WHERE a.usuario_id = ?
         ORDER BY m.fecha_matricula DESC
-        LIMIT 100
       `, [usuarioId]);
     } else if (rol === 'padre') {
       matriculas = await getAll(`
@@ -799,7 +785,6 @@ app.get('/api/matriculas', authMiddleware, asyncHandler(async (req, res) => {
         LEFT JOIN profesores p ON p.id = c.profesor_id
         WHERE a.padre_id = ?
         ORDER BY m.fecha_matricula DESC
-        LIMIT 100
       `, [usuarioId]);
     } else if (rol === 'docente') {
       const profesorId = await getProfesorIdPorUsuario(usuarioId);
@@ -820,7 +805,6 @@ app.get('/api/matriculas', authMiddleware, asyncHandler(async (req, res) => {
           LEFT JOIN profesores p ON p.id = c.profesor_id
           WHERE c.profesor_id = ?
           ORDER BY m.fecha_matricula DESC
-          LIMIT 100
         `, [profesorId]);
       }
     }
@@ -846,7 +830,6 @@ app.get('/api/pagos', authMiddleware, asyncHandler(async (req, res) => {
         FROM pagos p
         LEFT JOIN alumnos a ON a.id = p.alumno_id
         ORDER BY p.fecha_creacion DESC
-        LIMIT 100
       `);
     } else if (rol === 'alumno') {
       pagos = await getAll(`
@@ -858,7 +841,6 @@ app.get('/api/pagos', authMiddleware, asyncHandler(async (req, res) => {
         LEFT JOIN alumnos a ON a.id = p.alumno_id
         WHERE a.usuario_id = ?
         ORDER BY p.fecha_creacion DESC
-        LIMIT 100
       `, [usuarioId]);
     } else if (rol === 'padre') {
       pagos = await getAll(`
@@ -870,7 +852,6 @@ app.get('/api/pagos', authMiddleware, asyncHandler(async (req, res) => {
         LEFT JOIN alumnos a ON a.id = p.alumno_id
         WHERE a.padre_id = ?
         ORDER BY p.fecha_creacion DESC
-        LIMIT 100
       `, [usuarioId]);
     } else if (rol === 'docente') {
       const profesorId = await getProfesorIdPorUsuario(usuarioId);
@@ -886,7 +867,6 @@ app.get('/api/pagos', authMiddleware, asyncHandler(async (req, res) => {
           INNER JOIN cursos c ON c.id = m.curso_id
           WHERE c.profesor_id = ?
           ORDER BY p.fecha_creacion DESC
-          LIMIT 100
         `, [profesorId]);
       }
     }
@@ -915,7 +895,6 @@ app.get('/api/asistencia', authMiddleware, asyncHandler(async (req, res) => {
         LEFT JOIN alumnos al ON al.id = a.alumno_id
         LEFT JOIN cursos c ON c.id = a.curso_id
         ORDER BY a.fecha DESC
-        LIMIT 100
       `);
     } else if (rol === 'alumno') {
       asistencia = await getAll(`
@@ -930,7 +909,6 @@ app.get('/api/asistencia', authMiddleware, asyncHandler(async (req, res) => {
         LEFT JOIN cursos c ON c.id = a.curso_id
         WHERE al.usuario_id = ?
         ORDER BY a.fecha DESC
-        LIMIT 100
       `, [usuarioId]);
     } else if (rol === 'padre') {
       asistencia = await getAll(`
@@ -945,7 +923,6 @@ app.get('/api/asistencia', authMiddleware, asyncHandler(async (req, res) => {
         LEFT JOIN cursos c ON c.id = a.curso_id
         WHERE al.padre_id = ?
         ORDER BY a.fecha DESC
-        LIMIT 100
       `, [usuarioId]);
     } else if (rol === 'docente') {
       const profesorId = await getProfesorIdPorUsuario(usuarioId);
@@ -963,7 +940,6 @@ app.get('/api/asistencia', authMiddleware, asyncHandler(async (req, res) => {
           INNER JOIN matriculas m ON m.alumno_id = al.id
           WHERE c.profesor_id = ?
           ORDER BY a.fecha DESC
-          LIMIT 100
         `, [profesorId]);
       }
     }
@@ -1020,7 +996,6 @@ app.get('/api/calificaciones', authMiddleware, asyncHandler(async (req, res) => 
     }
 
     if (sql) {
-      sql += ' LIMIT 100';
       calificaciones = await getAll(sql, params);
     }
 
@@ -1045,7 +1020,6 @@ app.get('/api/notificaciones', authMiddleware, asyncHandler(async (req, res) => 
           FROM notificaciones n
           LEFT JOIN usuarios u ON u.id = n.destinatario_id
           ORDER BY n.fecha_creacion DESC
-          LIMIT 100
         `)
       : await getAll(`
           SELECT
@@ -1057,7 +1031,6 @@ app.get('/api/notificaciones', authMiddleware, asyncHandler(async (req, res) => 
           LEFT JOIN usuarios u ON u.id = n.destinatario_id
           WHERE n.destinatario_id = ?
           ORDER BY n.fecha_creacion DESC
-          LIMIT 100
         `, [usuarioId]);
     res.json(respuestaExito(notificaciones, 'Notificaciones obtenidas'));
   } catch (error) {
