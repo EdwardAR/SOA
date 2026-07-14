@@ -46,8 +46,8 @@ const TABLA_ICONS: Record<string, string> = {
 
 const fmtDate = (d: string) => {
   if (!d) return '—';
-  const dt = new Date(d);
-  return dt.toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const dt = new Date(d.replace(' ', 'T') + 'Z');
+  return dt.toLocaleString('es-PE', { timeZone: 'America/Lima', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
 };
 
 const TABLAS_FILTRO = ['alumnos', 'profesores', 'cursos', 'matriculas', 'pagos', 'asistencias', 'calificaciones', 'notificaciones'];

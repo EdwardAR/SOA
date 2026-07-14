@@ -121,13 +121,13 @@ const Calificaciones: React.FC = () => {
         puntuacion: formData.puntuacion, periodo: formData.periodo_academico, tipo_evaluacion: formData.tipo_evaluacion, observaciones: formData.observaciones };
       if (editingId) { await calificacionesService.update(editingId, payload); setSuccess('Calificación actualizada'); }
       else { await calificacionesService.create(payload); setSuccess('Calificación registrada'); }
-      setShowModal(false); setEditingId(null); setRefreshKey(k => k + 1); setTimeout(() => setSuccess(''), 3000);
+      setShowModal(false); setEditingId(null); await cargarDatos(cursoFiltroId); setRefreshKey(k => k + 1); setTimeout(() => setSuccess(''), 3000);
     } catch { setError('Error al guardar calificación'); }
   };
 
   const handleDeleteConfirm = async () => {
     try { await calificacionesService.delete(confirmDelete.id); setConfirmDelete({ show:false, id:'' });
-      setSuccess('Calificación eliminada'); setRefreshKey(k => k + 1); setTimeout(() => setSuccess(''), 3000);
+      setSuccess('Calificación eliminada'); await cargarDatos(cursoFiltroId); setRefreshKey(k => k + 1); setTimeout(() => setSuccess(''), 3000);
     } catch { setConfirmDelete({ show:false, id:'' }); setError('Error al eliminar'); }
   };
 
